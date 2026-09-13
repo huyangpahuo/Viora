@@ -1,0 +1,57 @@
+<ResourceDictionary
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+
+    <!--
+        Core (shared, never swapped by ThemeManager): typography, shape scale,
+        elevation, motion. Color brushes live in the palette dictionaries
+        (Tokens / Tokens.Ocean / ... ) which ThemeManager swaps at runtime.
+        Typography foregrounds use DynamicResource so palettes can change live.
+    -->
+    <FontFamily x:Key="Font.Family">Segoe UI Variable Display, Segoe UI, Microsoft YaHei UI</FontFamily>
+
+    <Style x:Key="Typography.Title" TargetType="TextBlock">
+        <Setter Property="FontFamily" Value="{StaticResource Font.Family}" />
+        <Setter Property="FontSize" Value="28" />
+        <Setter Property="FontWeight" Value="SemiBold" />
+        <Setter Property="Foreground" Value="{DynamicResource Color.Text.Primary}" />
+    </Style>
+    <Style x:Key="Typography.Heading" TargetType="TextBlock">
+        <Setter Property="FontFamily" Value="{StaticResource Font.Family}" />
+        <Setter Property="FontSize" Value="18" />
+        <Setter Property="FontWeight" Value="SemiBold" />
+        <Setter Property="Foreground" Value="{DynamicResource Color.Text.Primary}" />
+    </Style>
+    <Style x:Key="Typography.Body" TargetType="TextBlock">
+        <Setter Property="FontFamily" Value="{StaticResource Font.Family}" />
+        <Setter Property="FontSize" Value="14" />
+        <Setter Property="Foreground" Value="{DynamicResource Color.Text.Primary}" />
+    </Style>
+    <Style x:Key="Typography.BodySecondary" TargetType="TextBlock" BasedOn="{StaticResource Typography.Body}">
+        <Setter Property="Foreground" Value="{DynamicResource Color.Text.Secondary}" />
+    </Style>
+    <Style x:Key="Typography.Caption" TargetType="TextBlock">
+        <Setter Property="FontFamily" Value="{StaticResource Font.Family}" />
+        <Setter Property="FontSize" Value="12" />
+        <Setter Property="Foreground" Value="{DynamicResource Color.Text.Secondary}" />
+    </Style>
+
+    <CornerRadius x:Key="Radius.Small">4</CornerRadius>
+    <CornerRadius x:Key="Radius.Medium">8</CornerRadius>
+    <CornerRadius x:Key="Radius.Large">16</CornerRadius>
+    <CornerRadius x:Key="Radius.XLarge">20</CornerRadius>
+    <CornerRadius x:Key="Radius.Capsule">18</CornerRadius>
+    <CornerRadius x:Key="Radius.Pill">999</CornerRadius>
+
+    <DropShadowEffect x:Key="Shadow.Card" BlurRadius="12" ShadowDepth="2" Direction="270" Opacity="0.24" Color="#FF000000" />
+    <DropShadowEffect x:Key="Shadow.CardHover" BlurRadius="20" ShadowDepth="4" Direction="270" Opacity="0.34" Color="#FF000000" />
+    <DropShadowEffect x:Key="Shadow.Flyout" BlurRadius="28" ShadowDepth="6" Direction="270" Opacity="0.44" Color="#FF000000" />
+    <DropShadowEffect x:Key="Shadow.PrimaryGlow" BlurRadius="14" ShadowDepth="0" Opacity="0.4" Color="#FF82B1FF" />
+
+    <Duration x:Key="Motion.Quick">0:0:0.15</Duration>
+    <Duration x:Key="Motion.Standard">0:0:0.25</Duration>
+    <Duration x:Key="Motion.Slow">0:0:0.35</Duration>
+    <CubicEase x:Key="Motion.EaseOut" EasingMode="EaseOut" />
+    <CubicEase x:Key="Motion.EaseInOut" EasingMode="EaseInOut" />
+    <BackEase x:Key="Motion.EaseSpring" EasingMode="EaseOut" Amplitude="0.6" />
+</ResourceDictionary>

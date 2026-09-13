@@ -1,0 +1,14 @@
+<Window
+    x:Class="Viora.App.MainWindow"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:shell="clr-namespace:Viora.UI.Shell;assembly=Viora.UI"
+    Title="Viora"
+    Width="960"
+    Height="620"
+    MinWidth="480"
+    MinHeight="360"
+    Background="{DynamicResource Color.Background}"
+    WindowStartupLocation="CenterScreen">
+    <shell:ShellView />
+</Window>

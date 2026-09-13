@@ -1,0 +1,10 @@
+bin/
+obj/
+*.user
+.vs/
+.cr/
+plugins/*
+!plugins/.gitkeep
+*.vplugin
+settings.json
+portable.marker

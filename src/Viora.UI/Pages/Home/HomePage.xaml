@@ -1,0 +1,45 @@
+<UserControl
+    x:Class="Viora.UI.Pages.Home.HomePage"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:loc="clr-namespace:Viora.UI.Localization"
+    xmlns:pages="clr-namespace:Viora.UI.Pages">
+    <pages:PageChrome TitleKey="Home.Title" SubtitleKey="Home.Subtitle">
+        <StackPanel MaxWidth="860">
+            <StackPanel Orientation="Horizontal" Margin="0,8,0,24">
+                <Button Style="{DynamicResource VioraButton}" Content="{loc:Translate Home.Cta.Convert}" Command="{Binding GoConvertCommand}" Margin="0,0,12,0" />
+                <Button Style="{DynamicResource SecondaryButton}" Content="{loc:Translate Home.Cta.Plugins}" Command="{Binding GoPluginsCommand}" />
+            </StackPanel>
+
+            <TextBlock Style="{DynamicResource Typography.Heading}" Text="{loc:Translate Home.FeaturesTitle}" Margin="0,0,0,12" />
+            <UniformGrid Columns="3">
+                <Border Style="{DynamicResource VioraCard}" Margin="0,0,12,0">
+                    <StackPanel>
+                        <TextBlock Text="&#xE8E5;" FontFamily="Segoe MDL2 Assets" FontSize="22" Foreground="{DynamicResource Color.Accent}" />
+                        <TextBlock Style="{DynamicResource Typography.Heading}" FontSize="14" Text="{loc:Translate Home.Feature.Convert.Title}" Margin="0,10,0,6" />
+                        <TextBlock Style="{DynamicResource Typography.BodySecondary}" TextWrapping="Wrap" Text="{loc:Translate Home.Feature.Convert.Body}" />
+                    </StackPanel>
+                </Border>
+                <Border Style="{DynamicResource VioraCard}" Margin="0,0,12,0">
+                    <StackPanel>
+                        <TextBlock Text="&#xE116;" FontFamily="Segoe MDL2 Assets" FontSize="22" Foreground="{DynamicResource Color.Accent}" />
+                        <TextBlock Style="{DynamicResource Typography.Heading}" FontSize="14" Text="{loc:Translate Home.Feature.Plugins.Title}" Margin="0,10,0,6" />
+                        <TextBlock Style="{DynamicResource Typography.BodySecondary}" TextWrapping="Wrap" Text="{loc:Translate Home.Feature.Plugins.Body}" />
+                    </StackPanel>
+                </Border>
+                <Border Style="{DynamicResource VioraCard}">
+                    <StackPanel>
+                        <TextBlock Text="&#xE72E;" FontFamily="Segoe MDL2 Assets" FontSize="22" Foreground="{DynamicResource Color.Accent}" />
+                        <TextBlock Style="{DynamicResource Typography.Heading}" FontSize="14" Text="{loc:Translate Home.Feature.Privacy.Title}" Margin="0,10,0,6" />
+                        <TextBlock Style="{DynamicResource Typography.BodySecondary}" TextWrapping="Wrap" Text="{loc:Translate Home.Feature.Privacy.Body}" />
+                    </StackPanel>
+                </Border>
+            </UniformGrid>
+
+            <TextBlock Style="{DynamicResource Typography.Heading}" Text="{loc:Translate Home.RecentTitle}" Margin="0,24,0,12" />
+            <Border Style="{DynamicResource VioraCard}" Padding="24">
+                <TextBlock Style="{DynamicResource Typography.BodySecondary}" Text="{loc:Translate Home.RecentEmpty}" TextWrapping="Wrap" />
+            </Border>
+        </StackPanel>
+    </pages:PageChrome>
+</UserControl>

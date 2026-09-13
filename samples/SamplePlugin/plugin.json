@@ -1,0 +1,14 @@
+{
+  "id": "com.viora.sample-duotone",
+  "displayName": "Duotone (Sample)",
+  "version": "1.0.0",
+  "author": "Viora Project",
+  "description": "Sample plugin: duotone stylization preset proving the plugin lifecycle.",
+  "homepage": "https://github.com/viora-project/viora",
+  "repository": "https://github.com/viora-project/viora",
+  "requiredHostVersion": ">=1.0.0",
+  "entryAssembly": "SamplePlugin.dll",
+  "typeName": "SamplePlugin.SampleVioraPlugin",
+  "capabilities": [ "convert.preset", "localization.strings" ],
+  "dependencies": []
+}

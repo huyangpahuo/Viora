@@ -1,0 +1,34 @@
+<UserControl
+    x:Class="Viora.UI.Pages.Community.CommunityPage"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:loc="clr-namespace:Viora.UI.Localization"
+    xmlns:pages="clr-namespace:Viora.UI.Pages">
+    <pages:PageChrome TitleKey="Community.Title" SubtitleKey="Community.Subtitle">
+        <StackPanel MaxWidth="720">
+            <ItemsControl ItemsSource="{Binding Destinations}" Margin="0,8,0,0">
+                <ItemsControl.ItemTemplate>
+                    <DataTemplate>
+                        <Border Style="{DynamicResource VioraCard}" Padding="20" Margin="0,0,0,12">
+                            <Grid>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*" />
+                                    <ColumnDefinition Width="Auto" />
+                                </Grid.ColumnDefinitions>
+                                <StackPanel>
+                                    <TextBlock Style="{DynamicResource Typography.Heading}" FontSize="15" Text="{Binding Name}" />
+                                    <TextBlock Style="{DynamicResource Typography.BodySecondary}" Text="{Binding Description}" TextWrapping="Wrap" Margin="0,4,0,0" />
+                                </StackPanel>
+                                <Button Grid.Column="1" Style="{DynamicResource SecondaryButton}" Content="{loc:Translate Community.Join}"
+                                        Command="{Binding DataContext.JoinCommand, RelativeSource={RelativeSource AncestorType=ItemsControl}}"
+                                        CommandParameter="{Binding}" VerticalAlignment="Center" />
+                            </Grid>
+                        </Border>
+                    </DataTemplate>
+                </ItemsControl.ItemTemplate>
+            </ItemsControl>
+            <TextBlock Style="{DynamicResource Typography.Caption}" Text="{loc:Translate Community.Empty}" Margin="0,4,0,0"
+                       Visibility="{Binding HasNoDestinations, Converter={StaticResource BoolToVisibilityConverter}}" />
+        </StackPanel>
+    </pages:PageChrome>
+</UserControl>
