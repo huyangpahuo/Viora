@@ -35,14 +35,13 @@ public sealed class ClayStage : StageBase
         double smoothing = Dbl(context.Parameters, "smoothing", 0.7);
         double relief = Dbl(context.Parameters, "relief", 0.5);
 
-        // heavy smoothing on the tone → rounded, hand-modeled volumes
+        // Heavy color smoothing gives the flattened, thumb-pressed surface;
+        // the original still bleeds through so hues survive.
+        var flat = ImageOps.BoxBlurColor(px, stride, w, h, 3 + (int)(smoothing * 9));
+
         var luma = ImageOps.LumaMap(src);
         var soft = (byte[])luma.Clone();
-        int radius = 2 + (int)(smoothing * 6);
-        ImageOps.BoxBlurGray(soft, w, h, radius);
-        ImageOps.BoxBlurGray(soft, w, h, Math.Max(1, radius / 2));
-
-        var mag = ImageOps.SobelMagnitude(soft, w, h);
+        ImageOps.BoxBlurGray(soft, w, h, 2 + (int)(smoothing * 5));
 
         await Task.Run(() =>
         {
@@ -51,15 +50,23 @@ public sealed class ClayStage : StageBase
                 for (int x = 0; x < w; x++)
                 {
                     int i = y * stride + x * 4;
-                    // desaturated pastel base from the flattened tone
-                    double t = soft[y * w + x] / 255.0;
-                    int b = (int)(90 + t * 140), g = (int)(95 + t * 130), r = (int)(110 + t * 130);
+                    int f = y * stride + x * 4;
 
-                    // curvature relief: emboss from the blurred vertical gradient
+                    // clay = mostly flattened color, a little original detail
+                    double mix = 0.62;
+                    int b = (int)(flat[f] * mix + px[i] * (1 - mix));
+                    int g = (int)(flat[f + 1] * mix + px[i + 1] * (1 - mix));
+                    int r = (int)(flat[f + 2] * mix + px[i + 2] * (1 - mix));
+
+                    // matte pastel lift: pull toward milky tone
+                    b = b + (150 - b) * 14 / 100;
+                    g = g + (148 - g) * 14 / 100;
+                    r = r + (155 - r) * 14 / 100;
+
+                    // rounded-volume shading from the blurred vertical slope
                     double slope = (soft[Math.Min(h - 1, y + 1) * w + x] - soft[Math.Max(0, y - 1) * w + x]) / 255.0;
-                    double detail = Math.Clamp(mag[y * w + x] / 500.0, 0, 1) * relief;
+                    double shade = 1.0 + slope * relief * 2.0;
 
-                    double shade = 1.0 + slope * relief * 0.9 + (0.5 - detail) * 0.15;
                     px[i] = ImageOps.Clamp((int)(b * shade));
                     px[i + 1] = ImageOps.Clamp((int)(g * shade));
                     px[i + 2] = ImageOps.Clamp((int)(r * shade));
@@ -100,20 +107,23 @@ public sealed class CollageStage : StageBase
 
         var original = (byte[])px.Clone();
         var dst = new RgbaImageBuffer(w, h);
+        ImageOps.OpaqueAlpha(dst.Pixels);
         var outPx = dst.Pixels;
         int outStride = dst.Stride;
 
-        // paper background
+        // Paper background with light grain — visible in the gaps between scraps.
         for (int y = 0; y < h; y++)
             for (int x = 0; x < w; x++)
             {
                 int i = y * outStride + x * 4;
-                byte n = (byte)(244 + ImageOps.Hash(x, y, 3) * 8);
-                outPx[i] = n; outPx[i + 1] = n; outPx[i + 2] = (byte)(n + 2);
+                byte n = (byte)(242 + ImageOps.Hash(x, y, 3) * 10);
+                outPx[i] = n; outPx[i + 1] = n; outPx[i + 2] = (byte)(n + 3);
             }
 
-        double maxAngle = rotation * 6.0 * Math.PI / 180.0;
+        double tileW = w / (double)tiles, tileH = h / (double)tiles;
+        double maxAngle = (2.0 + rotation * 5.0) * Math.PI / 180.0;
 
+        // Draw the scraps row by row; each one is rotated, shifted and torn.
         for (int ty = 0; ty < tiles; ty++)
         {
             for (int tx = 0; tx < tiles; tx++)
@@ -121,25 +131,54 @@ public sealed class CollageStage : StageBase
                 double angle = (ImageOps.Hash(tx, ty, 13) - 0.5) * 2 * maxAngle;
                 double cos = Math.Cos(angle), sin = Math.Sin(angle);
 
-                double tileW = w / (double)tiles, tileH = h / (double)tiles;
-                double cxt = (tx + 0.5) * tileW, cyt = (ty + 0.5) * tileH;
+                // scrap center drifts from the ideal grid cell
+                double cxt = (tx + 0.5) * tileW + (ImageOps.Hash(tx, ty, 15) - 0.5) * tileW * 0.16;
+                double cyt = (ty + 0.5) * tileH + (ImageOps.Hash(tx, ty, 17) - 0.5) * tileH * 0.16;
 
-                for (int y = Math.Max(0, (int)(cyt - tileH)); y < Math.Min(h, cyt + tileH); y++)
+                // the scrap shows a DIFFERENT part of the picture than its grid slot
+                double srcShiftX = (ImageOps.Hash(tx, ty, 19) - 0.5) * tileW * 0.35;
+                double srcShiftY = (ImageOps.Hash(tx, ty, 23) - 0.5) * tileH * 0.35;
+
+                double halfW = tileW * 0.46, halfH = tileH * 0.46;
+                int x0 = Math.Max(0, (int)(cxt - tileW * 0.75));
+                int x1 = Math.Min(w - 1, (int)(cxt + tileW * 0.75));
+                int y0 = Math.Max(0, (int)(cyt - tileH * 0.75));
+                int y1 = Math.Min(h - 1, (int)(cyt + tileH * 0.75));
+
+                for (int y = y0; y <= y1; y++)
                 {
-                    for (int x = Math.Max(0, (int)(cxt - tileW)); x < Math.Min(w, cxt + tileW); x++)
+                    for (int x = x0; x <= x1; x++)
                     {
-                        // inverse-rotate around the tile center
                         double rx = x + 0.5 - cxt, ry = y + 0.5 - cyt;
-                        double sx = cos * rx + sin * ry + cxt;
-                        double sy = -sin * rx + cos * ry + cyt;
+                        // inverse-rotate the output point into the scrap's frame
+                        double lx = cos * rx + sin * ry;
+                        double ly = -sin * rx + cos * ry;
+                        if (Math.Abs(lx) > halfW || Math.Abs(ly) > halfH) continue;
 
-                        if (sx < tx * tileW + 1 || sy < ty * tileH + 1 ||
-                            sx >= (tx + 1) * tileW - 1 || sy >= (ty + 1) * tileH - 1) continue;
+                        // torn edge: irregular white bite around the border
+                        double edgeDist = halfW - Math.Abs(lx) < halfH - Math.Abs(ly)
+                            ? halfW - Math.Abs(lx) : halfH - Math.Abs(ly);
+                        double tear = 1.5 + ImageOps.Hash((int)(lx + 500), (int)(ly + 500), 25) * 3.5;
+                        if (edgeDist < tear) continue;
+
+                        // sample a shifted source region so neighbors don't repeat
+                        double sx = (tx + 0.5) * tileW + lx + srcShiftX;
+                        double sy = (ty + 0.5) * tileH + ly + srcShiftY;
+                        if (sx < 0 || sy < 0 || sx >= w - 1 || sy >= h - 1) continue;
 
                         var quad = new byte[4];
                         ImageOps.SampleBilinear(original, stride, w, h, sx, sy, quad);
+
                         int o = y * outStride + x * 4;
                         outPx[o] = quad[0]; outPx[o + 1] = quad[1]; outPx[o + 2] = quad[2];
+
+                        // drop-shadow line along each scrap's bottom-right inside edge
+                        if (edgeDist < tear + 2.5)
+                        {
+                            outPx[o] = ImageOps.Clamp(outPx[o] - 26);
+                            outPx[o + 1] = ImageOps.Clamp(outPx[o + 1] - 26);
+                            outPx[o + 2] = ImageOps.Clamp(outPx[o + 2] - 26);
+                        }
                     }
                 }
             }
@@ -372,7 +411,7 @@ public sealed class PorcelainPreset : IStylePreset
 public sealed class PorcelainStage : StageBase
 {
     public override string Name => "Porcelain";
-    public override async Task<ImageProcessingContext> ExecuteAsync(ImageProcessingContext context, IProgress<StageProgress>? progress, CancellationToken ct)
+    public override Task<ImageProcessingContext> ExecuteAsync(ImageProcessingContext context, IProgress<StageProgress>? progress, CancellationToken ct)
     {
         var src = context.Working!;
         int w = src.Width, h = src.Height, stride = src.Stride;
@@ -380,52 +419,42 @@ public sealed class PorcelainStage : StageBase
         double gloss = Dbl(context.Parameters, "gloss", 0.5);
         double smoothing = Dbl(context.Parameters, "smoothing", 0.7);
 
+        int radius = 2 + (int)(smoothing * 6);
+
+        // Actually-blurred color copy (the glaze base) + soft luma for the sheen mask.
+        var glaze = ImageOps.BoxBlurColor(px, stride, w, h, radius);
         var luma = ImageOps.LumaMap(src);
         var soft = (byte[])luma.Clone();
-        ImageOps.BoxBlurGray(soft, w, h, 2 + (int)(smoothing * 5));
+        ImageOps.BoxBlurGray(soft, w, h, Math.Max(1, radius / 2));
 
-        var softBuf = new RgbaImageBuffer(w, h, new byte[w * h * 4]);
-        Buffer.BlockCopy(src.Pixels, 0, softBuf.Pixels, 0, src.Pixels.Length);
-        ImageOps.BoxBlurRgb(ToFloat(softBuf), w, h, 2 + (int)(smoothing * 5));
-
-        await Task.Run(() =>
+        for (int y = 0; y < h; y++)
         {
-            for (int y = 0; y < h; y++)
+            for (int x = 0; x < w; x++)
             {
-                for (int x = 0; x < w; x++)
-                {
-                    int i = y * stride + x * 4;
-                    int fi = y * w * 3 + x * 3;
-                    double t = soft[y * w + x] / 255.0;
+                int i = y * stride + x * 4;
+                int f = y * stride + x * 4;
+                double t = soft[y * w + x] / 255.0;
 
-                    // cool white base from smoothed color
-                    double b = softBuf.Pixels[i] * 0.55 + 120 * (1 - t * 0.4);
-                    double g = softBuf.Pixels[i + 1] * 0.55 + 125 * (1 - t * 0.4);
-                    double r = softBuf.Pixels[i + 2] * 0.55 + 128 * (1 - t * 0.4);
+                // cool glazed white carries most of the tone; image keeps a third
+                double b = glaze[f] * 0.34 + 238 * 0.66;
+                double g = glaze[f + 1] * 0.34 + 243 * 0.66;
+                double r = glaze[f + 2] * 0.34 + 246 * 0.66;
 
-                    // specular: top luma gets a glazed highlight
-                    double spec = Math.Pow(Math.Max(0, t - 0.55) / 0.45, 2.0) * gloss;
-                    r += 205 * spec; g += 205 * spec; b += 205 * spec;
+                // specular glaze: bright zones get a hard highlight, curves get sheen
+                double spec = Math.Pow(Math.Max(0, t - 0.52) / 0.48, 1.6) * gloss;
+                double rim = Math.Pow(1 - t, 2.2) * 0.10 * gloss;
+                r += 235 * spec + 235 * rim;
+                g += 238 * spec + 238 * rim;
+                b += 242 * spec + 242 * rim;
 
-                    px[i] = ImageOps.Clamp((int)b);
-                    px[i + 1] = ImageOps.Clamp((int)g);
-                    px[i + 2] = ImageOps.Clamp((int)r);
-                }
-                progress?.Report(new StageProgress(Name, 0, 1, (y + 1) / (double)h));
+                px[i] = ImageOps.Clamp((int)b);
+                px[i + 1] = ImageOps.Clamp((int)g);
+                px[i + 2] = ImageOps.Clamp((int)r);
             }
-        }, ct);
+            progress?.Report(new StageProgress(Name, 0, 1, (y + 1) / (double)h));
+        }
 
-        return context;
-    }
-
-    private static float[] ToFloat(IImageBuffer buf)
-    {
-        var f = new float[buf.Width * buf.Height * 3];
-        for (int y = 0; y < buf.Height; y++)
-            for (int x = 0; x < buf.Width; x++)
-                for (int c = 0; c < 3; c++)
-                    f[y * buf.Width * 3 + x * 3 + c] = buf.Pixels[y * buf.Stride + x * 4 + c];
-        return f;
+        return Task.FromResult(context);
     }
 }
 
@@ -455,18 +484,11 @@ public sealed class OrigamiStage : StageBase
         int cell = Math.Clamp(Int(context.Parameters, "cellSize", 28), 8, 96);
         double crease = Dbl(context.Parameters, "crease", 0.5);
 
-        // reuse the low-poly facet machinery with paper tones
-        var desat = (byte[])px.Clone();
-        for (int y = 0; y < h; y++)
-            for (int x = 0; x < w; x++)
-            {
-                int i = y * stride + x * 4;
-                int l = ImageOps.Luma(px, i);
-                for (int c = 0; c < 3; c++)
-                    desat[i + c] = ImageOps.Clamp((int)((desat[i + c] * 0.35 + l * 0.65)));
-            }
+        // Folded-paper facets read from a smoothed copy of the picture.
+        var smooth = ImageOps.BoxBlurColor(src.Pixels, stride, w, h, Math.Clamp(cell / 4, 1, 8));
 
         var dst = new RgbaImageBuffer(w, h);
+        ImageOps.OpaqueAlpha(dst.Pixels);
         var outPx = dst.Pixels;
         int outStride = dst.Stride;
         int cols = (w + cell - 1) / cell + 1, rows = (h + cell - 1) / cell + 1;
@@ -492,12 +514,20 @@ public sealed class OrigamiStage : StageBase
                     (p00, p10, diag), (p00, diag, p01), (p10, p11, diag), (p01, diag, p11),
                 };
 
+                int triId = gx * 4 + gy * 97;
                 foreach (var (a, b, c) in tris)
                 {
                     double cx = (a.X + b.X + c.X) / 3, cy = (a.Y + b.Y + c.Y) / 3;
                     int sx = Math.Clamp((int)cx, 0, w - 1), sy = Math.Clamp((int)cy, 0, h - 1);
                     int pi = sy * stride + sx * 4;
-                    ImageOps.FillTriangle(outPx, outStride, w, h, a, b, c, desat[pi], desat[pi + 1], desat[pi + 2], shadeEdges: true);
+
+                    // fold shading: each facet tilts toward/away from the light
+                    double fold = 0.86 + ImageOps.Hash(gx * 2 + (triId++ & 1), gy, 67) * (0.10 + crease * 0.22);
+
+                    int bB = ImageOps.Clamp((int)((smooth[pi] * 0.45 + 240 * 0.55) * fold));
+                    int bG = ImageOps.Clamp((int)((smooth[pi + 1] * 0.45 + 236 * 0.55) * fold));
+                    int bR = ImageOps.Clamp((int)((smooth[pi + 2] * 0.45 + 230 * 0.55) * fold));
+                    ImageOps.FillTriangle(outPx, outStride, w, h, a, b, c, bB, bG, bR, shadeEdges: false);
                 }
             }
             progress?.Report(new StageProgress(Name, 0, 1, (gy + 1) / (double)(rows - 1)));

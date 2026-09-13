@@ -8,3 +8,4 @@ plugins/*
 *.vplugin
 settings.json
 portable.marker
+artifacts/

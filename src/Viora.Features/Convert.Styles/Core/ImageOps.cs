@@ -13,6 +13,12 @@ public static class ImageOps
 
     public static int Index(int x, int y, int stride) => y * stride + x * 4;
 
+    /// <summary>Sets every pixel's alpha to 255 — new pixel arrays start fully transparent.</summary>
+    public static void OpaqueAlpha(byte[] px)
+    {
+        for (int i = 3; i < px.Length; i += 4) px[i] = 255;
+    }
+
     public static int Luma(byte[] px, int i) => (px[i + 2] * 299 + px[i + 1] * 587 + px[i] * 114) / 1000;
 
     public static byte Clamp(int v) => (byte)(v < 0 ? 0 : v > 255 ? 255 : v);
@@ -131,6 +137,56 @@ public static class ImageOps
                 }
             }
         }
+    }
+
+    /// <summary>
+    /// In-place separable box blur on a BGRA byte buffer (alpha preserved).
+    /// Returns a NEW blurred pixel array; the source is untouched.
+    /// </summary>
+    public static byte[] BoxBlurColor(byte[] px, int stride, int width, int height, int radius)
+    {
+        if (radius <= 0) return (byte[])px.Clone();
+        var tmp = new byte[px.Length];
+        var tmpStride = width * 4;
+
+        for (int y = 0; y < height; y++)
+        {
+            int row = y * stride;
+            int trow = y * tmpStride;
+            for (int x = 0; x < width; x++)
+            {
+                int sb = 0, sg = 0, sr = 0, n = 0;
+                for (int k = -radius; k <= radius; k++)
+                {
+                    int q = x + k;
+                    if (q < 0 || q >= width) continue;
+                    int i = row + q * 4;
+                    sb += px[i]; sg += px[i + 1]; sr += px[i + 2]; n++;
+                }
+                int t = trow + x * 4;
+                tmp[t] = (byte)(sb / n); tmp[t + 1] = (byte)(sg / n); tmp[t + 2] = (byte)(sr / n);
+            }
+        }
+
+        var result = new byte[px.Length];
+        for (int x = 0; x < width; x++)
+        {
+            for (int y = 0; y < height; y++)
+            {
+                int sb = 0, sg = 0, sr = 0, n = 0;
+                for (int k = -radius; k <= radius; k++)
+                {
+                    int q = y + k;
+                    if (q < 0 || q >= height) continue;
+                    int t = q * tmpStride + x * 4;
+                    sb += tmp[t]; sg += tmp[t + 1]; sr += tmp[t + 2]; n++;
+                }
+                int o = y * stride + x * 4;
+                result[o] = (byte)(sb / n); result[o + 1] = (byte)(sg / n); result[o + 2] = (byte)(sr / n);
+                result[o + 3] = px[o + 3];
+            }
+        }
+        return result;
     }
 
     // ---------- Tone ----------

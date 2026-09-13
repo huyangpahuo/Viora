@@ -37,6 +37,7 @@ public sealed class AsciiArtStage : StageBase
         var luma = ImageOps.LumaMap(src);
 
         var dst = new RgbaImageBuffer(w, h);
+        ImageOps.OpaqueAlpha(dst.Pixels);
         var outPx = dst.Pixels;
         int outStride = dst.Stride;
         int cols = (w + cell - 1) / cell, rows = (h + cell - 1) / cell;
@@ -117,15 +118,17 @@ public sealed class IsometricDioramaStage : StageBase
 
         var original = (byte[])px.Clone();
         var dst = new RgbaImageBuffer(w, h);
+        ImageOps.OpaqueAlpha(dst.Pixels);
         var outPx = dst.Pixels;
         int outStride = dst.Stride;
 
         double cx = w / 2.0, cy = h / 2.0;
-        // isometric: rotate 45° then squash vertically by ~0.575 (cos of the tilt)
-        double halfW = w * scale * 0.5, halfH = h * scale * 0.5;
-        const double squash = 0.575;
+        // isometric diamond: X = cx + (sx-sy)*halfW, Y = cy + (sx+sy)*halfH, sx/sy ∈ [-1,1]
+        double halfW = w * 0.43 * scale;
+        double halfH = h * 0.40 * scale;
+        int thickness = (int)(Math.Min(w, h) * 0.035 * scale) + 3;
 
-        // desk background: soft radial desk tone
+        // desk background: soft radial tone
         for (int y = 0; y < h; y++)
             for (int x = 0; x < w; x++)
             {
@@ -135,40 +138,62 @@ public sealed class IsometricDioramaStage : StageBase
                 outPx[i] = (byte)(v - 8); outPx[i + 1] = v; outPx[i + 2] = (byte)(v + 6);
             }
 
-        // soft shadow diamond under the model
-        int shadowB = 8, shadowG = 10, shadowR = 8;
-        for (int y = 0; y < h; y++)
-            for (int x = 0; x < w; x++)
-            {
-                double u = (x - cx) / (halfW * 1.06), v = (y - cy - h * 0.03) / (halfH * 1.06);
-                double dist = Math.Abs(u) + Math.Abs(v);
-                if (dist > 1) continue;
-                int i = y * outStride + x * 4;
-                double k = shadow * (1 - dist) * 0.55;
-                outPx[i] = ImageOps.Clamp((int)(outPx[i] * (1 - k) + shadowB * k));
-                outPx[i + 1] = ImageOps.Clamp((int)(outPx[i + 1] * (1 - k) + shadowG * k));
-                outPx[i + 2] = ImageOps.Clamp((int)(outPx[i + 2] * (1 - k) + shadowR * k));
-            }
-        progress?.Report(new StageProgress(Name, 0, 1, 0.4));
-
-        // inverse isometric map into the source image
         var quad = new byte[4];
+        int shOff = (int)(h * 0.03) + 2;
+
+        // main pass: image diamond, extruded base walls, shadow
         for (int y = 0; y < h; y++)
         {
             for (int x = 0; x < w; x++)
             {
-                double u = (x - cx) / halfW, v = (y - cy) / (halfH * squash * 2);
-                double su = (u + v) / 2, sv = (v - u) / 2;
-                if (Math.Abs(su) > 1 || Math.Abs(sv) > 1) continue;
-
-                double sx = (su * 0.5 + 0.5) * (w - 1);
-                double sy = (sv * 0.5 + 0.5) * (h - 1);
-                ImageOps.SampleBilinear(original, stride, w, h, sx, sy, quad);
-
                 int i = y * outStride + x * 4;
-                outPx[i] = quad[0]; outPx[i + 1] = quad[1]; outPx[i + 2] = quad[2];
+
+                // shadow (behind everything, slightly larger and shifted down)
+                {
+                    double dxs = (x - cx) / (halfW * 1.05);
+                    double dys = (y - cy - shOff) / (halfH * 1.05);
+                    double ssx = (dxs + dys) / 2, ssy = (dys - dxs) / 2;
+                    if (Math.Abs(ssx) <= 1 && Math.Abs(ssy) <= 1)
+                    {
+                        double k = shadow * 0.5 * (1.1 - (Math.Abs(ssx) + Math.Abs(ssy)) / 2);
+                        outPx[i] = ImageOps.Clamp((int)(outPx[i] * (1 - k) + 10 * k));
+                        outPx[i + 1] = ImageOps.Clamp((int)(outPx[i + 1] * (1 - k) + 12 * k));
+                        outPx[i + 2] = ImageOps.Clamp((int)(outPx[i + 2] * (1 - k) + 10 * k));
+                    }
+                }
+
+                double dx = (x - cx) / halfW, dy = (y - cy) / halfH;
+                double sx = (dx + dy) / 2, sy = (dy - dx) / 2;
+
+                if (Math.Abs(sx) <= 1 && Math.Abs(sy) <= 1)
+                {
+                    // the picture itself, mapped onto the diamond floor
+                    ImageOps.SampleBilinear(original, stride, w, h,
+                        (sx * 0.5 + 0.5) * (w - 1), (sy * 0.5 + 0.5) * (h - 1), quad);
+                    outPx[i] = quad[0]; outPx[i + 1] = quad[1]; outPx[i + 2] = quad[2];
+                    continue;
+                }
+
+                // extruded base walls: pixels just below the diamond's lower edges
+                double dy2 = (y - thickness - cy) / halfH;
+                double sx2 = (dx + dy2) / 2, sy2 = (dy2 - dx) / 2;
+                bool onRightWall = sx2 >= 1 && sx2 <= 1.15 && Math.Abs(sy2) <= 1;
+                bool onLeftWall = sy2 >= 1 && sy2 <= 1.15 && Math.Abs(sx2) <= 1;
+                if (onRightWall || onLeftWall)
+                {
+                    double uu = onRightWall ? 1 : sx2, vv = onLeftWall ? 1 : sy2;
+                    double lu = (uu + vv) / 2, lv = (vv - uu) / 2;
+                    if (lu >= -1 && lu <= 1 && lv >= -1 && lv <= 1)
+                    {
+                        ImageOps.SampleBilinear(original, stride, w, h,
+                            (lu * 0.5 + 0.5) * (w - 1), (lv * 0.5 + 0.5) * (h - 1), quad);
+                        outPx[i] = ImageOps.Clamp((int)(quad[0] * 0.42));
+                        outPx[i + 1] = ImageOps.Clamp((int)(quad[1] * 0.42));
+                        outPx[i + 2] = ImageOps.Clamp((int)(quad[2] * 0.42));
+                    }
+                }
             }
-            progress?.Report(new StageProgress(Name, 0, 1, 0.4 + 0.6 * (y + 1) / (double)h));
+            progress?.Report(new StageProgress(Name, 0, 1, 0.3 + 0.7 * (y + 1) / (double)h));
         }
 
         context.Working = dst;
