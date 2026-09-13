@@ -4,10 +4,32 @@ using System.Diagnostics;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using Microsoft.Extensions.Logging;
+using Viora.Core.Pipeline;
 using Viora.Core.Plugins;
+using Viora.UI.Hosting;
 using Viora.UI.Localization;
 
 namespace Viora.UI.Pages.Plugins;
+
+/// <summary>One row of the "built-in presets" section on the Plugins page.</summary>
+public sealed partial class BuiltInPresetItemViewModel : ObservableObject
+{
+    public BuiltInPresetItemViewModel(IStylePreset preset) => Model = preset;
+
+    public IStylePreset Model { get; }
+
+    public string Glyph => Model.IconGlyph ?? "\uE790";
+
+    public string Name => Tr.Get(Model.DisplayNameKey);
+
+    public string Description => Tr.Get(Model.DescriptionKey);
+
+    public void Refresh()
+    {
+        OnPropertyChanged(nameof(Name));
+        OnPropertyChanged(nameof(Description));
+    }
+}
 
 public sealed partial class PluginItemViewModel : ObservableObject
 {
@@ -76,27 +98,73 @@ public sealed partial class PluginItemViewModel : ObservableObject
 public partial class PluginsViewModel : Viora.UI.Pages.PageViewModel
 {
     private readonly IPluginHost _host;
+    private readonly IPresetCatalog _catalog;
+    private readonly Shell.ShellViewModel _shell;
     private readonly ILogger<PluginsViewModel> _logger;
     private readonly IUiAlert _alert;
 
-    public PluginsViewModel(IPluginHost host, ILogger<PluginsViewModel> logger, IUiAlert alert)
+    public PluginsViewModel(
+        IPluginHost host,
+        IPresetCatalog catalog,
+        Shell.ShellViewModel shell,
+        ILogger<PluginsViewModel> logger,
+        IUiAlert alert)
     {
         _host = host;
+        _catalog = catalog;
+        _shell = shell;
         _logger = logger;
         _alert = alert;
         _host.PluginStateChanged += async (_, _) => await ReloadAsync();
+        _catalog.Changed += (_, _) => LoadBuiltInPresets();
+        LoadBuiltInPresets();
+        LocalizationSource.Current.PropertyChanged += (_, _) =>
+        {
+            foreach (var p in BuiltInPresets) p.Refresh();
+        };
     }
 
     public override string TitleKey => "Plugins.Title";
 
     public override string? SubtitleKey => "Plugins.Subtitle";
 
+    public ObservableCollection<BuiltInPresetItemViewModel> BuiltInPresets { get; } = new();
+
     public ObservableCollection<PluginItemViewModel> Plugins { get; } = new();
 
     public bool HasNoPlugins => Plugins.Count == 0;
 
+    /// <summary>
+    /// 系统预设:按约定,内置功能注册的预设 Id 以 "builtin." 开头
+    /// (见 docs/plugin-development.md)。始终可用,无需安装。
+    /// </summary>
+    private void LoadBuiltInPresets()
+    {
+        var builtIn = _catalog.Presets
+            .Where(p => p.Id.StartsWith("builtin.", StringComparison.Ordinal))
+            .OrderBy(p => p.Id, StringComparer.Ordinal)
+            .ToList();
+
+        // Changed fires on every registration; skip no-op rebuilds.
+        if (builtIn.Count == BuiltInPresets.Count &&
+            builtIn.Select(p => p.Id).SequenceEqual(BuiltInPresets.Select(p => p.Model.Id)))
+            return;
+
+        BuiltInPresets.Clear();
+        foreach (var preset in builtIn)
+            BuiltInPresets.Add(new BuiltInPresetItemViewModel(preset));
+    }
+
     [RelayCommand]
     private async Task LoadedAsync() => await ReloadAsync();
+
+    [RelayCommand]
+    private void UsePreset(BuiltInPresetItemViewModel? vm)
+    {
+        if (vm is null) return;
+        var convert = _shell.Items.FirstOrDefault(i => i.PageType == typeof(Convert.ConvertPage));
+        if (convert is not null) _shell.SelectedItem = convert;
+    }
 
     public async Task ReloadAsync()
     {

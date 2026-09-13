@@ -12,5 +12,5 @@ public partial class SponsorViewModel : Viora.UI.Pages.PageViewModel
 
     [RelayCommand]
     private void OpenSponsor() =>
-        Process.Start(new ProcessStartInfo("https://github.com/sponsors") { UseShellExecute = true });
+        Process.Start(new ProcessStartInfo(AppLinks.Sponsors) { UseShellExecute = true });
 }

@@ -9,6 +9,7 @@
     MinWidth="480"
     MinHeight="360"
     Background="{DynamicResource Color.Background}"
+    Icon="pack://application:,,,/Viora;component/viora.ico"
     WindowStartupLocation="CenterScreen">
     <shell:ShellView />
 </Window>

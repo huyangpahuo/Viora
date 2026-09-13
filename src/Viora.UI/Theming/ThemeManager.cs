@@ -12,7 +12,8 @@ namespace Viora.UI.Theming;
 public sealed class ThemeScheme : INotifyPropertyChanged
 {
     public ThemeScheme(string id, string displayNameKey, bool isDark,
-        string previewBackground, string previewSurface, string previewAccent)
+        string previewBackground, string previewSurface, string previewAccent,
+        string previewPrimaryContainer, string previewTextPrimary)
     {
         Id = id;
         DisplayNameKey = displayNameKey;
@@ -20,6 +21,8 @@ public sealed class ThemeScheme : INotifyPropertyChanged
         PreviewBackground = previewBackground;
         PreviewSurface = previewSurface;
         PreviewAccent = previewAccent;
+        PreviewPrimaryContainer = previewPrimaryContainer;
+        PreviewTextPrimary = previewTextPrimary;
         LocalizationSource.Current.PropertyChanged += (_, _) => OnPropertyChanged(nameof(LocalName));
     }
 
@@ -35,11 +38,19 @@ public sealed class ThemeScheme : INotifyPropertyChanged
 
     public string PreviewAccent { get; }
 
+    public string PreviewPrimaryContainer { get; }
+
+    public string PreviewTextPrimary { get; }
+
     public Brush PreviewBackgroundBrush => new SolidColorBrush((Color)ColorConverter.ConvertFromString(PreviewBackground));
 
     public Brush PreviewSurfaceBrush => new SolidColorBrush((Color)ColorConverter.ConvertFromString(PreviewSurface));
 
     public Brush PreviewAccentBrush => new SolidColorBrush((Color)ColorConverter.ConvertFromString(PreviewAccent));
+
+    public Brush PreviewPrimaryContainerBrush => new SolidColorBrush((Color)ColorConverter.ConvertFromString(PreviewPrimaryContainer));
+
+    public Brush PreviewTextPrimaryBrush => new SolidColorBrush((Color)ColorConverter.ConvertFromString(PreviewTextPrimary));
 
     public string LocalName => Tr.Get(DisplayNameKey);
 
@@ -69,12 +80,17 @@ public static class ThemeManager
 
     public static IReadOnlyList<ThemeScheme> Schemes { get; } = new ThemeScheme[]
     {
-        new("graphite", "Theme.Graphite", true,  "#FF14141B", "#FF1B1B23", "#FF82B1FF"),
-        new("ocean",    "Theme.Ocean",    true,  "#FF0D1522", "#FF131D30", "#FF7FB5FF"),
-        new("forest",   "Theme.Forest",   true,  "#FF0F1A14", "#FF15241C", "#FF8FD9A8"),
-        new("plum",     "Theme.Plum",     true,  "#FF171225", "#FF1F1932", "#FFD0BFFF"),
-        new("paper",    "Theme.Paper",    false, "#FFF7F6FB", "#FFFFFFFF", "#FF3053C9"),
-        new("sand",     "Theme.Sand",     false, "#FFFAF5EF", "#FFFFFDF9", "#FF9A5B2E"),
+        //                               id         nameKey          dark  background   surface      primary      primaryContainer textPrimary
+        new("graphite", "Theme.Graphite", true,  "#FF14141B", "#FF1B1B23", "#FF82B1FF", "#FF1E41AF", "#FFE4E1F0"),
+        new("ocean",    "Theme.Ocean",    true,  "#FF0A1120", "#FF101C33", "#FF4FC3F7", "#FF0C5A86", "#FFDFF2FF"),
+        new("forest",   "Theme.Forest",   true,  "#FF0A1510", "#FF10241A", "#FF6EE7A0", "#FF147A47", "#FFE4FBEA"),
+        new("plum",     "Theme.Plum",     true,  "#FF150E26", "#FF1F1638", "#FFC79BFF", "#FF6C3BD4", "#FFF3EBFF"),
+        new("sunset",   "Theme.Sunset",   true,  "#FF1B100A", "#FF241712", "#FFFF8A5C", "#FF5C2A12", "#FFF7ECE4"),
+        new("midnight", "Theme.Midnight", true,  "#FF0B0F1E", "#FF111730", "#FF8B93FF", "#FF2A3266", "#FFE4E7F8"),
+        new("paper",    "Theme.Paper",    false, "#FFF7F6FB", "#FFFFFFFF", "#FF3053C9", "#FFDEE1FF", "#FF1B1B22"),
+        new("sand",     "Theme.Sand",     false, "#FFFBF3E4", "#FFFFFDF6", "#FFC2410C", "#FFFFE0C2", "#FF2D1B0E"),
+        new("sakura",   "Theme.Sakura",   false, "#FFFDF2F6", "#FFFFFAFC", "#FFD81B60", "#FFFFDCE6", "#FF2B1220"),
+        new("mint",     "Theme.Mint",     false, "#FFF1FAF5", "#FFFAFEFB", "#FF0F9D6C", "#FFD3F5E6", "#FF0C231A"),
     };
 
     private static string PackUriFor(string id) => id switch
@@ -82,6 +98,10 @@ public static class ThemeManager
         "ocean" => "pack://application:,,,/Viora.UI;component/Themes/Tokens.Ocean.xaml",
         "forest" => "pack://application:,,,/Viora.UI;component/Themes/Tokens.Forest.xaml",
         "plum" => "pack://application:,,,/Viora.UI;component/Themes/Tokens.Plum.xaml",
+        "sunset" => "pack://application:,,,/Viora.UI;component/Themes/Tokens.Sunset.xaml",
+        "midnight" => "pack://application:,,,/Viora.UI;component/Themes/Tokens.Midnight.xaml",
+        "sakura" => "pack://application:,,,/Viora.UI;component/Themes/Tokens.Sakura.xaml",
+        "mint" => "pack://application:,,,/Viora.UI;component/Themes/Tokens.Mint.xaml",
         "paper" or Light => "pack://application:,,,/Viora.UI;component/Themes/Tokens.Light.xaml",
         "sand" => "pack://application:,,,/Viora.UI;component/Themes/Tokens.Sand.xaml",
         _ => "pack://application:,,,/Viora.UI;component/Themes/Tokens.xaml",

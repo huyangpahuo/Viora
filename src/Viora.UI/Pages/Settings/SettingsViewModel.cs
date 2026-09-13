@@ -15,14 +15,14 @@ public sealed class SettingCategory : ObservableObject
     {
         Key = key;
         Glyph = glyph;
-        Title = Tr.Get(key);
     }
 
     public string Key { get; }
 
     public string Glyph { get; }
 
-    public string Title { get; }
+    // Computed on read so Refresh() after a language switch returns the new string.
+    public string Title => Tr.Get(Key);
 
     public void Refresh() => OnPropertyChanged(nameof(Title));
 }

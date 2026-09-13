@@ -17,7 +17,7 @@ public partial class LegalViewModel : Viora.UI.Pages.PageViewModel
     {
         Components = new ObservableCollection<OssComponent>
         {
-            new("Viora", "GNU AGPL-3.0", "https://github.com/viora-project/viora"),
+            new("Viora", "GNU AGPL-3.0", AppLinks.Repository),
             new("CommunityToolkit.Mvvm", "MIT", "https://github.com/CommunityToolkit/dotnet"),
             new("Microsoft.Extensions.*", "MIT", "https://github.com/dotnet/runtime"),
         };

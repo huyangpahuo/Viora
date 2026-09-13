@@ -13,6 +13,11 @@
   </ItemGroup>
 
   <ItemGroup>
+    <!-- 应用 logo(侧边栏品牌位与关于页)。assets/logo.png 是 枫原万叶.png 的构建副本 -->
+    <Resource Include="..\..\assets\logo.png" Link="logo.png" />
+  </ItemGroup>
+
+  <ItemGroup>
     <ProjectReference Include="..\Viora.Core\Viora.Core.csproj" />
     <ProjectReference Include="..\Viora.PluginSdk\Viora.PluginSdk.csproj" />
   </ItemGroup>

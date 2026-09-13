@@ -17,18 +17,17 @@ namespace Viora.UI.Pages.Convert;
 
 public sealed partial class PresetItemViewModel : ObservableObject
 {
-    public PresetItemViewModel(IStylePreset preset)
-    {
-        Model = preset;
-        Name = Tr.Get(preset.DisplayNameKey);
-        Description = Tr.Get(preset.DescriptionKey);
-    }
+    public PresetItemViewModel(IStylePreset preset) => Model = preset;
 
     public IStylePreset Model { get; }
 
-    public string Name { get; }
+    // Computed on read so Refresh() after a language switch returns the new strings
+    // (a ctor-captured get-only property would keep serving the stale value).
+    public string Name => Tr.Get(Model.DisplayNameKey);
 
-    public string Description { get; }
+    public string Description => Tr.Get(Model.DescriptionKey);
+
+    public string? Glyph => Model.IconGlyph;
 
     public void Refresh()
     {
@@ -44,8 +43,6 @@ public sealed partial class ParameterItemViewModel : ObservableObject
     public ParameterItemViewModel(IPresetParameter model)
     {
         _model = model;
-        Label = Tr.Get(model.DisplayNameKey);
-        Description = Tr.Get(model.DisplayNameKey + ".Description");
         switch (model.Kind)
         {
             case "slider":
@@ -68,9 +65,9 @@ public sealed partial class ParameterItemViewModel : ObservableObject
 
     public string Key => _model.Key;
 
-    public string Label { get; }
+    public string Label => Tr.Get(_model.DisplayNameKey);
 
-    public string Description { get; }
+    public string Description => Tr.Get(_model.DisplayNameKey + ".Description");
 
     public string Kind => _model.Kind;
 
@@ -98,6 +95,9 @@ public sealed partial class ParameterItemViewModel : ObservableObject
 
 public partial class ConvertViewModel : PageViewModel
 {
+    private const double MaxZoom = 6.0;
+    private const double ZoomStep = 1.3;
+
     private readonly IPresetCatalog _catalog;
     private readonly IImportServiceProxy _import;
     private readonly IImageConversionEngine _engine;
@@ -108,6 +108,8 @@ public partial class ConvertViewModel : PageViewModel
     private IImageBuffer? _sourceBuffer;
     private IImageBuffer? _resultBuffer;
     private CancellationTokenSource? _cts;
+    private int _runId;
+    private bool _syncingSelection;
 
     public ConvertViewModel(
         IPresetCatalog catalog,
@@ -132,6 +134,8 @@ public partial class ConvertViewModel : PageViewModel
         {
             foreach (var p in Presets) p.Refresh();
             foreach (var p in Parameters) p.Refresh();
+            OnPropertyChanged(nameof(ConvertButtonText));
+            if (!IsBusy) StatusText = Tr.Get("Convert.Idle");
         };
     }
 
@@ -145,6 +149,17 @@ public partial class ConvertViewModel : PageViewModel
 
     [ObservableProperty]
     private PresetItemViewModel? _selectedPreset;
+
+    /// <summary>Index into Presets — bound by the selector slider / pager.</summary>
+    [ObservableProperty]
+    private int _selectedPresetIndex;
+
+    public bool HasPresets => Presets.Count > 0;
+
+    public string PresetPosition => Presets.Count == 0 ? "0 / 0" : $"{SelectedPresetIndex + 1} / {Presets.Count}";
+
+    /// <summary>Selector slider maximum (index range 0..Count-1).</summary>
+    public double PresetSliderMax => Math.Max(0, Presets.Count - 1);
 
     [ObservableProperty]
     private System.Windows.Media.ImageSource? _originalImageSource;
@@ -168,34 +183,66 @@ public partial class ConvertViewModel : PageViewModel
     private double _zoom = 1.0;
 
     [ObservableProperty]
-    private double _splitPosition = 0.5;
+    private double _panX;
+
+    [ObservableProperty]
+    private double _panY;
 
     [ObservableProperty]
     private CompareMode _compareMode = CompareMode.Split;
 
-    public bool ShowCompareSplit => CompareMode == CompareMode.Split && HasImage && ResultImageSource is not null;
+    /// <summary>Before/after divider position (0..1 of the content width).</summary>
+    [ObservableProperty]
+    private double _splitPosition = 0.5;
 
-    public bool ShowCompareSide => CompareMode == CompareMode.SideBySide && HasImage && ResultImageSource is not null;
+    public bool HasResult => ResultImageSource is not null;
 
-    public bool ShowOriginalOnly => HasImage && ResultImageSource is null;
+    public bool CanCompare => HasImage && HasResult;
 
-    partial void OnCompareModeChanged(CompareMode value)
+    public bool ShowOriginalOnly => HasImage && (CompareMode == CompareMode.Original || !CanCompare);
+
+    public bool ShowCompareSplit => CanCompare && CompareMode == CompareMode.Split;
+
+    public bool ShowCompareSide => CanCompare && CompareMode == CompareMode.SideBySide;
+
+    public bool ShowResultOnly => CanCompare && CompareMode == CompareMode.Result;
+
+    public bool Zoomed => Zoom > 1.001;
+
+    public string ZoomPercent => $"{Math.Round(Zoom * 100)}%";
+
+    public string ConvertButtonText => IsBusy ? Tr.Get("Convert.Cancel") : Tr.Get("Convert.Convert");
+
+    partial void OnIsBusyChanged(bool value) => OnPropertyChanged(nameof(ConvertButtonText));
+
+    partial void OnCompareModeChanged(CompareMode value) => RefreshViewFlags();
+
+    partial void OnResultImageSourceChanged(System.Windows.Media.ImageSource? value) => RefreshViewFlags();
+
+    partial void OnHasImageChanged(bool value) => RefreshViewFlags();
+
+    private void RefreshViewFlags()
     {
+        OnPropertyChanged(nameof(HasResult));
+        OnPropertyChanged(nameof(CanCompare));
+        OnPropertyChanged(nameof(ShowOriginalOnly));
         OnPropertyChanged(nameof(ShowCompareSplit));
         OnPropertyChanged(nameof(ShowCompareSide));
+        OnPropertyChanged(nameof(ShowResultOnly));
     }
 
-    partial void OnResultImageSourceChanged(System.Windows.Media.ImageSource? value)
+    partial void OnZoomChanged(double value)
     {
-        OnPropertyChanged(nameof(ShowCompareSplit));
-        OnPropertyChanged(nameof(ShowCompareSide));
-        OnPropertyChanged(nameof(ShowOriginalOnly));
+        OnPropertyChanged(nameof(ZoomPercent));
+        OnPropertyChanged(nameof(Zoomed));
+        if (value <= 1.001) { PanX = 0; PanY = 0; }
     }
 
     partial void OnSelectedPresetChanged(PresetItemViewModel? value)
     {
         Parameters.Clear();
         if (value is null) return;
+
         foreach (var p in value.Model.Parameters)
         {
             var vm = new ParameterItemViewModel(p);
@@ -204,13 +251,35 @@ public partial class ConvertViewModel : PageViewModel
         }
     }
 
-    partial void OnZoomChanged(double value) => OnPropertyChanged(nameof(ZoomPercent));
+    partial void OnSelectedPresetIndexChanged(int value)
+    {
+        OnPropertyChanged(nameof(PresetPosition));
+        if (_syncingSelection) return;
+        if (value < 0 || value >= Presets.Count) return;
+        var preset = Presets[value];
+        if (!ReferenceEquals(preset, SelectedPreset)) SelectedPreset = preset;
+    }
 
-    public string ZoomPercent => $"{Math.Round(Zoom * 100)}%";
+    [RelayCommand]
+    private void NextPreset() => StepPreset(+1);
 
-    public string ConvertButtonText => IsBusy ? Tr.Get("Convert.Cancel") : Tr.Get("Convert.Convert");
+    [RelayCommand]
+    private void PreviousPreset() => StepPreset(-1);
 
-    partial void OnIsBusyChanged(bool value) => OnPropertyChanged(nameof(ConvertButtonText));
+    private void StepPreset(int delta)
+    {
+        if (Presets.Count == 0) return;
+        SelectedPresetIndex = (SelectedPresetIndex + delta + Presets.Count) % Presets.Count;
+    }
+
+    [RelayCommand]
+    private void ZoomIn() => Zoom = Math.Min(MaxZoom, Zoom * ZoomStep);
+
+    [RelayCommand]
+    private void ZoomOut() => Zoom = Math.Max(1.0, Zoom / ZoomStep);
+
+    [RelayCommand]
+    private void ZoomFit() => Zoom = 1.0;
 
     private void LoadPresets()
     {
@@ -218,14 +287,22 @@ public partial class ConvertViewModel : PageViewModel
         Presets.Clear();
         foreach (var preset in _catalog.Presets)
             Presets.Add(new PresetItemViewModel(preset));
-        SelectedPreset = Presets.FirstOrDefault(p => p.Model.Id == selected) ?? Presets.FirstOrDefault();
+        OnPropertyChanged(nameof(HasPresets));
+        OnPropertyChanged(nameof(PresetPosition));
+        OnPropertyChanged(nameof(PresetSliderMax));
+
+        _syncingSelection = true;
+        try
+        {
+            SelectedPreset = Presets.FirstOrDefault(p => p.Model.Id == selected) ?? Presets.FirstOrDefault();
+            SelectedPresetIndex = SelectedPreset is null ? 0 : Presets.IndexOf(SelectedPreset);
+        }
+        finally { _syncingSelection = false; }
     }
 
     [RelayCommand]
     private async Task ImportAsync(string? path)
     {
-        if (IsBusy) return;
-
         try
         {
             if (string.IsNullOrEmpty(path))
@@ -242,11 +319,11 @@ public partial class ConvertViewModel : PageViewModel
             StatusText = Tr.Get("Common.Loading");
             _sourceBuffer = await _import.LoadFromFileAsync(path, cap);
             ResultBuffer = null;
+            Zoom = 1.0;
             OriginalImageSource = _import.ToImageSource(_sourceBuffer);
             HasImage = true;
-            Zoom = 1.0;
             StatusText = Tr.Get("Convert.Idle");
-            await RunConversionAsync(preview: true);
+            await AutoConvertAsync();
         }
         catch (ImageImportProxyException ex) when (ex.ErrorCode == Services.ImageImportProxyErrorCode.Unsupported)
         {
@@ -271,19 +348,13 @@ public partial class ConvertViewModel : PageViewModel
     }
 
     [RelayCommand]
-    private async Task ConvertAsync()
-    {
-        if (IsBusy) { _cts?.Cancel(); return; }
-        await RunConversionAsync(preview: false);
-    }
-
-    [RelayCommand]
     private void Cancel() => _cts?.Cancel();
 
     [RelayCommand]
     private void ResetParameters()
     {
         foreach (var p in Parameters) p.Reset();
+        _ = AutoRerunAsync();
     }
 
     [RelayCommand]
@@ -326,15 +397,20 @@ public partial class ConvertViewModel : PageViewModel
 
     private async Task AutoRerunAsync()
     {
-        if (IsBusy || !HasImage || SelectedPreset is null) return;
-        if (!_settings.Current.Performance.UsePreviewQualityDuringInteraction) return;
-        await RunConversionAsync(preview: true);
+        if (!HasImage || SelectedPreset is null) return;
+        await AutoConvertAsync();
     }
 
-    private async Task RunConversionAsync(bool preview)
+    /// <summary>
+    /// Latest-wins preview conversion: selecting a preset / moving a slider / importing
+    /// cancels the running pass and starts a new one. Cancellation-safe busy flag —
+    /// only the newest run clears IsBusy.
+    /// </summary>
+    private async Task AutoConvertAsync()
     {
         if (_sourceBuffer is null || SelectedPreset is null) return;
 
+        int id = ++_runId;
         _cts?.Cancel();
         _cts = new CancellationTokenSource();
         var ct = _cts.Token;
@@ -344,24 +420,25 @@ public partial class ConvertViewModel : PageViewModel
             IsBusy = true;
             var progress = new Progress<PipelineProgress>(p =>
             {
+                if (id != _runId) return;
                 ProgressFraction = p.OverallFraction;
                 StatusText = string.Format(Tr.Get("Convert.Progress"), (int)(p.OverallFraction * 100));
             });
 
-            var parameters = new Dictionary<string, object>();
-            foreach (var p in Parameters) parameters[p.Key] = p.ToParameterValue();
+            var buffer = await RunPipelineAsync(_sourceBuffer, preview: true, ct, progress);
+            if (id != _runId) return;
 
-            var buffer = await RunPipelineAsync(_sourceBuffer, preview, ct, progress);
             ResultBuffer = buffer;
             ResultImageSource = _import.ToImageSource(buffer);
             StatusText = Tr.Get("Convert.Idle");
         }
         catch (OperationCanceledException)
         {
-            StatusText = Tr.Get("Convert.Conversion.Cancelled");
+            if (id == _runId) StatusText = Tr.Get("Convert.Idle"); // superseded, not user-cancelled
         }
         catch (Exception ex)
         {
+            if (id != _runId) return;
             _logger.LogError(ex, "Conversion failed");
             StatusText = Tr.Get("Convert.Conversion.Failed");
             if (_settings.Current.Debug.DeveloperMode)
@@ -369,7 +446,7 @@ public partial class ConvertViewModel : PageViewModel
         }
         finally
         {
-            IsBusy = false;
+            if (id == _runId) IsBusy = false;
         }
     }
 
@@ -397,12 +474,13 @@ public partial class ConvertViewModel : PageViewModel
         if (_settings.Current.Debug.DeveloperMode)
             MessageBox.Show(ex.ToString(), "Viora", MessageBoxButton.OK, MessageBoxImage.Error);
     }
-
-    partial void OnHasImageChanged(bool value) => OnPropertyChanged(nameof(ShowOriginalOnly));
 }
 
+/// <summary>Viewport display modes. Split (before/after) is the default.</summary>
 public enum CompareMode
 {
+    Original,
     Split,
     SideBySide,
+    Result,
 }

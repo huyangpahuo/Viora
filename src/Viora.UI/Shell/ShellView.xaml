@@ -9,7 +9,10 @@
         Material 3 navigation items, page enter transition (fade + slide).
         Width animates between 248 and 56; below 900px the window auto-collapses.
     -->
-    <Grid Background="{DynamicResource Color.Background}">
+    <Grid Background="{DynamicResource Color.Background}"
+          TextOptions.TextFormattingMode="Display"
+          TextOptions.TextRenderingMode="ClearType"
+          UseLayoutRounding="True">
         <Grid.ColumnDefinitions>
             <ColumnDefinition Width="Auto" />
             <ColumnDefinition Width="*" />
@@ -29,8 +32,8 @@
                         <Button Style="{DynamicResource IconButton}" Command="{Binding ToggleSidebarCommand}" Width="36" Height="36">
                             <TextBlock Text="&#xE700;" FontFamily="Segoe MDL2 Assets" FontSize="15" />
                         </Button>
-                        <Border Width="28" Height="28" Background="{DynamicResource Color.Primary}" CornerRadius="8" Margin="8,0,0,0">
-                            <TextBlock Text="V" FontSize="15" FontWeight="Bold" Foreground="{DynamicResource Color.OnPrimary}" HorizontalAlignment="Center" VerticalAlignment="Center" />
+                        <Border Width="28" Height="28" CornerRadius="8" Margin="8,0,0,0" ClipToBounds="True">
+                            <Image Source="pack://application:,,,/Viora.UI;component/logo.png" Stretch="UniformToFill" />
                         </Border>
                         <StackPanel x:Name="BrandText" Margin="10,0,0,0" VerticalAlignment="Center">
                             <TextBlock Text="{Binding AppTitle}" FontSize="15" FontWeight="SemiBold" Foreground="{DynamicResource Color.Text.Primary}" />
@@ -39,59 +42,34 @@
                     </StackPanel>
                 </Grid>
 
+                <!-- Single grouped list: one selection, no per-group scroll drift. -->
                 <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto" Margin="0,2,0,12">
-                    <StackPanel>
-                        <TextBlock Style="{DynamicResource NavGroupHeader}" Text="{loc:Translate Nav.Group.Create}"
-                                   Visibility="{Binding IsSidebarCompact, Converter={StaticResource InverseBoolToVisibility}}" />
-                        <ListBox Style="{DynamicResource NavListBox}" ItemContainerStyle="{DynamicResource NavListBoxItem}"
-                                 ItemsSource="{Binding CreateItems}" SelectedItem="{Binding SelectedItem}" Margin="0,0,0,6">
-                            <ListBox.ItemTemplate>
-                                <DataTemplate>
-                                    <StackPanel Orientation="Horizontal" Height="34" Margin="8,0"
-                                                ToolTipService.IsEnabled="{Binding DataContext.IsSidebarCompact, RelativeSource={RelativeSource AncestorType=UserControl}}"
-                                                ToolTip="{Binding Title}">
-                                        <TextBlock Text="{Binding Glyph}" FontFamily="Segoe MDL2 Assets" FontSize="15" VerticalAlignment="Center" Width="20" TextAlignment="Center" />
-                                        <TextBlock Text="{Binding Title}" FontSize="14" VerticalAlignment="Center" Margin="14,0,0,0"
+                    <ListBox Style="{DynamicResource NavListBox}" ItemContainerStyle="{DynamicResource NavListBoxItem}"
+                             ItemsSource="{Binding NavView}" SelectedItem="{Binding SelectedItem}"
+                             ScrollViewer.VerticalScrollBarVisibility="Disabled">
+                        <ListBox.GroupStyle>
+                            <GroupStyle>
+                                <GroupStyle.HeaderTemplate>
+                                    <DataTemplate>
+                                        <TextBlock Style="{DynamicResource NavGroupHeader}"
+                                                   Text="{Binding Name, Converter={StaticResource TranslateKey}}"
                                                    Visibility="{Binding DataContext.IsSidebarCompact, RelativeSource={RelativeSource AncestorType=UserControl}, Converter={StaticResource InverseBoolToVisibility}}" />
-                                    </StackPanel>
-                                </DataTemplate>
-                            </ListBox.ItemTemplate>
-                        </ListBox>
-
-                        <TextBlock Style="{DynamicResource NavGroupHeader}" Text="{loc:Translate Nav.Group.System}"
-                                   Visibility="{Binding IsSidebarCompact, Converter={StaticResource InverseBoolToVisibility}}" />
-                        <ListBox Style="{DynamicResource NavListBox}" ItemContainerStyle="{DynamicResource NavListBoxItem}"
-                                 ItemsSource="{Binding SystemItems}" SelectedItem="{Binding SelectedItem}" Margin="0,0,0,6">
-                            <ListBox.ItemTemplate>
-                                <DataTemplate>
-                                    <StackPanel Orientation="Horizontal" Height="34" Margin="8,0"
-                                                ToolTipService.IsEnabled="{Binding DataContext.IsSidebarCompact, RelativeSource={RelativeSource AncestorType=UserControl}}"
-                                                ToolTip="{Binding Title}">
-                                        <TextBlock Text="{Binding Glyph}" FontFamily="Segoe MDL2 Assets" FontSize="15" VerticalAlignment="Center" Width="20" TextAlignment="Center" />
-                                        <TextBlock Text="{Binding Title}" FontSize="14" VerticalAlignment="Center" Margin="14,0,0,0"
-                                                   Visibility="{Binding DataContext.IsSidebarCompact, RelativeSource={RelativeSource AncestorType=UserControl}, Converter={StaticResource InverseBoolToVisibility}}" />
-                                    </StackPanel>
-                                </DataTemplate>
-                            </ListBox.ItemTemplate>
-                        </ListBox>
-
-                        <TextBlock Style="{DynamicResource NavGroupHeader}" Text="{loc:Translate Nav.Group.Information}"
-                                   Visibility="{Binding IsSidebarCompact, Converter={StaticResource InverseBoolToVisibility}}" />
-                        <ListBox Style="{DynamicResource NavListBox}" ItemContainerStyle="{DynamicResource NavListBoxItem}"
-                                 ItemsSource="{Binding InformationItems}" SelectedItem="{Binding SelectedItem}">
-                            <ListBox.ItemTemplate>
-                                <DataTemplate>
-                                    <StackPanel Orientation="Horizontal" Height="34" Margin="8,0"
-                                                ToolTipService.IsEnabled="{Binding DataContext.IsSidebarCompact, RelativeSource={RelativeSource AncestorType=UserControl}}"
-                                                ToolTip="{Binding Title}">
-                                        <TextBlock Text="{Binding Glyph}" FontFamily="Segoe MDL2 Assets" FontSize="15" VerticalAlignment="Center" Width="20" TextAlignment="Center" />
-                                        <TextBlock Text="{Binding Title}" FontSize="14" VerticalAlignment="Center" Margin="14,0,0,0"
-                                                   Visibility="{Binding DataContext.IsSidebarCompact, RelativeSource={RelativeSource AncestorType=UserControl}, Converter={StaticResource InverseBoolToVisibility}}" />
-                                    </StackPanel>
-                                </DataTemplate>
-                            </ListBox.ItemTemplate>
-                        </ListBox>
-                    </StackPanel>
+                                    </DataTemplate>
+                                </GroupStyle.HeaderTemplate>
+                            </GroupStyle>
+                        </ListBox.GroupStyle>
+                        <ListBox.ItemTemplate>
+                            <DataTemplate>
+                                <StackPanel Orientation="Horizontal" Height="34" Margin="8,0"
+                                            ToolTipService.IsEnabled="{Binding DataContext.IsSidebarCompact, RelativeSource={RelativeSource AncestorType=UserControl}}"
+                                            ToolTip="{Binding Title}">
+                                    <TextBlock Text="{Binding Glyph}" FontFamily="Segoe MDL2 Assets" FontSize="15" VerticalAlignment="Center" Width="20" TextAlignment="Center" />
+                                    <TextBlock Text="{Binding Title}" FontSize="14" VerticalAlignment="Center" Margin="14,0,0,0"
+                                               Visibility="{Binding DataContext.IsSidebarCompact, RelativeSource={RelativeSource AncestorType=UserControl}, Converter={StaticResource InverseBoolToVisibility}}" />
+                                </StackPanel>
+                            </DataTemplate>
+                        </ListBox.ItemTemplate>
+                    </ListBox>
                 </ScrollViewer>
             </Grid>
         </Border>

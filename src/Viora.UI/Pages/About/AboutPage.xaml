@@ -4,40 +4,131 @@
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
     xmlns:loc="clr-namespace:Viora.UI.Localization"
     xmlns:pages="clr-namespace:Viora.UI.Pages">
-    <pages:PageChrome TitleKey="About.Title">
-        <StackPanel MaxWidth="720">
-            <StackPanel Orientation="Horizontal" Margin="0,8,0,4">
-                <Border Width="44" Height="44" Background="{DynamicResource Color.Accent}" CornerRadius="12">
-                    <TextBlock Text="V" FontSize="24" FontWeight="Bold" Foreground="{DynamicResource Color.Text.OnAccent}" HorizontalAlignment="Center" VerticalAlignment="Center" />
-                </Border>
-                <StackPanel Margin="14,0,0,0" VerticalAlignment="Center">
-                    <TextBlock Style="{DynamicResource Typography.Heading}" FontSize="22" Text="Viora" />
-                    <TextBlock Style="{DynamicResource Typography.BodySecondary}" Text="{Binding VersionText}" />
+    <pages:PageChrome TitleKey="About.Title" SubtitleKey="About.Subtitle">
+        <ScrollViewer VerticalScrollBarVisibility="Auto">
+            <StackPanel MaxWidth="760" Margin="0,0,12,0">
+
+                <!-- 应用信息 -->
+                <StackPanel Orientation="Horizontal" Margin="0,8,0,4">
+                    <Border Width="44" Height="44" CornerRadius="12" ClipToBounds="True"
+                            BorderBrush="{DynamicResource Color.Border}" BorderThickness="1">
+                        <Image Source="pack://application:,,,/Viora.UI;component/logo.png" Stretch="UniformToFill" />
+                    </Border>
+                    <StackPanel Margin="14,0,0,0" VerticalAlignment="Center">
+                        <TextBlock Style="{DynamicResource Typography.Heading}" FontSize="22" Text="Viora" />
+                        <TextBlock Style="{DynamicResource Typography.BodySecondary}" Text="{Binding VersionText}" />
+                    </StackPanel>
                 </StackPanel>
+
+                <TextBlock Style="{DynamicResource Typography.Body}" Text="{loc:Translate About.Description}" TextWrapping="Wrap" Margin="0,16,0,8" />
+                <TextBlock Style="{DynamicResource Typography.BodySecondary}" Text="{loc:Translate About.Author}" />
+
+                <StackPanel Orientation="Horizontal" Margin="0,16,0,0">
+                    <Button Style="{DynamicResource LinkButton}" Content="{loc:Translate About.ProjectLink}" Command="{Binding OpenProjectCommand}" Margin="0,0,24,0" />
+                    <Button Style="{DynamicResource LinkButton}" Content="{loc:Translate Help.OfficialSite}" Command="{Binding OpenSiteCommand}" Margin="0,0,24,0" />
+                    <Button Style="{DynamicResource SecondaryButton}" Content="{Binding UpdateButtonText}" Command="{Binding CheckUpdatesCommand}" />
+                </StackPanel>
+                <TextBlock Style="{DynamicResource Typography.Caption}" Text="{Binding UpdateStatusText}" Margin="0,8,0,0" TextWrapping="Wrap" />
+
+                <!-- 快速上手(原帮助页) -->
+                <TextBlock Style="{DynamicResource Typography.Heading}" FontSize="16" Text="{loc:Translate Help.Title}" Margin="0,24,0,8" />
+                <Border Style="{DynamicResource VioraCard}" Padding="20">
+                    <StackPanel>
+                        <TextBlock Style="{DynamicResource Typography.Heading}" FontSize="14" Text="{loc:Translate Help.GettingStarted.Title}" />
+                        <TextBlock Style="{DynamicResource Typography.BodySecondary}" Text="{loc:Translate Help.GettingStarted.Body}" TextWrapping="Wrap" Margin="0,6,0,0" />
+                        <UniformGrid Columns="2" Margin="0,14,0,0">
+                            <Button Style="{DynamicResource SecondaryButton}" Content="{loc:Translate Help.Docs}" Command="{Binding OpenDocsCommand}" Margin="0,0,12,12" Height="40" />
+                            <Button Style="{DynamicResource SecondaryButton}" Content="{loc:Translate Help.Faq}" Command="{Binding OpenFaqCommand}" Margin="0,0,0,12" Height="40" />
+                            <Button Style="{DynamicResource SecondaryButton}" Content="{loc:Translate Help.GitHubDocs}" Command="{Binding OpenDocsCommand}" Margin="0,0,12,0" Height="40" />
+                            <Button Style="{DynamicResource LinkButton}" Content="{loc:Translate Settings.Debug.OpenLogs}" Command="{Binding OpenLogsCommand}" VerticalAlignment="Center" HorizontalAlignment="Left" />
+                        </UniformGrid>
+                        <TextBlock Style="{DynamicResource Typography.Caption}" Text="{loc:Translate Help.InApp.Future}" Margin="0,8,0,0" />
+                    </StackPanel>
+                </Border>
+
+                <!-- 反馈(原反馈页) -->
+                <TextBlock Style="{DynamicResource Typography.Heading}" FontSize="16" Text="{loc:Translate Feedback.Title}" Margin="0,24,0,2" />
+                <TextBlock Style="{DynamicResource Typography.BodySecondary}" Text="{loc:Translate Feedback.Subtitle}" Margin="0,0,0,10" />
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="12" />
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="12" />
+                        <ColumnDefinition Width="*" />
+                    </Grid.ColumnDefinitions>
+                    <Button Grid.Column="0" Command="{Binding OpenBugCommand}">
+                        <Button.Template>
+                            <ControlTemplate TargetType="Button">
+                                <Border x:Name="Card" Background="{DynamicResource Color.Surface}" BorderBrush="{DynamicResource Color.Border}" BorderThickness="1" CornerRadius="10" Padding="16" Cursor="Hand">
+                                    <StackPanel>
+                                        <TextBlock Text="&#xE9F5;" FontFamily="Segoe MDL2 Assets" FontSize="18" Foreground="{DynamicResource Color.Danger}" />
+                                        <TextBlock Style="{DynamicResource Typography.Heading}" FontSize="13" Text="{loc:Translate Feedback.Bug}" Margin="0,8,0,4" />
+                                        <TextBlock Style="{DynamicResource Typography.BodySecondary}" FontSize="11.5" TextWrapping="Wrap" Text="{loc:Translate Feedback.Bug.Description}" />
+                                    </StackPanel>
+                                </Border>
+                                <ControlTemplate.Triggers>
+                                    <Trigger Property="IsMouseOver" Value="True">
+                                        <Setter TargetName="Card" Property="Background" Value="{DynamicResource Color.SurfaceElevated}" />
+                                    </Trigger>
+                                </ControlTemplate.Triggers>
+                            </ControlTemplate>
+                        </Button.Template>
+                    </Button>
+                    <Button Grid.Column="2" Command="{Binding OpenFeatureCommand}">
+                        <Button.Template>
+                            <ControlTemplate TargetType="Button">
+                                <Border x:Name="Card" Background="{DynamicResource Color.Surface}" BorderBrush="{DynamicResource Color.Border}" BorderThickness="1" CornerRadius="10" Padding="16" Cursor="Hand">
+                                    <StackPanel>
+                                        <TextBlock Text="&#xE718;" FontFamily="Segoe MDL2 Assets" FontSize="18" Foreground="{DynamicResource Color.Success}" />
+                                        <TextBlock Style="{DynamicResource Typography.Heading}" FontSize="13" Text="{loc:Translate Feedback.Feature}" Margin="0,8,0,4" />
+                                        <TextBlock Style="{DynamicResource Typography.BodySecondary}" FontSize="11.5" TextWrapping="Wrap" Text="{loc:Translate Feedback.Feature.Description}" />
+                                    </StackPanel>
+                                </Border>
+                                <ControlTemplate.Triggers>
+                                    <Trigger Property="IsMouseOver" Value="True">
+                                        <Setter TargetName="Card" Property="Background" Value="{DynamicResource Color.SurfaceElevated}" />
+                                    </Trigger>
+                                </ControlTemplate.Triggers>
+                            </ControlTemplate>
+                        </Button.Template>
+                    </Button>
+                    <Button Grid.Column="4" Command="{Binding OpenGeneralCommand}">
+                        <Button.Template>
+                            <ControlTemplate TargetType="Button">
+                                <Border x:Name="Card" Background="{DynamicResource Color.Surface}" BorderBrush="{DynamicResource Color.Border}" BorderThickness="1" CornerRadius="10" Padding="16" Cursor="Hand">
+                                    <StackPanel>
+                                        <TextBlock Text="&#xE77B;" FontFamily="Segoe MDL2 Assets" FontSize="18" Foreground="{DynamicResource Color.Accent}" />
+                                        <TextBlock Style="{DynamicResource Typography.Heading}" FontSize="13" Text="{loc:Translate Feedback.General}" Margin="0,8,0,4" />
+                                        <TextBlock Style="{DynamicResource Typography.BodySecondary}" FontSize="11.5" TextWrapping="Wrap" Text="{loc:Translate Feedback.General.Description}" />
+                                    </StackPanel>
+                                </Border>
+                                <ControlTemplate.Triggers>
+                                    <Trigger Property="IsMouseOver" Value="True">
+                                        <Setter TargetName="Card" Property="Background" Value="{DynamicResource Color.SurfaceElevated}" />
+                                    </Trigger>
+                                </ControlTemplate.Triggers>
+                            </ControlTemplate>
+                        </Button.Template>
+                    </Button>
+                </Grid>
+                <TextBlock Style="{DynamicResource Typography.Caption}" Text="{loc:Translate Feedback.IncludeLogs}" Margin="0,10,0,0" TextWrapping="Wrap" />
+
+                <!-- 第三方组件 -->
+                <TextBlock Style="{DynamicResource Typography.Heading}" FontSize="16" Text="{loc:Translate About.ThirdParty}" Margin="0,24,0,8" />
+                <Border Style="{DynamicResource VioraCard}" Padding="20">
+                    <ItemsControl ItemsSource="{Binding ThirdPartyComponents}">
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate>
+                                <TextBlock Style="{DynamicResource Typography.BodySecondary}" Margin="0,2"
+                                           Text="{Binding Display, Mode=OneWay}" />
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+                </Border>
+
+                <TextBlock Style="{DynamicResource Typography.Caption}" Text="{loc:Translate About.License}" Margin="0,16,0,4" />
             </StackPanel>
-
-            <TextBlock Style="{DynamicResource Typography.Body}" Text="{loc:Translate About.Description}" TextWrapping="Wrap" Margin="0,16,0,8" />
-            <TextBlock Style="{DynamicResource Typography.BodySecondary}" Text="{loc:Translate About.Author}" />
-
-            <StackPanel Orientation="Horizontal" Margin="0,16,0,0">
-                <Button Style="{DynamicResource LinkButton}" Content="{loc:Translate About.ProjectLink}" Command="{Binding OpenProjectCommand}" Margin="0,0,24,0" />
-                <Button Style="{DynamicResource SecondaryButton}" Content="{Binding UpdateButtonText}" Command="{Binding CheckUpdatesCommand}" />
-            </StackPanel>
-            <TextBlock Style="{DynamicResource Typography.Caption}" Text="{Binding UpdateStatusText}" Margin="0,8,0,0" TextWrapping="Wrap" />
-
-            <TextBlock Style="{DynamicResource Typography.Heading}" Text="{loc:Translate About.ThirdParty}" Margin="0,24,0,8" />
-            <Border Style="{DynamicResource VioraCard}" Padding="20">
-                <ItemsControl ItemsSource="{Binding ThirdPartyComponents}">
-                    <ItemsControl.ItemTemplate>
-                        <DataTemplate>
-                            <TextBlock Style="{DynamicResource Typography.BodySecondary}" Margin="0,2"
-                                       Text="{Binding Display, Mode=OneWay}" />
-                        </DataTemplate>
-                    </ItemsControl.ItemTemplate>
-                </ItemsControl>
-            </Border>
-
-            <TextBlock Style="{DynamicResource Typography.Caption}" Text="{loc:Translate About.License}" Margin="0,16,0,0" />
-        </StackPanel>
+        </ScrollViewer>
     </pages:PageChrome>
 </UserControl>

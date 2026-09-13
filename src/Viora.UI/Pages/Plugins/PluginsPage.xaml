@@ -11,6 +11,44 @@
                 <Button Style="{DynamicResource SecondaryButton}" Content="{loc:Translate Plugins.Reload}" Command="{Binding ReloadPluginsCommand}" />
             </StackPanel>
 
+            <!-- 系统预设:内置功能注册的风格,始终可用 -->
+            <TextBlock Style="{DynamicResource Typography.Heading}" FontSize="16" Text="{loc:Translate Plugins.BuiltInPresets}" Margin="0,0,0,2" />
+            <TextBlock Style="{DynamicResource Typography.BodySecondary}" Text="{loc:Translate Plugins.BuiltInPresets.Hint}" Margin="0,0,0,10" />
+            <ItemsControl ItemsSource="{Binding BuiltInPresets}" Margin="0,0,0,12">
+                <ItemsControl.ItemTemplate>
+                    <DataTemplate>
+                        <Border Style="{DynamicResource VioraCard}" Padding="16" Margin="0,0,0,10">
+                            <Grid>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="Auto" />
+                                    <ColumnDefinition Width="*" />
+                                    <ColumnDefinition Width="Auto" />
+                                </Grid.ColumnDefinitions>
+                                <Border Width="40" Height="40" CornerRadius="10" Background="{DynamicResource Color.PrimaryContainer}">
+                                    <TextBlock Text="{Binding Glyph}" FontFamily="Segoe MDL2 Assets" FontSize="18"
+                                               Foreground="{DynamicResource Color.OnPrimaryContainer}"
+                                               HorizontalAlignment="Center" VerticalAlignment="Center" />
+                                </Border>
+                                <StackPanel Grid.Column="1" Margin="14,0,0,0" VerticalAlignment="Center">
+                                    <StackPanel Orientation="Horizontal">
+                                        <TextBlock Style="{DynamicResource Typography.Heading}" FontSize="14" Text="{Binding Name}" />
+                                        <Border Background="{DynamicResource Color.SurfaceHigh}" CornerRadius="6" Padding="8,1" Margin="10,0,0,0" VerticalAlignment="Center">
+                                            <TextBlock Text="{loc:Translate Plugins.BuiltInTag}" FontSize="10.5" Foreground="{DynamicResource Color.Text.Secondary}" />
+                                        </Border>
+                                    </StackPanel>
+                                    <TextBlock Style="{DynamicResource Typography.BodySecondary}" Text="{Binding Description}" TextWrapping="Wrap" Margin="0,3,0,0" />
+                                </StackPanel>
+                                <Button Grid.Column="2" Style="{DynamicResource SecondaryButton}" Content="{loc:Translate Plugins.UsePreset}"
+                                        Command="{Binding DataContext.UsePresetCommand, RelativeSource={RelativeSource AncestorType=ItemsControl}}"
+                                        CommandParameter="{Binding}" VerticalAlignment="Center" />
+                            </Grid>
+                        </Border>
+                    </DataTemplate>
+                </ItemsControl.ItemTemplate>
+            </ItemsControl>
+
+            <!-- 已安装插件 -->
+            <TextBlock Style="{DynamicResource Typography.Heading}" FontSize="16" Text="{loc:Translate Plugins.Installed}" Margin="0,8,0,10" />
             <ItemsControl ItemsSource="{Binding Plugins}">
                 <ItemsControl.ItemTemplate>
                     <DataTemplate>

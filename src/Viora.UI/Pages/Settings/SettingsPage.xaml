@@ -80,16 +80,30 @@
                                                             BorderBrush="{DynamicResource Color.Outline}" BorderThickness="1"
                                                             CornerRadius="{DynamicResource Radius.Medium}" Padding="10">
                                                         <StackPanel>
-                                                            <Border Height="34" CornerRadius="6" ClipToBounds="True">
+                                                            <!-- Mini-app mockup: sidebar + text lines + primary button,
+                                                                 rendered with the theme's own colors. -->
+                                                            <Border Height="52" CornerRadius="6" ClipToBounds="True"
+                                                                    Background="{Binding PreviewBackgroundBrush}"
+                                                                    BorderBrush="{DynamicResource Color.Border}" BorderThickness="1">
                                                                 <Grid>
                                                                     <Grid.ColumnDefinitions>
-                                                                        <ColumnDefinition Width="*" />
-                                                                        <ColumnDefinition Width="*" />
+                                                                        <ColumnDefinition Width="16" />
                                                                         <ColumnDefinition Width="*" />
                                                                     </Grid.ColumnDefinitions>
-                                                                    <Rectangle Grid.Column="0" Fill="{Binding PreviewBackgroundBrush}" />
-                                                                    <Rectangle Grid.Column="1" Fill="{Binding PreviewSurfaceBrush}" />
-                                                                    <Rectangle Grid.Column="2" Fill="{Binding PreviewAccentBrush}" />
+                                                                    <Border Grid.Column="0" Background="{Binding PreviewSurfaceBrush}" />
+                                                                    <StackPanel Grid.Column="0" HorizontalAlignment="Center" VerticalAlignment="Top" Margin="0,4,0,0">
+                                                                        <Ellipse Width="6" Height="6" Fill="{Binding PreviewAccentBrush}" />
+                                                                    </StackPanel>
+                                                                    <StackPanel Grid.Column="1" Margin="8,7,8,0">
+                                                                        <Border Height="5" Width="52" HorizontalAlignment="Left" CornerRadius="2.5"
+                                                                                Background="{Binding PreviewTextPrimaryBrush}" />
+                                                                        <Border Height="4" Width="34" HorizontalAlignment="Left" CornerRadius="2" Margin="0,4,0,0" Opacity="0.55"
+                                                                                Background="{Binding PreviewTextPrimaryBrush}" />
+                                                                        <Border Height="10" Width="26" HorizontalAlignment="Right" CornerRadius="5" Margin="0,-8,0,0"
+                                                                                Background="{Binding PreviewAccentBrush}" />
+                                                                    </StackPanel>
+                                                                    <Border Grid.Column="1" Height="8" VerticalAlignment="Bottom" Margin="8,0,8,6"
+                                                                            CornerRadius="4" Background="{Binding PreviewPrimaryContainerBrush}" Opacity="0.9" />
                                                                 </Grid>
                                                             </Border>
                                                             <TextBlock Text="{Binding LocalName}" FontSize="11.5" Margin="0,6,0,0"
@@ -191,8 +205,10 @@
                                 </ItemsControl>
 
                                 <StackPanel Orientation="Horizontal" Margin="0,8,0,0">
-                                    <Button Style="{DynamicResource VioraButton}" Content="{loc:Translate Theme.Save}"
-                                            Command="{Binding SaveThemeCommand}" Margin="0,0,10,0" />
+                                    <Button Style="{DynamicResource SaveIconButton}" Command="{Binding SaveThemeCommand}" Margin="0,0,10,0"
+                                            ToolTip="{loc:Translate Theme.Save}">
+                                        <TextBlock Text="&#xE74E;" FontFamily="Segoe MDL2 Assets" FontSize="16" />
+                                    </Button>
                                     <Button Style="{DynamicResource SecondaryButton}" Content="{loc:Translate Theme.Cancel}"
                                             Command="{Binding CancelEditThemeCommand}" />
                                 </StackPanel>
@@ -292,8 +308,11 @@
                             </Grid.ColumnDefinitions>
                             <TextBlock Text="{loc:Translate Settings.SaveHint}" FontSize="12"
                                        Foreground="{DynamicResource Color.Text.Secondary}" VerticalAlignment="Center" TextWrapping="Wrap" />
-                            <Button Grid.Column="1" Style="{DynamicResource VioraButton}" Content="{loc:Translate Settings.SaveAndApply}"
-                                    Command="{Binding SaveAndApplyCommand}" Margin="12,0,0,0" />
+                            <Button Grid.Column="1" Style="{DynamicResource SaveIconButton}"
+                                    Command="{Binding SaveAndApplyCommand}" Margin="12,0,0,0"
+                                    ToolTip="{loc:Translate Settings.SaveAndApply}">
+                                <TextBlock Text="&#xE74E;" FontFamily="Segoe MDL2 Assets" FontSize="16" />
+                            </Button>
                         </Grid>
                     </Border>
                 </StackPanel>

@@ -54,6 +54,66 @@
         </Setter>
     </Style>
 
+    <!-- ============ MD3 filled icon button (circular) ============ -->
+    <!-- Primary save-style actions: icon only, tooltip carries the label. -->
+    <Style x:Key="SaveIconButton" TargetType="Button">
+        <Setter Property="Width" Value="40" />
+        <Setter Property="Height" Value="40" />
+        <Setter Property="Background" Value="{DynamicResource Color.Primary}" />
+        <Setter Property="Foreground" Value="{DynamicResource Color.OnPrimary}" />
+        <Setter Property="Cursor" Value="Hand" />
+        <Setter Property="FocusVisualStyle" Value="{x:Null}" />
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="Button">
+                    <Grid>
+                        <Ellipse x:Name="Bg" Fill="{TemplateBinding Background}" />
+                        <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center" />
+                    </Grid>
+                    <ControlTemplate.Triggers>
+                        <Trigger Property="IsMouseOver" Value="True">
+                            <Setter TargetName="Bg" Property="Fill" Value="{DynamicResource Color.AccentHover}" />
+                        </Trigger>
+                        <Trigger Property="IsPressed" Value="True">
+                            <Setter TargetName="Bg" Property="Fill" Value="{DynamicResource Color.AccentPressed}" />
+                        </Trigger>
+                        <Trigger Property="IsEnabled" Value="False">
+                            <Setter Property="Opacity" Value="0.45" />
+                        </Trigger>
+                    </ControlTemplate.Triggers>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
+    <!-- ============ Segmented pill (RadioButton) ============ -->
+    <!-- For pill switchers bound to one enum (e.g. compare mode). -->
+    <Style x:Key="ModePill" TargetType="RadioButton">
+        <Setter Property="Foreground" Value="{DynamicResource Color.Text.Primary}" />
+        <Setter Property="FontSize" Value="12" />
+        <Setter Property="Cursor" Value="Hand" />
+        <Setter Property="FocusVisualStyle" Value="{x:Null}" />
+        <Setter Property="Margin" Value="2,0" />
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="RadioButton">
+                    <Border x:Name="Pill" Background="Transparent" CornerRadius="12" Padding="12,4">
+                        <ContentPresenter VerticalAlignment="Center" RecognizesAccessKey="True" />
+                    </Border>
+                    <ControlTemplate.Triggers>
+                        <Trigger Property="IsMouseOver" Value="True">
+                            <Setter TargetName="Pill" Property="Background" Value="{DynamicResource Color.StateHover}" />
+                        </Trigger>
+                        <Trigger Property="IsChecked" Value="True">
+                            <Setter TargetName="Pill" Property="Background" Value="{DynamicResource Color.Primary}" />
+                            <Setter Property="Foreground" Value="{DynamicResource Color.OnPrimary}" />
+                        </Trigger>
+                    </ControlTemplate.Triggers>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
     <!-- ============ Tonal / secondary button ============ -->
     <Style x:Key="SecondaryButton" TargetType="Button" BasedOn="{StaticResource VioraButton}">
         <Setter Property="Background" Value="{DynamicResource Color.SecondaryContainer}" />

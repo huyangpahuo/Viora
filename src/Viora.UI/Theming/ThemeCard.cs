@@ -48,9 +48,13 @@ public sealed class ThemeCard : INotifyPropertyChanged
         _ = palette.Colors.TryGetValue("Background", out var bg);
         _ = palette.Colors.TryGetValue("Surface", out var surface);
         _ = palette.Colors.TryGetValue("Primary", out var accent);
+        _ = palette.Colors.TryGetValue("PrimaryContainer", out var container);
+        _ = palette.Colors.TryGetValue("TextPrimary", out var text);
         PreviewBackground = bg ?? "#FF14141B";
         PreviewSurface = surface ?? "#FF1B1B23";
         PreviewAccent = accent ?? "#FF82B1FF";
+        PreviewPrimaryContainer = container ?? "#FF1E41AF";
+        PreviewTextPrimary = text ?? "#FFE4E1F0";
     }
 
     public string SchemeId { get; }
@@ -67,11 +71,19 @@ public sealed class ThemeCard : INotifyPropertyChanged
 
     public string PreviewAccent { get; } = "#FF82B1FF";
 
+    public string PreviewPrimaryContainer { get; } = "#FF1E41AF";
+
+    public string PreviewTextPrimary { get; } = "#FFE4E1F0";
+
     public Brush PreviewBackgroundBrush => Swatch(PreviewBackground);
 
     public Brush PreviewSurfaceBrush => Swatch(PreviewSurface);
 
     public Brush PreviewAccentBrush => Swatch(PreviewAccent);
+
+    public Brush PreviewPrimaryContainerBrush => Swatch(PreviewPrimaryContainer);
+
+    public Brush PreviewTextPrimaryBrush => Swatch(PreviewTextPrimary);
 
     public string Name { get; }
 

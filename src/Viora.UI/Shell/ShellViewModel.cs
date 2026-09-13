@@ -1,4 +1,6 @@
 using System.Collections.ObjectModel;
+using System.ComponentModel;
+using System.Windows.Data;
 using CommunityToolkit.Mvvm.ComponentModel;
 using Microsoft.Extensions.DependencyInjection;
 using CommunityToolkit.Mvvm.Input;
@@ -36,8 +38,9 @@ public partial class NavigationItem : ObservableObject
 
 /// <summary>
 /// Sidebar navigation shell. Pages are resolved from DI by type and cached.
-/// Responsive: LayoutState drives IsSidebarCompact from the window width;
-/// the hamburger toggles SidebarOpen manually.
+/// One grouped list (single selection — group ListBoxes would each keep their own
+/// highlight and scroll position, drifting the sidebar). Responsive: LayoutState
+/// drives IsSidebarCompact from the window width; the hamburger toggles SidebarOpen.
 /// </summary>
 public partial class ShellViewModel : ObservableObject
 {
@@ -51,20 +54,23 @@ public partial class ShellViewModel : ObservableObject
 
         Items = new ObservableCollection<NavigationItem>
         {
-            // Create
+            // 创作
             new(NavGroupKeys.Create, "Nav.Home", "\uE80F", typeof(Pages.Home.HomePage), 0),
             new(NavGroupKeys.Create, "Nav.Convert", "\uE8E5", typeof(Pages.Convert.ConvertPage), 1),
-            // System
-            new(NavGroupKeys.System, "Nav.Plugins", "\uE116", typeof(Pages.Plugins.PluginsPage), 2),
-            new(NavGroupKeys.System, "Nav.Settings", "\uE713", typeof(Pages.Settings.SettingsPage), 3),
-            // Information
-            new(NavGroupKeys.Information, "Nav.About", "\uE946", typeof(Pages.About.AboutPage), 4),
-            new(NavGroupKeys.Information, "Nav.Help", "\uE897", typeof(Pages.Help.HelpPage), 5),
-            new(NavGroupKeys.Information, "Nav.Feedback", "\uED15", typeof(Pages.Feedback.FeedbackPage), 6),
-            new(NavGroupKeys.Information, "Nav.Community", "\uE902", typeof(Pages.Community.CommunityPage), 7),
-            new(NavGroupKeys.Information, "Nav.Sponsor", "\uE734", typeof(Pages.Sponsor.SponsorPage), 8),
-            new(NavGroupKeys.Information, "Nav.Legal", "\uE8B7", typeof(Pages.Legal.LegalPage), 9),
+            // 社区(独立分组:未来承接插件分享)
+            new(NavGroupKeys.Community, "Nav.Community", "\uE902", typeof(Pages.Community.CommunityPage), 2),
+            // 系统
+            new(NavGroupKeys.System, "Nav.Plugins", "\uE116", typeof(Pages.Plugins.PluginsPage), 3),
+            new(NavGroupKeys.System, "Nav.Settings", "\uE713", typeof(Pages.Settings.SettingsPage), 4),
+            // 信息(帮助与反馈内容并入关于页)
+            new(NavGroupKeys.Information, "Nav.About", "\uE946", typeof(Pages.About.AboutPage), 5),
+            new(NavGroupKeys.Information, "Nav.Sponsor", "\uE734", typeof(Pages.Sponsor.SponsorPage), 6),
+            new(NavGroupKeys.Information, "Nav.Legal", "\uE8B7", typeof(Pages.Legal.LegalPage), 7),
         };
+
+        var view = CollectionViewSource.GetDefaultView(Items);
+        view.GroupDescriptions.Add(new PropertyGroupDescription(nameof(NavigationItem.GroupKey)));
+        NavView = view;
 
         SelectedItem = Items[0];
 
@@ -90,16 +96,8 @@ public partial class ShellViewModel : ObservableObject
 
     public ObservableCollection<NavigationItem> Items { get; }
 
-    public System.Collections.Generic.IEnumerable<NavigationItem> CreateItems => Filter(NavGroupKeys.Create);
-
-    public System.Collections.Generic.IEnumerable<NavigationItem> SystemItems => Filter(NavGroupKeys.System);
-
-    public System.Collections.Generic.IEnumerable<NavigationItem> InformationItems => Filter(NavGroupKeys.Information);
-
-    private System.Collections.Generic.IEnumerable<NavigationItem> Filter(string group)
-    {
-        foreach (var i in Items) if (i.GroupKey == group) yield return i;
-    }
+    /// <summary>Grouped view over Items — one ListBox, one selection, fixed layout.</summary>
+    public System.ComponentModel.ICollectionView NavView { get; }
 
     [ObservableProperty]
     private NavigationItem? _selectedItem;
@@ -154,6 +152,7 @@ public partial class ShellViewModel : ObservableObject
 public static class NavGroupKeys
 {
     public const string Create = "Nav.Group.Create";
+    public const string Community = "Nav.Group.Community";
     public const string System = "Nav.Group.System";
     public const string Information = "Nav.Group.Information";
 }

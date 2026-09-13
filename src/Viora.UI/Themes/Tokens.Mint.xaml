@@ -1,0 +1,86 @@
+<ResourceDictionary
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+
+    <!--
+        Viora palette: Mint (mint green, light)
+        Material Design 3 tonal palette + Fluent elevation/state-layer language.
+        All page XAML consumes these names only; ThemeManager swaps this file
+        for Tokens.Light.xaml at runtime.
+    -->
+
+    <!-- ============ MD3 tonal palette (dark) ============ -->
+    <Color x:Key="Color.PrimaryColor">#FF0F9D6C</Color>
+    <Color x:Key="Color.OnPrimaryColor">#FFFFFFFF</Color>
+    <Color x:Key="Color.PrimaryContainerColor">#FFD3F5E6</Color>
+    <Color x:Key="Color.OnPrimaryContainerColor">#FF03301E</Color>
+
+    <Color x:Key="Color.SecondaryColor">#FF0B7C56</Color>
+    <Color x:Key="Color.SecondaryContainerColor">#FFC8F3E0</Color>
+
+    <Color x:Key="Color.TertiaryColor">#FF2C7A8C</Color>
+    <Color x:Key="Color.TertiaryContainerColor">#FFCFEDF5</Color>
+
+    <Color x:Key="Color.BackgroundColor">#FFF1FAF5</Color>
+    <Color x:Key="Color.SurfaceColor">#FFFAFEFB</Color>
+    <Color x:Key="Color.SurfaceElevatedColor">#FFE4F3EB</Color>
+    <Color x:Key="Color.SurfaceHighColor">#FFD5EBE0</Color>
+
+    <Color x:Key="Color.TextPrimaryColor">#FF0C231A</Color>
+    <Color x:Key="Color.TextSecondaryColor">#FF6E837A</Color>
+    <Color x:Key="Color.TextDisabledColor">#FFA9BCB2</Color>
+
+    <Color x:Key="Color.BorderColor">#FFDDEEE5</Color>
+    <Color x:Key="Color.OutlineColor">#FF688074</Color>
+    <Color x:Key="Color.DividerColor">#FFE7F3EC</Color>
+
+    <Color x:Key="Color.DangerColor">#FFFFB4AB</Color>
+    <Color x:Key="Color.DangerContainerColor">#FF93000A</Color>
+    <Color x:Key="Color.SuccessColor">#FF7ED9A0</Color>
+    <Color x:Key="Color.WarningColor">#FFFFD980</Color>
+
+    <!-- State layers (Fluent): hover/press overlays composited over any surface -->
+    <Color x:Key="Color.StateHoverColor">#0E000000</Color>
+    <Color x:Key="Color.StatePressedColor">#16000000</Color>
+    <Color x:Key="Color.StateSelectedColor">#240F9D6C</Color>
+
+    <!-- ============ Brushes ============ -->
+    <SolidColorBrush x:Key="Color.Primary" Color="{StaticResource Color.PrimaryColor}" />
+    <SolidColorBrush x:Key="Color.OnPrimary" Color="{StaticResource Color.OnPrimaryColor}" />
+    <SolidColorBrush x:Key="Color.PrimaryContainer" Color="{StaticResource Color.PrimaryContainerColor}" />
+    <SolidColorBrush x:Key="Color.OnPrimaryContainer" Color="{StaticResource Color.OnPrimaryContainerColor}" />
+    <SolidColorBrush x:Key="Color.Secondary" Color="{StaticResource Color.SecondaryColor}" />
+    <SolidColorBrush x:Key="Color.SecondaryContainer" Color="{StaticResource Color.SecondaryContainerColor}" />
+    <SolidColorBrush x:Key="Color.Tertiary" Color="{StaticResource Color.TertiaryColor}" />
+    <SolidColorBrush x:Key="Color.TertiaryContainer" Color="{StaticResource Color.TertiaryContainerColor}" />
+
+    <SolidColorBrush x:Key="Color.Background" Color="{StaticResource Color.BackgroundColor}" />
+    <SolidColorBrush x:Key="Color.Surface" Color="{StaticResource Color.SurfaceColor}" />
+    <SolidColorBrush x:Key="Color.SurfaceElevated" Color="{StaticResource Color.SurfaceElevatedColor}" />
+    <SolidColorBrush x:Key="Color.SurfaceHigh" Color="{StaticResource Color.SurfaceHighColor}" />
+
+    <SolidColorBrush x:Key="Color.Text.Primary" Color="{StaticResource Color.TextPrimaryColor}" />
+    <SolidColorBrush x:Key="Color.Text.Secondary" Color="{StaticResource Color.TextSecondaryColor}" />
+    <SolidColorBrush x:Key="Color.Text.Disabled" Color="{StaticResource Color.TextDisabledColor}" />
+    <SolidColorBrush x:Key="Color.Text.OnAccent" Color="{StaticResource Color.OnPrimaryColor}" />
+
+    <SolidColorBrush x:Key="Color.Border" Color="{StaticResource Color.BorderColor}" />
+    <SolidColorBrush x:Key="Color.Outline" Color="{StaticResource Color.OutlineColor}" />
+    <SolidColorBrush x:Key="Color.Divider" Color="{StaticResource Color.DividerColor}" />
+
+    <SolidColorBrush x:Key="Color.Danger" Color="{StaticResource Color.DangerColor}" />
+    <SolidColorBrush x:Key="Color.Success" Color="{StaticResource Color.SuccessColor}" />
+    <SolidColorBrush x:Key="Color.Warning" Color="{StaticResource Color.WarningColor}" />
+    <SolidColorBrush x:Key="Color.Scrim" Color="#A0000000" />
+
+    <SolidColorBrush x:Key="Color.StateHover" Color="{StaticResource Color.StateHoverColor}" />
+    <SolidColorBrush x:Key="Color.StatePressed" Color="{StaticResource Color.StatePressedColor}" />
+    <SolidColorBrush x:Key="Color.StateSelected" Color="{StaticResource Color.StateSelectedColor}" />
+
+    <!-- Legacy aliases (v1 style names keep resolving during migration) -->
+    <SolidColorBrush x:Key="Color.Accent" Color="{StaticResource Color.PrimaryColor}" />
+    <SolidColorBrush x:Key="Color.AccentHover" Color="#FF2BB483" />
+    <SolidColorBrush x:Key="Color.AccentPressed" Color="#FF0A7A54" />
+    <SolidColorBrush x:Key="Color.AccentText" Color="{StaticResource Color.OnPrimaryColor}" />
+
+</ResourceDictionary>

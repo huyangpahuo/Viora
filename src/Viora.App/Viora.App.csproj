@@ -12,7 +12,14 @@
     <Version>1.0.0</Version>
     <AssemblyVersion>1.0.0.0</AssemblyVersion>
     <FileVersion>1.0.0.0</FileVersion>
+    <!-- exe 文件图标:Explorer、桌面快捷方式与任务栏(未显式设置窗口图标时的回退) -->
+    <ApplicationIcon>..\..\assets\viora.ico</ApplicationIcon>
   </PropertyGroup>
+
+  <ItemGroup>
+    <!-- 供 MainWindow.Icon(pack URI)运行时使用 -->
+    <Resource Include="..\..\assets\viora.ico" Link="viora.ico" />
+  </ItemGroup>
 
   <ItemGroup>
     <PackageReference Include="CommunityToolkit.Mvvm" Version="8.3.2" />

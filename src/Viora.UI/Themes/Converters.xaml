@@ -12,4 +12,6 @@
     <conv:CountToVisibilityConverter x:Key="CountToVisibility" />
     <conv:ResponsiveGutterConverter x:Key="ResponsiveGutter" />
     <conv:SidebarWidthConverter x:Key="SidebarWidth" />
+    <conv:TranslateKeyConverter x:Key="TranslateKey" />
+    <conv:EqualityConverter x:Key="Equals" />
 </ResourceDictionary>

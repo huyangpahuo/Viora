@@ -1,6 +1,7 @@
 using System.Globalization;
 using System.Windows;
 using System.Windows.Data;
+using Viora.UI.Localization;
 
 namespace Viora.UI.Converters;
 
@@ -106,6 +107,33 @@ public sealed class ResponsiveGutterConverter : IValueConverter
 
     public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture) =>
         throw new NotSupportedException();
+}
+
+/// <summary>Localization key (string) → translated text. For dynamic keys (group headers).</summary>
+public sealed class TranslateKeyConverter : IValueConverter
+{
+    public object Convert(object? value, Type targetType, object parameter, CultureInfo culture) =>
+        Tr.Get(value as string ?? string.Empty);
+
+    public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture) =>
+        throw new NotSupportedException();
+}
+
+/// <summary>
+/// value.ToString() == parameter.ToString() → bool. ConvertBack: true → Enum.Parse(targetType,
+/// parameter) — lets a group of RadioButtons bind one enum (compare mode switcher).
+/// </summary>
+public sealed class EqualityConverter : IValueConverter
+{
+    public object Convert(object? value, Type targetType, object parameter, CultureInfo culture) =>
+        string.Equals(value?.ToString(), parameter?.ToString(), StringComparison.Ordinal);
+
+    public object ConvertBack(object? value, Type targetType, object parameter, CultureInfo culture)
+    {
+        if (value is true && parameter is string s && targetType.IsEnum)
+            return Enum.Parse(targetType, s);
+        return Binding.DoNothing;
+    }
 }
 
 public static class Converters
