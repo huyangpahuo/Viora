@@ -1,194 +1,266 @@
-# Viora — Phase 0 Inspection & Implementation Plan
+# Viora — 阶段 0 检查与实施计划
 
-> Produced per Section 1 of `Viora_Engineering_Prompt.md`. Every downstream decision references this document.
-> Inspection date: 2026-09-07. All observations below come from actually reading the files/images, not from assumptions.
+> 依据 `Viora_Engineering_Prompt.md` 第 1 节产出。所有下游决策均引用本文档。
+> 检查日期:2026-09-07。以下全部观察来自对实际文件/图片的阅读,而非假设。
 
 ---
 
-## 1. Repository Inventory
+## 1. 仓库盘点
 
-Workspace root `D:\WPF_learn\`:
+工作区根目录 `D:\WPF_learn\`:
 
-| Item | Nature | Notes |
+| 条目 | 性质 | 备注 |
 |---|---|---|
-| `Viora/` | Git repo, this product | 1 commit ("Initial commit"), LICENSE = **AGPL-3.0**, contains only `LICENSE` + `Viora_Engineering_Prompt.md` before this Phase. No `.sln`, no source. |
-| `Viora/Viora_Engineering_Prompt.md` | The engineering brief | Authoritative spec (this document's source). |
-| `NavigationBar/` | Reference WPF project | `NavigationBar.sln` with two projects: `NavigationBar/` (class lib, the `MagicBar` control) and `DemoApp/` (demo exe). |
-| `矢量二次元人物风格/DM_20260907214913_001.jpg` | **Anime Vector reference image** | 1400×1400 JPEG, ~114 KB. Copied into `Viora/assets/reference-anime-vector.jpg` during Phase 0. |
+| `Viora/` | Git 仓库,本产品 | 1 个提交("Initial commit"),LICENSE = **AGPL-3.0**;本阶段之前仅含 `LICENSE` + `Viora_Engineering_Prompt.md`。无 `.sln`,无源码。 |
+| `Viora/Viora_Engineering_Prompt.md` | 工程任务书 | 权威规格(本文档的来源)。 |
+| `NavigationBar/` | 参考 WPF 项目 | `NavigationBar.sln` 含两个项目:`NavigationBar/`(类库,`MagicBar` 控件)与 `DemoApp/`(演示 exe)。 |
+| `矢量二次元人物风格/DM_20260907214913_001.jpg` | **Anime Vector 参考图** | 1400×1400 JPEG,约 114 KB。阶段 0 已复制到 `Viora/assets/reference-anime-vector.jpg`。 |
 
-**Reference image location (exact):** `D:\WPF_learn\矢量二次元人物风格\DM_20260907214913_001.jpg` → now canonical at `Viora/assets/reference-anime-vector.jpg`.
+**参考图位置(精确):** `D:\WPF_learn\矢量二次元人物风格\DM_20260907214913_001.jpg` → 现以 `Viora/assets/reference-anime-vector.jpg` 为准。
 
-**NavigationBar project location (exact):** `D:\WPF_learn\NavigationBar\` — source files: `NavigationBar/MagicBar.cs`, `NavigationBar/Themes/Generic.xaml`, `DemoApp/MainWindow.xaml`, `DemoApp/App.xaml`.
+**NavigationBar 项目位置(精确):** `D:\WPF_learn\NavigationBar\` —— 源文件:`NavigationBar/MagicBar.cs`、`NavigationBar/Themes/Generic.xaml`、`DemoApp/MainWindow.xaml`、`DemoApp/App.xaml`。
 
-**Build environment:** `dotnet --list-sdks` → **8.0.405, 9.0.312, 10.0.201** (Windows x64, Git Bash shell, MSBuild via `dotnet build`). No CI config, no `.editorconfig`, no existing build scripts anywhere in the workspace.
+**构建环境:** `dotnet --list-sdks` → **8.0.405、9.0.312、10.0.201**(Windows x64,Git Bash shell,经 `dotnet build` 调用 MSBuild)。工作区内无 CI 配置、无 `.editorconfig`、无现成构建脚本。
 
-**Toolchain decision (Section 3.1):** target **`net8.0-windows`** — the latest LTS installed, and identical to the reference project's framework, which eliminates any framework-mismatch ambiguity when consulting it. .NET 10 is current but non-LTS; .NET 9 is STS. NuGet packages to use: `CommunityToolkit.Mvvm`, `Microsoft.Extensions.DependencyInjection`, `Microsoft.Extensions.Logging` (+ `Microsoft.Extensions.Logging.Abstractions`, a file/console sink via `Microsoft.Extensions.Logging.Debug` plus a small built-in file sink in `Viora.Infrastructure`), `Microsoft.Extensions.Configuration.Json` not needed — settings use `System.Text.Json` directly. All offline, all MIT-licensed.
+**工具链决策(第 3.1 节):** 目标 **`net8.0-windows`** —— 已安装的最新 LTS,且与参考项目框架一致,查阅参考项目时不存在框架不匹配的歧义。.NET 10 虽新但非 LTS;.NET 9 为 STS。使用的 NuGet 包:`CommunityToolkit.Mvvm`、`Microsoft.Extensions.DependencyInjection`、`Microsoft.Extensions.Logging`(+ `Microsoft.Extensions.Logging.Abstractions`;文件/控制台 sink 经 `Microsoft.Extensions.Logging.Debug` 与 `Viora.Infrastructure` 内置的小型文件 sink 提供),`Microsoft.Extensions.Configuration.Json` 不需要——设置直接用 `System.Text.Json`。全部离线可用,全部 MIT 授权。
 
 ---
 
-## 2. Style Analysis — Anime Vector reference image
+## 2. 风格分析 — Anime Vector 参考图
 
-*Inspected visually and measured via pixel sampling (2 quantization passes; HSV computed per cluster). Image: two anime girls, waist-up, front-facing, over a diagonal-striped background.*
+*经目视检查并以像素采样测量(两轮量化;逐簇计算 HSV)。图像:两名动漫少女,腰上构图,正面朝向,斜条纹背景。*
 
-### 2.1 Composition
-- Two figures occupy the central ~60% of the frame, symmetric diagonal balance (left figure white-haired, right figure red-haired), roughly knee-up framing.
-- Large **negative-space diagonal bands** in the background run at ~30–45°; the figures are placed on the band boundaries so the background stripes read as deliberate graphic composition, not wallpaper.
-- Silhouettes are **highly legible** — each figure's outline is a single unbroken closed shape against the striped background; you could cut either figure out with scissors and it would still read.
+### 2.1 构图
+- 两个人物占据画面中央约 60%,对称的对角平衡(左为白发、右为红发),约膝上取景。
+- 背景大面积**负空间斜向色带**呈约 30–45°;人物被安排在色带边界上,使背景条纹读作有意
+  的图形构成,而非壁纸。
+- 剪影**高度易读**——每个人物的轮廓相对条纹背景是一条完整闭合形状;用剪刀把人物剪下来
+  也依然成立。
 
-### 2.2 Palette (measured)
-Six dominant clusters (coarse 24-step quantization, % of sampled pixels):
+### 2.2 调色板(实测)
+六个主导色簇(粗粒度 24 级量化,占采样像素百分比):
 
-| Hex | Share | HSV | Role |
+| Hex | 占比 | HSV | 角色 |
 |---|---|---|---|
-| `#1A1A2E`~`#181830` | ~20% | near-black, slightly blue | Background stripe 1 / garment shadows / line-art masses |
-| `#F06060` (coral red) | ~19% | H≈0 S=0.60 V=0.94 | Background stripe 2 / right figure's hair |
-| `#F0F0F0` (off-white) | ~16% | neutral | Skins' highlight tone, clothing base, background stripe 3 |
-| `#0090C0` (cyan blue) | ~15% | H≈195 S=1.00 V=0.75 | Background stripe 4 / clothing accents |
-| `#F0C018` (golden yellow) | ~8% | H≈47 S=0.90 V=0.94 | Accent blocks (aprons, hair clips, armbands) |
-| `#F0D8D8` (pink-tinted white) | ~6% | S=0.10 | Skin mid-tone |
+| `#1A1A2E`~`#181830` | ~20% | 近黑,微偏蓝 | 背景条纹 1 / 服装阴影 / 线稿体块 |
+| `#F06060`(珊瑚红) | ~19% | H≈0 S=0.60 V=0.94 | 背景条纹 2 / 右侧人物头发 |
+| `#F0F0F0`(米白) | ~16% | 中性 | 皮肤高光调、服装基底、背景条纹 3 |
+| `#0090C0`(青蓝) | ~15% | H≈195 S=1.00 V=0.75 | 背景条纹 4 / 服装点缀 |
+| `#F0C018`(金黄) | ~8% | H≈47 S=0.90 V=0.94 | 点缀色块(围裙、发夹、臂环) |
+| `#F0D8D8`(粉调白) | ~6% | S=0.10 | 皮肤中间调 |
 
-- **Warm/cool balance:** cool cyan vs. warm coral/yellow in near-equal measure — a deliberate **near-complementary pair** (cyan ↔ coral) with yellow as a tertiary accent. Saturation is uniformly **high** (0.6–1.0) except the near-black and off-white anchors.
-- **Banding per region:** each major region (hair, skin, clothing) uses **2–3 flat tones** — e.g. white hair = off-white mass + yellow accent clip + soft blue-grey shadow sliver; skin = pink-white mid + slightly deeper pink shadow at the neck/collarbone. There is **no tonal gradient inside any region**; every tone change is a hard-edged shape.
+- **冷暖平衡:** 冷青与暖珊瑚/金黄近乎对等——一组刻意的**近互补对**(青 ↔ 珊瑚),
+  黄色为第三点缀。饱和度整体**偏高**(0.6–1.0),近黑与米白两个锚点除外。
+- **分区域色调带:** 每个主要区域(头发、皮肤、服装)只用 **2–3 个平色**——如白发 =
+  米白体块 + 黄色发夹点缀 + 淡蓝灰阴影窄条;皮肤 = 粉白中间调 + 颈部/锁骨处略深的
+  粉色阴影。任何区域内部**没有色调渐变**;每次色调变化都是硬边形状。
 
-### 2.3 Region decomposition
-- **Hair:** 2 tones max + small accent shapes; the hair mass is decomposed into 5–8 large "petal" shapes with hard boundaries; individual strands are not drawn — shape boundaries *imply* strands.
-- **Face/skin:** flat fill + at most 1 shadow tone; blush is a hard-edged pink ellipse; no gradient shading anywhere.
-- **Eyes:** the most detailed element — 3–4 tones (dark base, iris color, white highlight dot, thin lash mass), but geometrically simplified: iris is a rounded rectangle-ish mass, no render-level detail.
-- **Clothing:** color-blocking with 3–5 geometric patches per garment; patch boundaries follow fabric logic loosely but are decorative — they read as "design panels," not folds. Shadows on clothing are **hard-edged black-ish wedge shapes** (e.g., under the arm, under the chin) — classic "cel block" but simplified further into pure geometry.
-- **Accessories:** headphones/goggles reduced to 2–3 stacked rounded rectangles + circles.
+### 2.3 区域分解
+- **头发:** 最多 2 色调 + 少量点缀形状;发体被分解为 5–8 个大"花瓣"形状,边界硬朗;
+  不画发丝——形状边界**暗示**发丝。
+- **面部/皮肤:** 平涂 + 至多 1 个阴影调;腮红是硬边粉色椭圆;全无渐变阴影。
+- **眼睛:** 最精细的元素——3–4 色调(深色基底、虹膜色、白高光点、细睫毛体块),但
+  几何上高度简化:虹膜接近圆角色块,无渲染级细节。
+- **服装:** 3–5 个几何色块的颜色分块;色块边界松散地跟随布料逻辑但偏装饰——读作
+  "设计拼接",不是褶皱。服装阴影是**硬边近黑的楔形**(如腋下、下巴下)——经典的
+  "赛璐璐色块",但进一步简化为纯几何。
+- **配饰:** 耳机/护目镜被简化为 2–3 个叠放的圆角矩形 + 圆形。
 
-### 2.4 Outline treatment
-- **Almost no drawn outlines.** Region separation is achieved by **color contrast alone** (white hair against black band; coral jacket against cyan stripe). Where a dark line exists (eye lash mass, a few garment seams), it is a **filled dark shape**, not a stroked line, and its color is the shared near-black `#1A1A2E`, not pure black.
-- Line weight is therefore variable-by-design: "lines" are really thin color blocks.
+### 2.4 轮廓处理
+- **几乎没有描线。** 区域分离完全依靠**颜色对比**(白发对黑色条带;珊瑚外套对青色条纹)。
+  少数存在深色线的地方(睫毛体块、几条服装缝线)也是**填充的深色形状**,不是描边线,
+  且颜色是共享的近黑 `#1A1A2E`,而非纯黑。
+- 因此线宽是"设计上可变"的:所谓"线"其实是细的色块。
 
-### 2.5 Shadow/highlight treatment
-- Shadows are **hard-edged geometric shapes** — wedges, triangles, parallelograms — with **0 feathering**. One shadow tone per region (occasionally two: black wedge + deeper color wedge on clothing).
-- Highlights are rare and geometric (a white rectangle on hair, a dot in the eye).
-- Light-source logic is **loose/decorative**: shadows appear where the composition needs darkening for contrast, not from a consistent single light. Background stripes ignore lighting entirely.
+### 2.5 阴影/高光处理
+- 阴影是**硬边几何形状**——楔形、三角、平行四边形,**零羽化**。每区域一个阴影调
+  (偶尔两个:黑色楔形 + 更深的彩色楔形)。
+- 高光稀少且几何化(头发上的白色矩形、眼中的高光点)。
+- 光源逻辑**松散/装饰性**:阴影出现在构图需要加深对比的地方,而非来自一致的单光源。
+  背景条纹完全无视光照。
 
-### 2.6 Edge/shape character
-- Silhouette edges are **smooth large-radius curves** at the macro level (hair masses, shoulders) but every interior boundary is either a straight line or a single arc — **faceted, polygonal, "vector-tool" feeling**. No bezier-organic detail; detail is *removed*, not smoothed.
-- Facial features vs. photoreal/anime baseline: nose is omitted or a single tick; mouth is a short 1-stroke line; ears often omitted; the face is essentially a flat region + eyes + mouth tick. Extreme simplification.
+### 2.6 边缘/形状特征
+- 剪影边缘在宏观层面是**平滑的大半径曲线**(发体、肩部),但所有内部边界要么是直线
+  要么是单弧——**面片化、多边形化、"矢量工具"感**。没有贝塞尔有机细节;细节是被
+  *移除*的,不是被磨平的。
+- 与照片级/动漫基线对比:鼻子被省略或一笔带过;嘴是一条短线;耳朵常被省略;脸本质
+  是平色区域 + 眼睛 + 嘴线。极端简化。
 
-### 2.7 Style rules (must-have) vs. subject-specific (incidental)
-**Style rules the output must satisfy to "read" as this style:**
-1. Global color count collapses to a **small bounded palette** (roughly 6–10 colors), high saturation, anchored by one near-black and one near-white.
-2. All interior tone changes become **hard-edged shapes** — zero soft gradients, zero photographic texture.
-3. Regions are **coherent connected shapes** (a region should not be salt-and-pepper noise), boundaries smooth/simplified, detail abstracted into geometry.
-4. Contrast structure preserved: dark anchoring masses (hair shadow, background bands) vs. light figure masses.
-5. Facial detail reduced toward the geometric minimum (eyes/mouth survive as simplified masses, skin texture gone).
+### 2.7 风格规则(必备) vs. 题材特有(偶发)
+**输出必须满足、才能"读作"该风格的规则:**
+1. 全局颜色数收敛为**小的有界调色板**(约 6–10 色),高饱和,以一个近黑与一个近白锚定。
+2. 所有内部色调变化变为**硬边形状**——零软渐变、零摄影纹理。
+3. 区域是**连贯的连通形状**(区域不能是盐胡椒噪声),边界平滑/简化,细节抽象为几何。
+4. 保留对比结构:深色锚定体块(头发阴影、背景条带)对浅色人物体块。
+5. 面部细节简化到几何最小值(眼睛/嘴以简化体块存活,皮肤纹理消失)。
 
-**Incidental to this particular image (must NOT be hardcoded into the algorithm):** the exact palette (coral/cyan/yellow), the diagonal background stripes, two-figure composition, headphones, poses. The algorithm must derive the palette **from the input image**.
+**本图特有、不得写死进算法的(偶发):** 具体调色板(珊瑚/青/黄)、对角背景条纹、
+双人构图、耳机、姿势。算法必须**从输入图像**推导调色板。
 
-### 2.8 Consequence for the algorithm (referenced in §5 below)
-The reference is, in essence, **"posterized flat-color vector art with hard-edged shadow blocks and simplified silhouettes."** The dominant visual grammar is *color-region geometry*, which means: aggressive color quantization into a small palette + edge-preserving region smoothing + region-boundary simplification reproduces the style rules faithfully. A texture/gradient-preserving approach (e.g., style-transfer) would *violate* rules 2–3. See §10 for the full decision.
+### 2.8 对算法的推论(对应 §5)
+参考图本质上是**"海报化的平色矢量艺术:硬边阴影色块 + 简化剪影"**。主导视觉语法是
+*颜色区域几何*,这意味着:向小调色板的激进颜色量化 + 保边区域平滑 + 区域边界简化
+即可忠实复现风格规则。任何保留纹理/渐变的路线(如风格迁移)都会**违反**规则 2–3。
+完整决策见 §10(即本文 §6)。
 
 ---
 
-## 3. Design Language Extraction — NavigationBar project
+## 3. 设计语言提取 — NavigationBar 项目
 
-*From `NavigationBar/Themes/Generic.xaml`, `NavigationBar/MagicBar.cs`, `DemoApp/MainWindow.xaml`.*
+*来自 `NavigationBar/Themes/Generic.xaml`、`NavigationBar/MagicBar.cs`、`DemoApp/MainWindow.xaml`。*
 
-1. **Layout skeleton:** full-window dark canvas (`#222222`) with a single **floating bottom bar** (440×120, centered). The demo is single-surface; no sidebar/top-nav. Content region = everything above the bar.
-2. **Navigation model:** flat `ListBox` of icon+label items; selected item is expressed by a **traveling "circle" indicator** (an 80×80 dark circle with a colored inner dot that slides under the selected item, `SelectedIndex * 80`, animated). Label text fades in on selection (`#00000000` → visible), icon shifts up 80px and darkens to `#333333`.
-3. **Typography:** single font (system default), `FontSize=14`, `FontWeight=Bold` for labels. Hierarchy expressed by **color/opacity**, not size (disabled = 44-alpha black, selected = full `#333333`).
-4. **Spacing system:** loose multiples of 20 (bar padding 20, bar top margin 40, item grid 80-wide per cell). Implied 8px-grid-compatible, but generous — spacious, not dense.
-5. **Corner radius:** `CornerRadius=10` on the bar; circles (radius 40/34) for the indicator. Rounded, soft, "dock"-like.
-6. **Color system:** window `#222222` (very dark grey), bar surface `#DDDDDD` (light grey) — a **strong light-on-dark contrast pair**; accent = `CadetBlue` inner dot; icon default `#44333333` (heavily transparent black), selected `#333333` opaque. Text-on-light uses near-black; no dark/light theme switching — the light bar sits on a dark window (a "floating island" pattern).
-7. **Component styling patterns:** everything is flat (no drop shadows, no gradients); states are expressed via color + position animation; icons are vector `Geometry` glyphs from Jamesnet's `JamesIcon`.
-8. **Motion:** `CubicEaseInOut` storyboards at **500 ms** for selection (icon shift, label fade, indicator slide); indicator uses `QuinticEaseInOut` 500 ms. Motion is a first-class part of the design language, not decoration.
-9. **Overall feel:** **playful-minimal, spacious, animation-forward** — a "dock" aesthetic. Dense/utilitarian it is not.
+1. **布局骨架:** 全窗口深色画布(`#222222`)+ 单个**悬浮底栏**(440×120,居中)。
+   演示是单表面;无侧边栏/顶部导航。内容区 = 栏以上的一切。
+2. **导航模型:** 图标+标签的扁平 `ListBox`;选中态由**移动的"圆点"指示器**表达
+   (80×80 深色圆 + 彩色内点,滑到选中项下方,`SelectedIndex * 80`,带动画)。
+   标签文字选中时淡入(`#00000000` → 可见),图标上移 80px 并加深为 `#333333`。
+3. **字体:** 单一字体(系统默认),`FontSize=14`,标签 `FontWeight=Bold`。层级由
+   **颜色/透明度**表达,而非字号(禁用 = 44-alpha 黑,选中 = 完整 `#333333`)。
+4. **间距系统:** 20 的宽松倍数(栏内边距 20、栏上边距 40、单元格宽 80)。隐含兼容
+   8px 网格,但更宽松——疏朗而非致密。
+5. **圆角:** 栏 `CornerRadius=10`;指示器为圆(r=40/34)。圆润、柔和、"dock"感。
+6. **颜色系统:** 窗口 `#222222`(极深灰),栏面 `#DDDDDD`(浅灰)——**强对比的
+   深底浅面组合**;点缀 = `CadetBlue` 内点;图标默认 `#44333333`(高透明黑),选中
+   `#333333` 不透明。浅面上的文字近黑;无深浅主题切换——浅色栏浮在深色窗口上
+   ("悬浮岛"模式)。
+7. **组件样式模式:** 一切扁平(无投影、无渐变);状态通过颜色 + 位置动画表达;
+   图标是 Jamesnet `JamesIcon` 的矢量 `Geometry` 字形。
+8. **动效:** 选中动效(图标位移、标签淡入、指示器滑动)为 `CubicEaseInOut` **500ms**;
+   指示器用 `QuinticEaseInOut` 500ms。动效是设计语言的一等公民,不是装饰。
+9. **总体气质:** **趣味极简、疏朗、动画优先**——一种"dock"美学。绝非致密实用风。
 
-**Translation to Viora Design System (spirit, not clone):** keep the dark anchored shell + light floating surfaces + rounded geometry + springy eased motion + opacity-based hierarchy; extend into a **left sidebar navigation** (an image tool needs a persistent, always-visible nav, not a bottom dock) with a large content canvas for the image viewport, and a parameter side panel. Accent moves from CadetBlue to a Viora-specific accent; the traveling-indicator motif returns as an animated selection pill in the sidebar. Full token table in `docs/design-system.md`.
+**向 Viora 设计系统的转化(取其精神,不做克隆):** 保留深色锚定外壳 + 浅色悬浮
+表面 + 圆角几何 + 有弹性的缓动动效 + 基于透明度的层级;扩展为**左侧边栏导航**
+(图像工具需要常驻可见的导航,而非底部 dock)+ 大面积内容画布(图像视口)+
+参数侧栏。点缀色从 CadetBlue 换为 Viora 专属强调色;移动指示器母题回归为侧边栏的
+动画选中胶囊。完整令牌表见 `docs/design-system.md`。
 
 ---
 
-## 4. Implementation Plan (nine points from the original brief)
+## 4. 实施计划(原任务书九点)
 
-### 4.1 Product architecture
-Concept map exactly per brief §2: `Viora.App` (exe, composition root) hosts `Viora.UI` (views/VMs/design system), which consumes only `Viora.Core` contracts. Built-in features live in `Viora.Features.*` and register through the same `IPluginContext` seam that external plugins use — **built-ins are "plugins that ship in the box,"** so the Anime Vector preset proves the extensibility path instead of bypassing it. Infrastructure concerns (file I/O, plugin loading, settings persistence) are isolated in `Viora.Infrastructure`.
+### 4.1 产品架构
+概念图严格按任务书 §2:`Viora.App`(exe,组合根)承载 `Viora.UI`(视图/VM/设计系统),
+后者只消费 `Viora.Core` 契约。内置功能位于 `Viora.Features.*`,经与外部插件相同的
+`IPluginContext` 通道注册——**内置功能就是"随箱附带的插件"**,因此 Anime Vector
+预设验证的是扩展路径本身,而非绕过它。基础设施(文件 IO、插件加载、设置持久化)
+隔离在 `Viora.Infrastructure`。
 
-### 4.2 UI architecture
-MVVM via `CommunityToolkit.Mvvm` (source-generator `ObservableProperty`/`RelayCommand`; choice justified in §10). Navigation: a `MainWindow` shell with a sidebar `ListBox` bound to a `NavigationItem` VM list; content region is a `ContentControl` over DI-resolved page VMs. No code-behind beyond `InitializeComponent` + event-to-VM plumbing that has no XAML-equivalent (drag & drop). All styling through merged `ResourceDictionary` token files; zero hardcoded colors/sizes in page XAML.
+### 4.2 UI 架构
+MVVM 经 `CommunityToolkit.Mvvm`(源生成 `ObservableProperty`/`RelayCommand`;
+选型依据见 §10)。导航:`MainWindow` 外壳 + 绑定 `NavigationItem` VM 列表的侧边栏
+`ListBox`;内容区为承载 DI 解析页面的 `ContentControl`。除 `InitializeComponent` 与
+无 XAML 等价物的事件接线(拖放)外,无其他 code-behind。全部样式经合并的
+`ResourceDictionary` 令牌文件;页面 XAML 零硬编码颜色/尺寸。
 
-### 4.3 Plugin architecture
-Per brief §6 verbatim: `plugin.json` manifest + `AssemblyLoadContext` isolation, discovery (metadata-only) → load → version check → initialize; enable/disable independent of load; host-boundary try/catch with "failed" state + localized error; capability-declared permissions; uninstall = unload + delete folder. Sample plugin under `samples/` proves the lifecycle.
+### 4.3 插件架构
+严格按任务书 §6:`plugin.json` 清单 + `AssemblyLoadContext` 隔离,发现(仅元数据)→
+加载 → 版本检查 → 初始化;启用/停用独立于加载;宿主边界 try/catch + "失败"状态 +
+本地化错误;能力声明式权限;卸载 = 卸载 + 删除文件夹。`samples/` 下的示例插件验证
+生命周期。
 
-### 4.4 Image conversion architecture
-Pipeline contracts in `Viora.Core` exactly per brief §5.1. `IImageConversionEngine` walks an ordered stage list with `IProgress<PipelineProgress>` and `CancellationToken`. Buffers are a plain `IImageBuffer` (BGRA byte grid) — no WPF types in Core; `Viora.Infrastructure` adapts to/from WPF `BitmapSource` and file codecs. Chosen Anime Vector approach: **classical CV raster pipeline** (§10).
+### 4.4 图像转换架构
+管线契约位于 `Viora.Core`,严格按任务书 §5.1。`IImageConversionEngine` 按序执行阶段
+列表,带 `IProgress<PipelineProgress>` 与 `CancellationToken`。缓冲为朴素的
+`IImageBuffer`(BGRA 字节网格)——Core 中无 WPF 类型;`Viora.Infrastructure` 负责
+与 WPF `BitmapSource` 及文件编解码器的双向适配。Anime Vector 选定方案:**经典 CV
+栅格管线**(见 §6)。
 
-### 4.5 Localization architecture
-`ILocalizationService` (Core) + JSON language packs (`en.json`, `zh-Hans.json`) in `Viora.Localization`, loaded at runtime and hot-swappable. XAML binding via a custom `TranslateExtension` markup extension bound to a `LocalizationManager` (INotifyPropertyChanged) so **language switches re-render live without restart**. Missing key → English fallback → visible `[key]` only in debug builds. Plugins register their own string tables via `IPluginContext`.
+### 4.5 本地化架构
+`ILocalizationService`(Core)+ `Viora.Localization` 中的 JSON 语言包(`en.json`、
+`zh-Hans.json`),运行时加载、可热切换。XAML 绑定经自定义 `TranslateExtension`
+标记扩展,绑定到 `LocalizationManager`(INotifyPropertyChanged),因此**切换语言
+实时重渲染,无需重启**。缺失键 → 英文回退 → 仅调试构建显示可见的 `[key]`。
+插件经 `IPluginContext` 注册自己的字符串表。
 
-### 4.6 Settings architecture
-`ISettingsService` with the nine strongly-typed sections from brief §9, persisted as a single versioned JSON document (`settings.json`) under `%LOCALAPPDATA%\Viora\` via `System.Text.Json` (source-gen serializers). Save is debounced 500 ms after change + explicit Save on settings page close. Every setting wired to real behavior (language, theme, log level, cache path/limit, preview quality, etc.).
+### 4.6 设置架构
+`ISettingsService` 按任务书 §9 的九个强类型分节,以单个版本化 JSON 文档
+(`settings.json`)持久化在 `%LOCALAPPDATA%\Viora\`,经 `System.Text.Json`(源生成
+序列化器)。保存为变更后 500ms 防抖 + 设置页关闭时显式保存。每个设置都接到真实行为
+(语言、主题、日志级别、缓存路径/上限、预览质量等)。
 
-### 4.7 Project structure
-Exactly the Section 4 tree — 8 src projects + 3 test projects + `plugins/` + `assets/` + `docs/`. Justification: each project maps to one layer boundary the brief makes mandatory (WPF isolation, plugin SDK surface, feature hosting); collapsing any two would re-couple a boundary the brief explicitly forbids coupling. Nothing added beyond the brief's tree.
+### 4.7 项目结构
+严格按第 4 节目录——8 个 src 项目 + 3 个测试项目 + `plugins/` + `assets/` + `docs/`。
+理由:每个项目对应任务书强制的一条层边界(WPF 隔离、插件 SDK 面、功能承载);
+合并其中任意两个都会重新耦合任务书明确禁止耦合的边界。任务书目录之外未添加任何项目。
 
-### 4.8 Development phases
-Phases 0–9 as listed in brief §14, executed in order; each phase ends compiling and runnable. (This document completes Phase 0.)
+### 4.8 开发阶段
+按任务书 §14 的阶段 0–9 顺序执行;每个阶段结束时都可编译、可运行。(本文档完成阶段 0。)
 
-### 4.9 Risks and technical trade-offs
-| Risk | Mitigation |
+### 4.9 风险与技术权衡
+| 风险 | 缓解 |
 |---|---|
-| Anime Vector quality on real photos (classical CV limits) | Position as *stylization*, not AI art; parameterized strength; document expected inputs; preview-first UX |
-| K-means/segmentation cost on large images | Preview pass at reduced resolution; full-res only on export; `CancellationToken` checks per stage; downsampling cap parameter |
-| `AssemblyLoadContext` unloading pitfalls (cached types, event leaks) | Collectible ALC + strict host-boundary interfaces only; failed-unload falls back to "disabled, loaded" state (documented) |
-| Live language switch complexity | Bind every string through `TranslateExtension`; smoke-test page sweep in Phase 3 |
-| AGPL-3.0 license of the repo | All dependencies chosen MIT/Apache; no GPL-linked native libs (OpenCode pathological case avoided — pure managed CV) |
-| Jamesnet.Wpf (reference project dep) | **Not** reused — analyzed only; Viora has its own design system |
+| Anime Vector 在真实照片上的质量(经典 CV 局限) | 定位为*风格化*,不是 AI 绘画;参数化强度;文档说明预期输入;预览优先的交互 |
+| 大图上 K-means/分割的代价 | 预览以降分辨率执行;仅导出时全分辨率;每阶段检查 `CancellationToken`;降采样上限参数 |
+| `AssemblyLoadContext` 卸载陷阱(缓存类型、事件泄漏) | 可回收 ALC + 仅严格宿主边界接口;卸载失败回退为"已停用、已加载"状态(已记录) |
+| 实时语言切换复杂度 | 所有字符串经 `TranslateExtension` 绑定;阶段 3 做整页冒烟测试 |
+| 仓库的 AGPL-3.0 许可证 | 依赖全部选 MIT/Apache;不链 GPL 原生库(规避 OpenCode 式病态案例——纯托管 CV) |
+| Jamesnet.Wpf(参考项目依赖) | **不复用** —— 仅作分析;Viora 有自己的设计系统 |
 
 ---
 
-## 5. Decision protocol record (Section 11 compliance)
+## 5. 决策协议记录(第 11 节合规)
 
-Summaries here; full rationale lives in `docs/architecture.md` where noted.
+此处为摘要;完整理由见 `docs/architecture.md` 对应位置。
 
-1. **MVVM toolkit** — CommunityToolkit.Mvvm vs. hand-rolled `ObservableObject`. **Chosen: CommunityToolkit.Mvvm** (MIT, source generators cut boilerplate, industry-standard, no WPF coupling). Hand-rolled rejected: pure boilerplate cost with no benefit. *(speed-justified, revisit never — this is the ecosystem default)*
-2. **Plugin isolation** — `AssemblyLoadContext` (collectible) vs. separate process per plugin vs. AppDomain (unavailable in .NET 8). **Chosen: collectible ALC.** Process isolation is over-engineering for v1 (IPC cost, complexity); ALC gives unload + version isolation in-process. Trade-off documented: a plugin that leaks its own types may fail to fully unload → falls back to disable-only.
-3. **Localization format** — RESX vs. JSON. **Chosen: JSON.** Adding a language = dropping a file, no recompile (brief §8 explicitly values this); RESX compiles into assemblies and fights hot-swap. Cost: no tooling (acceptable; we ship a key-coverage test).
-4. **Settings persistence** — single JSON doc vs. per-section files vs. registry. **Chosen: single versioned JSON** under local app data: atomic write via temp+rename, schema-versioned for migrations, trivially inspectable. Registry rejected (portability, diffability).
-5. **Anime Vector algorithm** — see §6.
+1. **MVVM 工具包** — CommunityToolkit.Mvvm vs. 手写 `ObservableObject`。
+   **选定:CommunityToolkit.Mvvm**(MIT,源生成削减样板,行业默认,无 WPF 耦合)。
+   手写方案否决:纯样板成本,无收益。*(快速决策,无需重审——生态默认)*
+2. **插件隔离** — 可回收 `AssemblyLoadContext` vs. 每插件独立进程 vs. AppDomain
+   (.NET 8 不可用)。**选定:可回收 ALC。** 进程隔离对 v1 是过度设计(IPC 代价、
+   复杂度);ALC 在进程内提供卸载 + 版本隔离。权衡已记录:泄漏自身类型的插件可能
+   无法完全卸载 → 回退为仅停用。
+3. **本地化格式** — RESX vs. JSON。**选定:JSON。** 加语言 = 放一个文件,无需重编译
+   (任务书 §8 明确看重这点);RESX 编译进程序集且不利于热切换。代价:无工具链
+   (可接受;我们以键覆盖率测试兜底)。
+4. **设置持久化** — 单 JSON 文档 vs. 分节文件 vs. 注册表。**选定:本地应用数据下的
+   单版本化 JSON**:临时文件+重命名原子写,按模式版本迁移,易于人工检查。注册表
+   否决(可移植性、可对比性)。
+5. **Anime Vector 算法** — 见 §6。
 
 ---
 
-## 6. Anime Vector algorithm — approach decision
+## 6. Anime Vector 算法 — 路线决策
 
-**Candidates evaluated (brief §5.3):**
+**候选方案(任务书 §5.3):**
 
-| Criterion | A. Classical CV pipeline | B. ONNX segmentation-assisted | C. Hybrid (classical + optional model) |
+| 准则 | A. 经典 CV 管线 | B. ONNX 分割辅助 | C. 混合(经典 + 可选模型) |
 |---|---|---|---|
-| Maintainability | ✔ pure managed, no native deps | ✖ model hosting/versions | ✖ two codepaths |
-| Performance | ✔ ~seconds, tunable | ✖ model download/inference cost | middle |
-| Accuracy vs §2 style rules | ✔ directly implements rules 1–3 | ✔✔ region coherence | ✔ |
-| Extensibility (future presets) | ✔ stages reusable | ✔ stages reusable | ✔ |
-| Dependency/licensing | ✔ none (all managed) | ✖ model license + ONNX runtime (~100 MB) | middle |
-| Offline | ✔ fully | ✖ unless model bundled (repo weight) | middle |
+| 可维护性 | ✔ 纯托管,无原生依赖 | ✖ 模型托管/版本 | ✖ 双代码路径 |
+| 性能 | ✔ 秒级,可调 | ✖ 模型下载/推理开销 | 中 |
+| 对 §2 风格规则的还原 | ✔ 直接实现规则 1–3 | ✔✔ 区域连贯性 | ✔ |
+| 可扩展(未来预设) | ✔ 阶段可复用 | ✔ 阶段可复用 | ✔ |
+| 依赖/授权 | ✔ 无(全托管) | ✖ 模型许可 + ONNX 运行时(约 100 MB) | 中 |
+| 离线 | ✔ 完全 | ✖ 除非捆绑模型(仓库体积) | 中 |
 
-**Chosen: A — classical CV, raster-first, staged as:**
+**选定:A —— 经典 CV,栅格优先,阶段划分如下:**
 
 ```text
-Decode → Preprocess (orientation/size cap) → Edge-preserving smooth (iterated bilateral-like, managed)
-      → Color quantization (k-means in Lab, k bounded, seeded from image histogram)
-      → Region consolidation (connected components; merge micro-regions into neighbors)
-      → Boundary simplification (marching-squares trace + Douglas–Peucker on region masks)
-      → Shadow blocking (luminance-band remap into hard-edged tones per region, per §2.5)
-      → Edge re-inking (dark-tinted stroke on high-contrast boundaries, per §2.4 — optional, default subtle)
-      → Render raster + optional SVG path export (simplified polygons per color layer)
+解码 → 预处理(方向/尺寸上限)→ 保边平滑(迭代式双边近似,托管实现)
+    → 颜色量化(Lab 空间 k-means,k 有界,以图像直方图播种)
+    → 区域合并(连通域;微区域并入邻域)
+    → 边界简化(区域掩码上 marching-squares 走廓 + Douglas–Peucker)
+    → 阴影色块(按 §2.5 将亮度带重映射为区域内硬边色调)
+    → 边缘描墨(高对比边界上的深色调描边,按 §2.4 —— 可选,默认轻微)
+    → 栅格渲染 + 可选 SVG 路径导出(按颜色分层的简化多边形)
 ```
 
-This is **not** a cartoon filter / B&W filter / canny-trace: it is palette collapse + shape simplification + hard-shadow blocking, i.e. a direct operationalization of §2.7's five style rules, and it satisfies every evaluation criterion. Segmentation-assist (B) is recorded as the future upgrade path via a plugin-provided stage — the pipeline contract admits it without redesign.
+这**不是**卡通滤镜 / 黑白滤镜 / canny 描摹:它是调色板坍缩 + 形状简化 + 硬阴影色块,
+即 §2.7 五条风格规则的直接落地,满足全部评估准则。分割辅助(B)被记录为未来的升级
+路径,经插件提供的阶段接入——管线契约无需重构即可容纳。
 
-**Raster-first, SVG as derived export:** the reference's style is achievable purely in raster space; SVG paths are produced from the simplified region boundaries as a downstream representation (doubling as the "true vector" capability without a vector-first engine).
+**栅格优先,SVG 作为派生导出:** 参考风格完全可以在栅格空间达成;SVG 路径由简化后
+的区域边界作为下游表示生成(兼职"真矢量"能力,无需矢量优先引擎)。
 
-**Explicitly avoided per brief:** instagram-cartoon filter, B&W, pretrained style transfer, conventional cel-shading as the *core* (our shadow-blocking stage is geometric color-blocking, not luminance cel shading), generic low-poly, naive canny tracing.
+**按任务书明确规避:** instagram 卡通滤镜、黑白、预训练风格迁移、作为*核心*的常规
+赛璐璐着色(我们的阴影色块阶段是几何色块,不是亮度赛璐璐)、泛用 low-poly、朴素
+canny 描摹。
 
 ---
 
-## 7. Phase 0 acceptance check (brief §14 Phase 0)
+## 7. 阶段 0 验收核对(任务书 §14 阶段 0)
 
-- [x] Inspection complete (§1–§3), grounded in the actual files/image (§2 has measured data)
-- [x] Tooling confirmed: .NET 8.0.405 SDK present
-- [x] Nine-point plan (§4)
-- [x] Anime Vector approach chosen with alternatives compared (§6)
+- [x] 检查完成(§1–§3),锚定真实文件/图片(§2 含实测数据)
+- [x] 工具链确认:存在 .NET 8.0.405 SDK
+- [x] 九点计划(§4)
+- [x] Anime Vector 路线已选定并完成备选比较(§6)

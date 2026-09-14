@@ -102,6 +102,13 @@
                         </Grid>
                     </Grid>
 
+                    <!-- Split drag surface: near the divider → split drag, elsewhere → pan.
+                         Sits directly above the image but BELOW every overlay control, so
+                         the mode switcher / zoom bar / dropzone stay clickable. -->
+                    <Canvas x:Name="SplitHandle" Background="Transparent" AllowDrop="True" Cursor="SizeWE"
+                            Drop="OnDrop" DragOver="OnDragOver"
+                            MouseLeftButtonDown="OnSplitDown" MouseMove="OnSplitMove" MouseLeftButtonUp="OnSplitUp" />
+
                     <!-- Compare mode switcher (top center) -->
                     <Border HorizontalAlignment="Center" VerticalAlignment="Top" Margin="0,12,0,0"
                             Background="{DynamicResource Color.Scrim}" CornerRadius="17" Padding="4"
@@ -136,13 +143,6 @@
                             </Button>
                         </StackPanel>
                     </Border>
-
-                    <!-- Split drag surface: near the divider → split drag, elsewhere → pan.
-                         Must stay UNDER the mode switcher / zoom bar / dropzone so those
-                         remain clickable. -->
-                    <Canvas x:Name="SplitHandle" Background="Transparent" AllowDrop="True" Cursor="SizeWE"
-                            Drop="OnDrop" DragOver="OnDragOver"
-                            MouseLeftButtonDown="OnSplitDown" MouseMove="OnSplitMove" MouseLeftButtonUp="OnSplitUp" />
 
                     <!-- Dropzone: whole viewport is one browse button when empty -->
                     <Button Command="{Binding ImportCommand}"
