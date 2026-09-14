@@ -137,6 +137,13 @@
                         </StackPanel>
                     </Border>
 
+                    <!-- Split drag surface: near the divider → split drag, elsewhere → pan.
+                         Must stay UNDER the mode switcher / zoom bar / dropzone so those
+                         remain clickable. -->
+                    <Canvas x:Name="SplitHandle" Background="Transparent" AllowDrop="True" Cursor="SizeWE"
+                            Drop="OnDrop" DragOver="OnDragOver"
+                            MouseLeftButtonDown="OnSplitDown" MouseMove="OnSplitMove" MouseLeftButtonUp="OnSplitUp" />
+
                     <!-- Dropzone: whole viewport is one browse button when empty -->
                     <Button Command="{Binding ImportCommand}"
                             Visibility="{Binding HasImage, Converter={StaticResource InverseBoolToVisibility}}">
@@ -177,11 +184,6 @@
                             </Button>
                         </Grid>
                     </Border>
-
-                    <!-- Split drag surface: near the divider → split drag, elsewhere → pan -->
-                    <Canvas x:Name="SplitHandle" Background="Transparent" AllowDrop="True" Cursor="SizeWE"
-                            Drop="OnDrop" DragOver="OnDragOver"
-                            MouseLeftButtonDown="OnSplitDown" MouseMove="OnSplitMove" MouseLeftButtonUp="OnSplitUp" />
                 </Grid>
             </Border>
 
@@ -189,58 +191,76 @@
             <ScrollViewer x:Name="PanelScroll" Grid.Row="0" Grid.RowSpan="3" Grid.Column="2" VerticalScrollBarVisibility="Auto">
                 <StackPanel>
                     <!-- Action row: replace / reset / export -->
-                    <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" Margin="0,2,0,6">
-                        <Button Style="{DynamicResource IconButton}" Width="38" Height="38" Command="{Binding ImportCommand}"
-                                ToolTip="{loc:Translate Convert.ReplaceImage}">
-                            <TextBlock Text="&#xE8B9;" FontFamily="Segoe MDL2 Assets" FontSize="15" />
-                        </Button>
-                        <Button Style="{DynamicResource IconButton}" Width="38" Height="38" Command="{Binding ResetParametersCommand}"
-                                ToolTip="{loc:Translate Convert.Reset}" Margin="10,0,0,0">
-                            <TextBlock Text="&#xE777;" FontFamily="Segoe MDL2 Assets" FontSize="15" />
-                        </Button>
-                        <Button Style="{DynamicResource IconButton}" Width="38" Height="38" Command="{Binding ExportCommand}"
-                                IsEnabled="{Binding CanCompare}" ToolTip="{loc:Translate Convert.Export}" Margin="10,0,0,0">
-                            <TextBlock Text="&#xE898;" FontFamily="Segoe MDL2 Assets" FontSize="15" />
-                        </Button>
-                    </StackPanel>
-
-                    <TextBlock Style="{DynamicResource Typography.Heading}" FontSize="14" Text="{loc:Translate Convert.Preset}" Margin="0,2,0,8" />
-
-                    <!-- Preset chip: current preset only (details live in its tooltip) -->
-                    <Border HorizontalAlignment="Center" Background="{DynamicResource Color.PrimaryContainer}"
-                            CornerRadius="{DynamicResource Radius.Medium}" Padding="14,6" MaxWidth="276"
-                            ToolTip="{Binding SelectedPreset.Description}"
-                            Visibility="{Binding HasPresets, Converter={StaticResource BoolToVisibility}}">
-                        <TextBlock Text="{Binding SelectedPreset.Name}" FontWeight="SemiBold" FontSize="13"
-                                   Foreground="{DynamicResource Color.OnPrimaryContainer}" TextTrimming="CharacterEllipsis" />
-                    </Border>
-
-                    <!-- Preset selector: ‹ slider ›  n/N — changing selection converts at once -->
-                    <Grid Margin="0,8,0,4" Visibility="{Binding HasPresets, Converter={StaticResource BoolToVisibility}}">
+                    <Grid Margin="0,2,0,12">
                         <Grid.ColumnDefinitions>
-                            <ColumnDefinition Width="Auto" />
                             <ColumnDefinition Width="*" />
-                            <ColumnDefinition Width="Auto" />
-                            <ColumnDefinition Width="Auto" />
+                            <ColumnDefinition Width="8" />
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="8" />
+                            <ColumnDefinition Width="*" />
                         </Grid.ColumnDefinitions>
-                        <Button Style="{DynamicResource IconButton}" Width="30" Height="30" Command="{Binding PreviousPresetCommand}"
-                                ToolTip="{loc:Translate Convert.PrevPreset}">
-                            <TextBlock Text="&#xE76B;" FontFamily="Segoe MDL2 Assets" FontSize="12" />
+                        <Button Grid.Column="0" Style="{DynamicResource SecondaryButton}" Padding="6,7"
+                                Command="{Binding ImportCommand}" ToolTip="{loc:Translate Convert.ReplaceImage}">
+                            <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
+                                <TextBlock Text="&#xE8B9;" FontFamily="Segoe MDL2 Assets" FontSize="13" VerticalAlignment="Center" />
+                                <TextBlock Text="{loc:Translate Convert.ReplaceImage}" FontSize="11.5" Margin="6,0,0,0" />
+                            </StackPanel>
                         </Button>
-                        <Slider Grid.Column="1" Style="{DynamicResource VioraSlider}" Margin="6,0"
-                                Minimum="0" Maximum="{Binding PresetSliderMax}"
-                                Value="{Binding SelectedPresetIndex, Mode=TwoWay}"
-                                IsSnapToTickEnabled="True" TickFrequency="1"
-                                IsEnabled="{Binding HasPresets}" />
-                        <Button Grid.Column="2" Style="{DynamicResource IconButton}" Width="30" Height="30" Command="{Binding NextPresetCommand}"
-                                ToolTip="{loc:Translate Convert.NextPreset}">
-                            <TextBlock Text="&#xE76C;" FontFamily="Segoe MDL2 Assets" FontSize="12" />
+                        <Button Grid.Column="2" Style="{DynamicResource SecondaryButton}" Padding="6,7"
+                                Command="{Binding ResetParametersCommand}" ToolTip="{loc:Translate Convert.Reset}">
+                            <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
+                                <TextBlock Text="&#xE777;" FontFamily="Segoe MDL2 Assets" FontSize="13" VerticalAlignment="Center" />
+                                <TextBlock Text="{loc:Translate Convert.Reset}" FontSize="11.5" Margin="6,0,0,0" />
+                            </StackPanel>
                         </Button>
-                        <TextBlock Grid.Column="3" Text="{Binding PresetPosition}" FontSize="12" Margin="8,0,0,0"
-                                   VerticalAlignment="Center" Foreground="{DynamicResource Color.Text.Secondary}" />
+                        <Button Grid.Column="4" Style="{DynamicResource SecondaryButton}" Padding="6,7"
+                                Command="{Binding ExportCommand}" IsEnabled="{Binding CanCompare}"
+                                ToolTip="{loc:Translate Convert.Export}">
+                            <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
+                                <TextBlock Text="&#xE898;" FontFamily="Segoe MDL2 Assets" FontSize="13" VerticalAlignment="Center" />
+                                <TextBlock Text="{loc:Translate Convert.Export}" FontSize="11.5" Margin="6,0,0,0" />
+                            </StackPanel>
+                        </Button>
                     </Grid>
 
-                    <TextBlock Style="{DynamicResource Typography.Heading}" FontSize="14" Text="{loc:Translate Convert.Parameters}" Margin="0,10,0,10" />
+                    <!-- Preset selector card: chip + pager on top, scrub slider below -->
+                    <Border Style="{DynamicResource VioraCard}" Padding="14,12"
+                            Visibility="{Binding HasPresets, Converter={StaticResource BoolToVisibility}}">
+                        <StackPanel>
+                            <Grid>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="Auto" />
+                                    <ColumnDefinition Width="*" />
+                                    <ColumnDefinition Width="Auto" />
+                                    <ColumnDefinition Width="Auto" />
+                                </Grid.ColumnDefinitions>
+                                <Button Style="{DynamicResource IconButton}" Width="30" Height="30" Command="{Binding PreviousPresetCommand}"
+                                        ToolTip="{loc:Translate Convert.PrevPreset}">
+                                    <TextBlock Text="&#xE76B;" FontFamily="Segoe MDL2 Assets" FontSize="12" />
+                                </Button>
+                                <Border Grid.Column="1" Background="{DynamicResource Color.PrimaryContainer}"
+                                        CornerRadius="{DynamicResource Radius.Medium}" Padding="14,5" Margin="8,0"
+                                        HorizontalAlignment="Center" MaxWidth="150"
+                                        ToolTip="{Binding SelectedPreset.Description}">
+                                    <TextBlock Text="{Binding SelectedPreset.Name}" FontWeight="SemiBold" FontSize="13.5"
+                                               Foreground="{DynamicResource Color.OnPrimaryContainer}" TextTrimming="CharacterEllipsis" />
+                                </Border>
+                                <Button Grid.Column="2" Style="{DynamicResource IconButton}" Width="30" Height="30" Command="{Binding NextPresetCommand}"
+                                        ToolTip="{loc:Translate Convert.NextPreset}">
+                                    <TextBlock Text="&#xE76C;" FontFamily="Segoe MDL2 Assets" FontSize="12" />
+                                </Button>
+                                <TextBlock Grid.Column="3" Text="{Binding PresetPosition}" FontSize="12" MinWidth="46" TextAlignment="Right"
+                                           VerticalAlignment="Center" Foreground="{DynamicResource Color.Text.Secondary}" />
+                            </Grid>
+                            <Slider Style="{DynamicResource VioraSlider}" Margin="4,10,4,0"
+                                    Minimum="0" Maximum="{Binding PresetSliderMax}"
+                                    Value="{Binding SelectedPresetIndex, Mode=TwoWay}"
+                                    IsSnapToTickEnabled="True" TickFrequency="1"
+                                    IsEnabled="{Binding HasPresets}" />
+                        </StackPanel>
+                    </Border>
+
+                    <TextBlock Style="{DynamicResource Typography.Heading}" FontSize="14" Text="{loc:Translate Convert.Parameters}" Margin="0,14,0,10" />
                     <ItemsControl ItemsSource="{Binding Parameters}">
                         <ItemsControl.ItemTemplate>
                             <DataTemplate>

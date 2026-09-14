@@ -6,11 +6,12 @@
     xmlns:pages="clr-namespace:Viora.UI.Pages"
     xmlns:controls="clr-namespace:Viora.UI.Controls">
     <pages:PageChrome TitleKey="Settings.Title" SubtitleKey="Settings.Subtitle">
-        <!-- Category column is pinned to the far left; the detail column centers its own content. -->
-        <Grid HorizontalAlignment="Stretch">
+        <!-- Category column and detail column both have fixed widths so every category
+             renders with identical geometry (the grid is centered as a whole). -->
+        <Grid HorizontalAlignment="Stretch" MaxWidth="1140">
             <Grid.ColumnDefinitions>
-                <ColumnDefinition Width="220" />
-                <ColumnDefinition Width="16" />
+                <ColumnDefinition Width="230" />
+                <ColumnDefinition Width="24" />
                 <ColumnDefinition Width="*" />
             </Grid.ColumnDefinitions>
 
@@ -49,7 +50,7 @@
             </ListBox>
 
             <ScrollViewer Grid.Column="2" VerticalScrollBarVisibility="Auto">
-                <StackPanel Margin="0,4,0,0" MaxWidth="820" HorizontalAlignment="Left">
+                <StackPanel Margin="0,4,0,0">
                     <!-- General -->
                     <StackPanel Visibility="{Binding IsCategoryGeneral, Converter={StaticResource BoolToVisibility}}">
                         <TextBlock Style="{DynamicResource Typography.Heading}" FontSize="15" Text="{loc:Translate Settings.Group.General}" Margin="0,0,0,12" />

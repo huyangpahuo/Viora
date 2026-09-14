@@ -18,8 +18,8 @@ public sealed class NeonCyberpunkPreset : IStylePreset
     public string? IconGlyph => "\uE7F8";
     public IReadOnlyList<IPresetParameter> Parameters { get; } = new IPresetParameter[]
     {
-        new PresetParameter("glow", "Param.Generic.Glow", 0.6, 0.0, 1.0, 0.05),
-        new PresetParameter("intensity", "Param.Generic.Intensity", 0.6, 0.0, 1.0, 0.05),
+        new PresetParameter("glow", "Param.Generic.Glow", 0.45, 0.0, 1.0, 0.05),
+        new PresetParameter("intensity", "Param.Generic.Intensity", 0.55, 0.0, 1.0, 0.05),
     };
     public IReadOnlyList<IImageProcessingStage> BuildPipeline(IReadOnlyDictionary<string, object> p) => new IImageProcessingStage[] { new NeonCyberpunkStage() };
 }
@@ -69,19 +69,23 @@ public sealed class NeonCyberpunkStage : StageBase
                     int i = y * stride + x * 4;
                     int ni = y * w * 3 + x * 3;
 
-                    // crush shadows toward navy, push saturation
+                    // crush shadows toward navy, tame highlights (anti-overexposure)
                     for (int c = 0; c < 3; c++)
                     {
                         double v = px[i + c] / 255.0;
-                        v = Math.Pow(v, 1.0 + intensity * 0.6);           // deepen shadows
-                        v = Math.Pow(v, 1.0 / (1.0 + intensity * 0.35));  // lift mids
+                        v = Math.Pow(v, 1.0 + intensity * 0.8);           // deepen shadows more
+                        v = Math.Pow(v, 1.35) * 0.92;                     // roll off highlights
                         px[i + c] = ImageOps.Clamp((int)(v * 255));
                     }
 
-                    // additive neon glow
-                    px[i] = ImageOps.Clamp(px[i] + (int)(neon[ni] * 255 * glow));
-                    px[i + 1] = ImageOps.Clamp(px[i + 1] + (int)(neon[ni + 1] * 255 * glow));
-                    px[i + 2] = ImageOps.Clamp(px[i + 2] + (int)(neon[ni + 2] * 255 * glow));
+                    // neon glow: screen-blend (softer than additive) so bulbs don't clip
+                    for (int c = 0; c < 3; c++)
+                    {
+                        double baseV = px[i + c] / 255.0;
+                        double glowV = Math.Min(1.0, neon[ni + c] * 0.62) * glow;
+                        double screen = 1.0 - (1.0 - baseV) * (1.0 - glowV);
+                        px[i + c] = ImageOps.Clamp((int)(screen * 255));
+                    }
                 }
             }
         }, ct);

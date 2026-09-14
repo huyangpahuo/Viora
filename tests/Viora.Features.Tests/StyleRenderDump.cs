@@ -25,9 +25,13 @@ public class StyleRenderDump
         var engine = new ImageConversionEngine();
         string[] targets =
         {
+            "builtin.stippling", "builtin.cross-hatching", "builtin.etching", "builtin.fresco",
+            "builtin.mosaic-glass", "builtin.metal-engraving", "builtin.neon-sign", "builtin.liquid-metal",
+            "builtin.chrome", "builtin.glowing-wireframe", "builtin.torn-paper", "builtin.tape-art",
+            "builtin.string-art", "builtin.sand-art", "builtin.smoke-art", "builtin.light-painting",
+            "builtin.kaleidoscope", "builtin.liquid-marble", "builtin.dithered", "builtin.globe-relief",
             "builtin.low-poly", "builtin.clay", "builtin.halftone", "builtin.collage",
-            "builtin.porcelain", "builtin.origami", "builtin.isometric-diorama",
-            "builtin.mosaic", "builtin.oil-painting", "builtin.watercolor", "builtin.sketch",
+            "builtin.porcelain", "builtin.origami", "builtin.isometric-diorama", "builtin.neon-cyberpunk",
         };
 
         foreach (var (preset, _, _, _) in BuiltInStyles.All)
