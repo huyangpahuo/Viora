@@ -34,3 +34,13 @@ public interface IExportProxy
 
     Task ExportAsync(IImageBuffer buffer, string path, int jpegQuality, CancellationToken ct = default);
 }
+
+/// <summary>UI alert facade (dialogs implemented in App to keep UI project testable).</summary>
+public interface IUiAlert
+{
+    void Info(string message);
+
+    void Warn(string title, string message);
+
+    bool Confirm(string title, string message);
+}

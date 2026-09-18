@@ -1,0 +1,698 @@
+<UserControl
+    x:Class="Viora.UI.Pages.Stylize.StylizePage"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:controls="clr-namespace:Viora.UI.Controls"
+    xmlns:loc="clr-namespace:Viora.UI.Localization">
+
+    <!--
+        风格化工作台(v2 redesign 主界面):
+        中央 = Before/After 大图 + 缩略图条 + 工作模式 Tab(图片/批量处理/历史记录)+ 上传区/示例图;
+        右侧 = 风格卡片面板(分类 Tab + 卡片网格 + 高级设置 + 开始风格化 CTA)。
+        对比分割、缩放平移手势在 code-behind。
+    -->
+
+    <UserControl.InputBindings>
+        <KeyBinding Modifiers="Control" Key="Enter" Command="{Binding RunCommand}" />
+    </UserControl.InputBindings>
+
+    <UserControl.Resources>
+        <!-- 对比状态胶囊 -->
+        <Style x:Key="StateBadge" TargetType="Border">
+            <Setter Property="Background" Value="{DynamicResource Color.Scrim}" />
+            <Setter Property="CornerRadius" Value="9" />
+            <Setter Property="Padding" Value="10,3" />
+        </Style>
+
+        <!-- 缩略图条 -->
+        <Style x:Key="ThumbItem" TargetType="ListBoxItem">
+            <Setter Property="Cursor" Value="Hand" />
+            <Setter Property="FocusVisualStyle" Value="{x:Null}" />
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="ListBoxItem">
+                        <Border x:Name="Root" Width="76" Height="60" CornerRadius="9" Margin="3,0"
+                                BorderThickness="2" BorderBrush="Transparent" ClipToBounds="True">
+                            <ContentPresenter />
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="Root" Property="BorderBrush" Value="#66FFFFFF" />
+                            </Trigger>
+                            <Trigger Property="IsSelected" Value="True">
+                                <Setter TargetName="Root" Property="BorderBrush" Value="{DynamicResource Color.Primary}" />
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <!-- 工作模式 Tab(大号 pill) -->
+        <Style x:Key="ModeTab" TargetType="RadioButton">
+            <Setter Property="Foreground" Value="{DynamicResource Color.Text.Secondary}" />
+            <Setter Property="FontSize" Value="13" />
+            <Setter Property="FontWeight" Value="SemiBold" />
+            <Setter Property="FontFamily" Value="{StaticResource Font.Family}" />
+            <Setter Property="Cursor" Value="Hand" />
+            <Setter Property="FocusVisualStyle" Value="{x:Null}" />
+            <Setter Property="Margin" Value="0,0,18,0" />
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="RadioButton">
+                        <Grid>
+                            <Border x:Name="Pill" Background="Transparent" CornerRadius="10" Padding="14,6">
+                                <ContentPresenter VerticalAlignment="Center" RecognizesAccessKey="True" />
+                            </Border>
+                            <Border x:Name="Underline" Height="3" CornerRadius="1.5" VerticalAlignment="Bottom"
+                                    Margin="10,0" Background="Transparent" />
+                        </Grid>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter Property="Foreground" Value="{DynamicResource Color.Text.Primary}" />
+                            </Trigger>
+                            <Trigger Property="IsChecked" Value="True">
+                                <Setter TargetName="Underline" Property="Background" Value="{DynamicResource Brush.Brand}" />
+                                <Setter Property="Foreground" Value="{DynamicResource Color.Text.Primary}" />
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <!-- 风格分类 chip -->
+        <Style x:Key="CategoryChipItem" TargetType="ListBoxItem">
+            <Setter Property="Foreground" Value="{DynamicResource Color.Text.Secondary}" />
+            <Setter Property="FontSize" Value="12" />
+            <Setter Property="FontFamily" Value="{StaticResource Font.Family}" />
+            <Setter Property="Cursor" Value="Hand" />
+            <Setter Property="FocusVisualStyle" Value="{x:Null}" />
+            <Setter Property="Margin" Value="0,0,8,0" />
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="ListBoxItem">
+                        <Border x:Name="Pill" Background="{DynamicResource Brush.Glass}" CornerRadius="15" Padding="13,5">
+                            <ContentPresenter VerticalAlignment="Center" RecognizesAccessKey="True" />
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="Pill" Property="Background" Value="{DynamicResource Color.StateHover}" />
+                                <Setter Property="Foreground" Value="{DynamicResource Color.Text.Primary}" />
+                            </Trigger>
+                            <Trigger Property="IsSelected" Value="True">
+                                <Setter TargetName="Pill" Property="Background" Value="{DynamicResource Color.Primary}" />
+                                <Setter Property="Foreground" Value="{DynamicResource Color.OnPrimary}" />
+                                <Setter Property="FontWeight" Value="SemiBold" />
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <!-- 风格卡片容器 -->
+        <Style x:Key="StyleCardItem" TargetType="ListBoxItem">
+            <Setter Property="Cursor" Value="Hand" />
+            <Setter Property="FocusVisualStyle" Value="{x:Null}" />
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="ListBoxItem">
+                        <ContentPresenter />
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <!-- 复选框(高级设置 AI 选项) -->
+        <Style x:Key="VioraCheck" TargetType="CheckBox">
+            <Setter Property="Foreground" Value="{DynamicResource Color.Text.Primary}" />
+            <Setter Property="FontSize" Value="12.5" />
+            <Setter Property="FontFamily" Value="{StaticResource Font.Family}" />
+            <Setter Property="Cursor" Value="Hand" />
+            <Setter Property="FocusVisualStyle" Value="{x:Null}" />
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="CheckBox">
+                        <StackPanel Orientation="Horizontal">
+                            <Border x:Name="Box" Width="17" Height="17" CornerRadius="5" VerticalAlignment="Center"
+                                    Background="{DynamicResource Color.SurfaceElevated}"
+                                    BorderBrush="{DynamicResource Color.Outline}" BorderThickness="1">
+                                <controls:VioraIcon x:Name="CheckIcon" Geometry="{StaticResource Icon.Check}" Width="10" Height="10"
+                                                    Foreground="{DynamicResource Color.OnPrimary}" Visibility="Collapsed" />
+                            </Border>
+                            <ContentPresenter VerticalAlignment="Center" Margin="9,0,0,0" RecognizesAccessKey="True" />
+                        </StackPanel>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsChecked" Value="True">
+                                <Setter TargetName="Box" Property="Background" Value="{DynamicResource Color.Primary}" />
+                                <Setter TargetName="Box" Property="BorderBrush" Value="{DynamicResource Color.Primary}" />
+                                <Setter TargetName="CheckIcon" Property="Visibility" Value="Visible" />
+                            </Trigger>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="Box" Property="BorderBrush" Value="{DynamicResource Color.Primary}" />
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+    </UserControl.Resources>
+
+    <Grid Margin="16,14,16,14">
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="*" />
+            <ColumnDefinition Width="420" />
+        </Grid.ColumnDefinitions>
+
+        <!-- ==================== 中央工作区 ==================== -->
+        <Grid Grid.Column="0" Margin="0,0,14,0">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="*" />
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="Auto" />
+            </Grid.RowDefinitions>
+
+            <!-- ======== Before / After 大图 ======== -->
+            <Border x:Name="ViewerBorder" Grid.Row="0" CornerRadius="14" ClipToBounds="True"
+                    Background="{DynamicResource Color.Surface}" BorderBrush="{DynamicResource Color.Border}" BorderThickness="1"
+                    AllowDrop="True" Drop="OnDrop" DragOver="OnDragOver"
+                    PreviewMouseWheel="OnViewportWheel">
+                <Grid>
+                    <!-- 缩放/平移宿主 -->
+                    <Grid x:Name="ZoomHost" RenderTransformOrigin="0.5,0.5" Visibility="{Binding HasImage, Converter={StaticResource BoolToVisibility}}">
+                        <Grid.RenderTransform>
+                            <TransformGroup>
+                                <ScaleTransform ScaleX="{Binding Zoom}" ScaleY="{Binding Zoom}" />
+                                <TranslateTransform X="{Binding PanX}" Y="{Binding PanY}" />
+                            </TransformGroup>
+                        </Grid.RenderTransform>
+
+                        <!-- 仅原图(无结果或选择原图) -->
+                        <Image Source="{Binding OriginalImageSource}" Stretch="Uniform" Margin="16"
+                               RenderOptions.BitmapScalingMode="LowQuality"
+                               Visibility="{Binding ShowOriginalOnly, Converter={StaticResource BoolToVisibility}}" />
+
+                        <!-- 仅结果 -->
+                        <Image Source="{Binding ResultImageSource}" Stretch="Uniform" Margin="16"
+                               RenderOptions.BitmapScalingMode="LowQuality"
+                               Visibility="{Binding ShowResultOnly, Converter={StaticResource BoolToVisibility}}" />
+
+                        <!-- 并排 -->
+                        <Grid Visibility="{Binding ShowCompareSide, Converter={StaticResource BoolToVisibility}}">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*" />
+                                <ColumnDefinition Width="*" />
+                            </Grid.ColumnDefinitions>
+                            <Image Grid.Column="0" Source="{Binding OriginalImageSource}" Stretch="Uniform" Margin="16"
+                                   RenderOptions.BitmapScalingMode="LowQuality" />
+                            <Image Grid.Column="1" Source="{Binding ResultImageSource}" Stretch="Uniform" Margin="16"
+                                   RenderOptions.BitmapScalingMode="LowQuality" />
+                        </Grid>
+
+                        <!-- Before/After 分屏:CompareRoot 精确贴合图片内容区 -->
+                        <Grid Visibility="{Binding ShowCompareSplit, Converter={StaticResource BoolToVisibility}}" Cursor="SizeWE">
+                            <Grid x:Name="CompareRoot" HorizontalAlignment="Center" VerticalAlignment="Center">
+                                <Image x:Name="OriginalHost" Source="{Binding OriginalImageSource}" Stretch="Uniform"
+                                       RenderOptions.BitmapScalingMode="LowQuality" />
+                                <Image x:Name="ResultHost" Source="{Binding ResultImageSource}" Stretch="Uniform"
+                                       RenderOptions.BitmapScalingMode="LowQuality">
+                                    <Image.Clip>
+                                        <RectangleGeometry x:Name="ResultClip" Rect="0,0,0,0" />
+                                    </Image.Clip>
+                                </Image>
+
+                                <Canvas x:Name="SplitOverlay" IsHitTestVisible="False">
+                                    <Rectangle x:Name="DividerLine" Width="2" RadiusX="1" RadiusY="1"
+                                               Fill="{DynamicResource Color.Primary}" />
+                                    <Border x:Name="DividerGrip" Width="34" Height="34" CornerRadius="17"
+                                            Background="{DynamicResource Color.Primary}"
+                                            Effect="{DynamicResource Shadow.PrimaryGlow}">
+                                        <Grid>
+                                            <controls:VioraIcon Geometry="{StaticResource Icon.ChevronLeft}" Width="8" Height="8"
+                                                                HorizontalAlignment="Left" VerticalAlignment="Center" Margin="7,0,0,0"
+                                                                Foreground="{DynamicResource Color.OnPrimary}" />
+                                            <controls:VioraIcon Geometry="{StaticResource Icon.ChevronRight}" Width="8" Height="8"
+                                                                HorizontalAlignment="Right" VerticalAlignment="Center" Margin="0,0,7,0"
+                                                                Foreground="{DynamicResource Color.OnPrimary}" />
+                                        </Grid>
+                                    </Border>
+                                </Canvas>
+                            </Grid>
+                        </Grid>
+                    </Grid>
+
+                    <!-- 分割拖拽 / 平移手势面 -->
+                    <Canvas x:Name="SplitHandle" Background="Transparent" AllowDrop="True" Cursor="SizeWE"
+                            Drop="OnDrop" DragOver="OnDragOver"
+                            MouseLeftButtonDown="OnSplitDown" MouseMove="OnSplitMove" MouseLeftButtonUp="OnSplitUp"
+                            MouseRightButtonDown="OnDoubleResetSplit" />
+
+                    <!-- 状态标签:原图 / 风格化后 -->
+                    <Border Style="{StaticResource StateBadge}" HorizontalAlignment="Left" VerticalAlignment="Top" Margin="14,12,0,0"
+                            Visibility="{Binding CanCompare, Converter={StaticResource BoolToVisibility}}">
+                        <TextBlock Text="{loc:Translate Stylize.Badge.Original}" FontSize="11.5" Foreground="{DynamicResource Color.Text.Primary}" />
+                    </Border>
+                    <Border HorizontalAlignment="Right" VerticalAlignment="Top" Margin="0,12,14,0" CornerRadius="9" Padding="10,3"
+                            Background="{DynamicResource Brush.BrandSoft}"
+                            Visibility="{Binding CanCompare, Converter={StaticResource BoolToVisibility}}">
+                        <TextBlock Text="{loc:Translate Stylize.Badge.Stylized}" FontSize="11.5" FontWeight="SemiBold" Foreground="White" />
+                    </Border>
+
+                    <!-- 缩放工具条 + 导出 -->
+                    <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" VerticalAlignment="Bottom" Margin="0,0,14,14"
+                                Visibility="{Binding HasImage, Converter={StaticResource BoolToVisibility}}">
+                        <Border Background="{DynamicResource Color.Scrim}" CornerRadius="15" Padding="6,2">
+                            <StackPanel Orientation="Horizontal">
+                                <Button Style="{DynamicResource IconButton}" Width="30" Height="30" Command="{Binding ZoomOutCommand}" ToolTip="{loc:Translate Stylize.ZoomOut}">
+                                    <controls:VioraIcon Geometry="{StaticResource Icon.MagnifyingGlassMinus}" Width="13" Height="13"
+                                                        Foreground="{Binding Foreground, RelativeSource={RelativeSource AncestorType=Button}}" />
+                                </Button>
+                                <TextBlock Text="{Binding ZoomPercent}" FontSize="11.5" Foreground="{DynamicResource Color.Text.Primary}"
+                                           VerticalAlignment="Center" MinWidth="40" TextAlignment="Center" />
+                                <Button Style="{DynamicResource IconButton}" Width="30" Height="30" Command="{Binding ZoomInCommand}" ToolTip="{loc:Translate Stylize.ZoomIn}">
+                                    <controls:VioraIcon Geometry="{StaticResource Icon.MagnifyingGlassPlus}" Width="13" Height="13"
+                                                        Foreground="{Binding Foreground, RelativeSource={RelativeSource AncestorType=Button}}" />
+                                </Button>
+                                <Button Style="{DynamicResource IconButton}" Width="30" Height="30" Command="{Binding ZoomFitCommand}" ToolTip="{loc:Translate Stylize.ZoomFit}">
+                                    <controls:VioraIcon Geometry="{StaticResource Icon.Expand}" Width="12" Height="12"
+                                                        Foreground="{Binding Foreground, RelativeSource={RelativeSource AncestorType=Button}}" />
+                                </Button>
+                            </StackPanel>
+                        </Border>
+                        <Button Style="{DynamicResource IconButton}" Width="38" Height="38" Margin="8,0,0,0"
+                                Command="{Binding ExportCommand}" ToolTip="{loc:Translate Stylize.Export}"
+                                Visibility="{Binding HasResult, Converter={StaticResource BoolToVisibility}}">
+                            <Border Background="{DynamicResource Brush.Brand}" CornerRadius="17" Width="30" Height="30">
+                                <controls:VioraIcon Geometry="{StaticResource Icon.Download}" Width="14" Height="14" Foreground="White" />
+                            </Border>
+                        </Button>
+                    </StackPanel>
+
+                    <!-- 空状态:整块即上传区 -->
+                    <Button Command="{Binding ImportCommand}"
+                            Visibility="{Binding HasImage, Converter={StaticResource InverseBoolToVisibility}}">
+                        <Button.Template>
+                            <ControlTemplate TargetType="Button">
+                                <Border Background="Transparent" Cursor="Hand">
+                                    <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center" Margin="0,0,0,20">
+                                        <Border Width="78" Height="78" CornerRadius="22" HorizontalAlignment="Center"
+                                                Background="{DynamicResource Brush.Glass}" BorderBrush="{DynamicResource Color.Outline}"
+                                                BorderThickness="1">
+                                            <controls:VioraIcon Geometry="{StaticResource Icon.FileImage}" Width="32" Height="32"
+                                                                Foreground="{DynamicResource Color.Primary}" />
+                                        </Border>
+                                        <TextBlock Text="{loc:Translate Stylize.Empty.Title}" FontSize="15" FontWeight="SemiBold"
+                                                   Foreground="{DynamicResource Color.Text.Primary}" HorizontalAlignment="Center" Margin="0,18,0,0" />
+                                        <TextBlock Text="{loc:Translate Stylize.Empty.Subtitle}" FontSize="12"
+                                                   Foreground="{DynamicResource Color.Text.Secondary}" HorizontalAlignment="Center" Margin="0,7,0,0" />
+                                    </StackPanel>
+                                </Border>
+                            </ControlTemplate>
+                        </Button.Template>
+                    </Button>
+
+                    <!-- 处理中遮罩 -->
+                    <Border Background="{DynamicResource Color.Scrim}" Visibility="{Binding IsBusy, Converter={StaticResource BoolToVisibility}}">
+                        <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center" Width="260">
+                            <TextBlock Text="{loc:Translate Stylize.Generating}" FontSize="14" FontWeight="SemiBold"
+                                       Foreground="{DynamicResource Color.Text.Primary}" HorizontalAlignment="Center" />
+                            <ProgressBar Height="4" Minimum="0" Maximum="1" Value="{Binding ProgressFraction, Mode=OneWay}" Margin="0,14,0,0"
+                                         Foreground="{DynamicResource Color.Primary}" Background="{DynamicResource Color.SurfaceHigh}"
+                                         BorderThickness="0" />
+                            <Grid Margin="0,10,0,0">
+                                <TextBlock Text="{Binding StatusText}" FontSize="11.5" Foreground="{DynamicResource Color.Text.Secondary}"
+                                           HorizontalAlignment="Center" />
+                                <Button Style="{DynamicResource IconButton}" Width="26" Height="26" HorizontalAlignment="Right"
+                                        Command="{Binding CancelCommand}" ToolTip="{loc:Translate Stylize.Cancel}">
+                                    <controls:VioraIcon Geometry="{StaticResource Icon.Xmark}" Width="11" Height="11"
+                                                        Foreground="{Binding Foreground, RelativeSource={RelativeSource AncestorType=Button}}" />
+                                </Button>
+                            </Grid>
+                        </StackPanel>
+                    </Border>
+
+                    <!-- 失败遮罩 -->
+                    <Border Background="#C0101020" Padding="24,18"
+                            Visibility="{Binding SelectedItem.IsFailed, Converter={StaticResource BoolToVisibility}, FallbackValue=Collapsed}">
+                        <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center">
+                            <controls:VioraIcon Geometry="{StaticResource Icon.CircleXmark}" Width="34" Height="34"
+                                                Foreground="{DynamicResource Color.Danger}" HorizontalAlignment="Center" />
+                            <TextBlock Text="{loc:Translate Stylize.Failed}" FontSize="14" FontWeight="SemiBold"
+                                       Foreground="{DynamicResource Color.Text.Primary}" HorizontalAlignment="Center" Margin="0,10,0,0" />
+                            <Button Style="{DynamicResource SecondaryButton}" Command="{Binding RetryCommand}" Margin="0,12,0,0"
+                                    Content="{loc:Translate Stylize.Retry}" HorizontalAlignment="Center" />
+                        </StackPanel>
+                    </Border>
+                </Grid>
+            </Border>
+
+            <!-- ======== 缩略图条 ======== -->
+            <Border Grid.Row="1" Margin="0,12,0,0" CornerRadius="14" Padding="12,9"
+                    Background="{DynamicResource Color.Surface}" BorderBrush="{DynamicResource Color.Border}" BorderThickness="1"
+                    Visibility="{Binding HasImage, Converter={StaticResource BoolToVisibility}}">
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="Auto" />
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="Auto" />
+                    </Grid.ColumnDefinitions>
+
+                    <!-- 翻页器 -->
+                    <StackPanel Grid.Column="0" Orientation="Horizontal" VerticalAlignment="Center">
+                        <Button Style="{DynamicResource IconButton}" Width="28" Height="28" Command="{Binding PreviousItemCommand}">
+                            <controls:VioraIcon Geometry="{StaticResource Icon.ChevronLeft}" Width="11" Height="11"
+                                                Foreground="{Binding Foreground, RelativeSource={RelativeSource AncestorType=Button}}" />
+                        </Button>
+                        <TextBlock Text="{Binding ItemsSummary}" FontSize="12" MinWidth="44" TextAlignment="Center"
+                                   VerticalAlignment="Center" Foreground="{DynamicResource Color.Text.Primary}" />
+                        <Button Style="{DynamicResource IconButton}" Width="28" Height="28" Command="{Binding NextItemCommand}">
+                            <controls:VioraIcon Geometry="{StaticResource Icon.ChevronRight}" Width="11" Height="11"
+                                                Foreground="{Binding Foreground, RelativeSource={RelativeSource AncestorType=Button}}" />
+                        </Button>
+                    </StackPanel>
+
+                    <!-- 缩略图列表 -->
+                    <ListBox Grid.Column="1" BorderThickness="0" Background="Transparent"
+                             ItemsSource="{Binding Items}" SelectedItem="{Binding SelectedItem}"
+                             ItemContainerStyle="{StaticResource ThumbItem}"
+                             ScrollViewer.VerticalScrollBarVisibility="Disabled"
+                             ScrollViewer.HorizontalScrollBarVisibility="Auto">
+                        <ListBox.ItemsPanel>
+                            <ItemsPanelTemplate>
+                                <StackPanel Orientation="Horizontal" />
+                            </ItemsPanelTemplate>
+                        </ListBox.ItemsPanel>
+                        <ListBox.ItemTemplate>
+                            <DataTemplate>
+                                <Image Source="{Binding SourceImage}" Stretch="UniformToFill" Width="72" Height="56"
+                                       RenderOptions.BitmapScalingMode="LowQuality" />
+                            </DataTemplate>
+                        </ListBox.ItemTemplate>
+                    </ListBox>
+
+                    <!-- 删除当前 -->
+                    <Button Grid.Column="2" Style="{DynamicResource IconButton}" Width="32" Height="32" VerticalAlignment="Center"
+                            Command="{Binding DeleteCurrentItemCommand}" ToolTip="{loc:Translate Stylize.DeleteItem}">
+                        <controls:VioraIcon Geometry="{StaticResource Icon.TrashCan}" Width="14" Height="14"
+                                            Foreground="{Binding Foreground, RelativeSource={RelativeSource AncestorType=Button}}" />
+                    </Button>
+                </Grid>
+            </Border>
+
+            <!-- ======== 工作模式 + 上传区 ======== -->
+            <Border Grid.Row="2" Margin="0,12,0,0" CornerRadius="14" Padding="16,12"
+                    Background="{DynamicResource Color.Surface}" BorderBrush="{DynamicResource Color.Border}" BorderThickness="1">
+                <StackPanel>
+                    <StackPanel Orientation="Horizontal">
+                        <RadioButton GroupName="WorkMode" Style="{StaticResource ModeTab}" Content="{loc:Translate Stylize.Tab.Image}"
+                                     IsChecked="{Binding Mode, Converter={StaticResource Equals}, ConverterParameter=Image, Mode=TwoWay}" />
+                        <RadioButton GroupName="WorkMode" Style="{StaticResource ModeTab}" Content="{loc:Translate Stylize.Tab.Batch}"
+                                     IsChecked="{Binding Mode, Converter={StaticResource Equals}, ConverterParameter=Batch, Mode=TwoWay}" />
+                        <RadioButton GroupName="WorkMode" Style="{StaticResource ModeTab}" Content="{loc:Translate Stylize.Tab.History}"
+                                     IsChecked="{Binding Mode, Converter={StaticResource Equals}, ConverterParameter=History, Mode=TwoWay}" />
+                    </StackPanel>
+
+                    <!-- 图片模式:上传区 + 示例 -->
+                    <Grid Margin="0,12,0,2" Visibility="{Binding IsImageMode, Converter={StaticResource BoolToVisibility}}">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="190" />
+                        </Grid.ColumnDefinitions>
+
+                        <!-- 拖放上传媒区(虚线圆角框) -->
+                        <Button Grid.Column="0" Command="{Binding ImportCommand}" HorizontalAlignment="Stretch" HorizontalContentAlignment="Stretch" Margin="0,0,12,0">
+                            <Button.Template>
+                                <ControlTemplate TargetType="Button">
+                                    <Grid Cursor="Hand">
+                                        <Rectangle x:Name="Drop" Fill="{DynamicResource Brush.Glass}"
+                                                   Stroke="{DynamicResource Color.Outline}" StrokeThickness="1.6"
+                                                   StrokeDashArray="5 4" RadiusX="12" RadiusY="12" />
+                                        <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center" Margin="18">
+                                            <Border Width="44" Height="44" CornerRadius="13" HorizontalAlignment="Center"
+                                                    Background="{DynamicResource Color.SurfaceElevated}">
+                                                <controls:VioraIcon Geometry="{StaticResource Icon.FileImage}" Width="20" Height="20"
+                                                                    Foreground="{DynamicResource Color.Primary}" />
+                                            </Border>
+                                            <TextBlock Text="{loc:Translate Stylize.Drop.Title}" FontSize="13" FontWeight="SemiBold"
+                                                       Foreground="{DynamicResource Color.Text.Primary}" HorizontalAlignment="Center" Margin="0,10,0,0" />
+                                            <TextBlock Text="{loc:Translate Stylize.Drop.Subtitle}" FontSize="11"
+                                                       Foreground="{DynamicResource Color.Text.Secondary}" HorizontalAlignment="Center" Margin="0,5,0,0" />
+                                        </StackPanel>
+                                    </Grid>
+                                    <ControlTemplate.Triggers>
+                                        <Trigger Property="IsMouseOver" Value="True">
+                                            <Setter TargetName="Drop" Property="Stroke" Value="{DynamicResource Color.Primary}" />
+                                        </Trigger>
+                                    </ControlTemplate.Triggers>
+                                </ControlTemplate>
+                            </Button.Template>
+                        </Button>
+
+                        <!-- 示例图片 -->
+                        <Button Grid.Column="1" Command="{Binding LoadSampleCommand}" HorizontalContentAlignment="Stretch">
+                            <Button.Template>
+                                <ControlTemplate TargetType="Button">
+                                    <Border x:Name="Sample" Background="{DynamicResource Brush.Glass}" CornerRadius="12" Padding="12"
+                                            BorderBrush="{DynamicResource Color.Border}" BorderThickness="1" Cursor="Hand">
+                                        <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                                            <Border Width="52" Height="52" CornerRadius="9" ClipToBounds="True">
+                                                <Image Source="pack://application:,,,/Viora.UI;component/sample.jpg" Stretch="UniformToFill" />
+                                            </Border>
+                                            <StackPanel Margin="11,0,0,0" VerticalAlignment="Center">
+                                                <TextBlock Text="{loc:Translate Stylize.Sample.Title}" FontSize="13" FontWeight="SemiBold"
+                                                           Foreground="{DynamicResource Color.Text.Primary}" />
+                                                <TextBlock Text="{loc:Translate Stylize.Sample.Subtitle}" FontSize="10.5" TextWrapping="Wrap"
+                                                           Foreground="{DynamicResource Color.Text.Secondary}" Margin="0,3,0,0" />
+                                            </StackPanel>
+                                        </StackPanel>
+                                    </Border>
+                                    <ControlTemplate.Triggers>
+                                        <Trigger Property="IsMouseOver" Value="True">
+                                            <Setter TargetName="Sample" Property="BorderBrush" Value="{DynamicResource Color.Primary}" />
+                                        </Trigger>
+                                    </ControlTemplate.Triggers>
+                                </ControlTemplate>
+                            </Button.Template>
+                        </Button>
+                    </Grid>
+
+                    <!-- 批量处理占位 -->
+                    <StackPanel Margin="0,14,0,6" Visibility="{Binding IsBatchMode, Converter={StaticResource BoolToVisibility}}">
+                        <TextBlock Text="{loc:Translate Stylize.Tab.Batch.Empty}" FontSize="12.5"
+                                   Foreground="{DynamicResource Color.Text.Secondary}" HorizontalAlignment="Center" Margin="0,6" />
+                    </StackPanel>
+
+                    <!-- 历史记录占位 -->
+                    <StackPanel Margin="0,14,0,6" Visibility="{Binding IsHistoryMode, Converter={StaticResource BoolToVisibility}}">
+                        <TextBlock Text="{loc:Translate Stylize.Tab.History.Empty}" FontSize="12.5"
+                                   Foreground="{DynamicResource Color.Text.Secondary}" HorizontalAlignment="Center" Margin="0,6" />
+                    </StackPanel>
+                </StackPanel>
+            </Border>
+        </Grid>
+
+        <!-- ==================== 右侧风格面板 ==================== -->
+        <Border Grid.Column="1" CornerRadius="14" Padding="16,14" Background="{DynamicResource Color.Surface}"
+                BorderBrush="{DynamicResource Color.Border}" BorderThickness="1">
+            <Grid>
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="*" />
+                    <RowDefinition Height="Auto" />
+                </Grid.RowDefinitions>
+
+                <!-- 面板头部 -->
+                <Grid Grid.Row="0" Margin="0,0,0,2">
+                    <StackPanel Orientation="Horizontal">
+                        <TextBlock Text="{loc:Translate Stylize.Panel.ChooseStyle}" FontSize="17" FontWeight="Bold"
+                                   Foreground="{DynamicResource Color.Text.Primary}" VerticalAlignment="Center" />
+                        <Border Background="{DynamicResource Brush.Brand}" CornerRadius="9" Padding="9,3" Margin="9,0,0,0" VerticalAlignment="Center">
+                            <TextBlock Text="{loc:Translate Stylize.Panel.Recommended}" FontSize="10.5" FontWeight="SemiBold" Foreground="White" />
+                        </Border>
+                    </StackPanel>
+                    <Button Style="{DynamicResource SecondaryButton}" Height="30" Padding="12,0" FontSize="11.5" HorizontalAlignment="Right"
+                            Command="{Binding ResetParametersCommand}" ToolTip="{loc:Translate Stylize.Reset}">
+                        <StackPanel Orientation="Horizontal">
+                            <controls:VioraIcon Geometry="{StaticResource Icon.ArrowRotateLeft}" Width="11" Height="11"
+                                                Foreground="{Binding Foreground, RelativeSource={RelativeSource AncestorType=Button}}" />
+                            <TextBlock Text="{loc:Translate Stylize.Reset}" FontSize="11.5" Margin="6,0,0,0" VerticalAlignment="Center" />
+                        </StackPanel>
+                    </Button>
+                </Grid>
+
+                <!-- 分类 chips -->
+                <ListBox Grid.Row="1" Margin="0,6,0,12" BorderThickness="0" Background="Transparent" Padding="0"
+                         ItemsSource="{Binding CategoryFilters}" SelectedItem="{Binding CategoryFilter}"
+                         ItemContainerStyle="{StaticResource CategoryChipItem}"
+                         ScrollViewer.VerticalScrollBarVisibility="Disabled"
+                         ScrollViewer.HorizontalScrollBarVisibility="Disabled">
+                    <ListBox.ItemsPanel>
+                        <ItemsPanelTemplate>
+                            <StackPanel Orientation="Horizontal" />
+                        </ItemsPanelTemplate>
+                    </ListBox.ItemsPanel>
+                    <ListBox.ItemTemplate>
+                        <DataTemplate>
+                            <TextBlock Text="{Binding Converter={StaticResource TranslateKey}}" />
+                        </DataTemplate>
+                    </ListBox.ItemTemplate>
+                </ListBox>
+
+                <!-- 风格卡片网格 -->
+                <ScrollViewer Grid.Row="2" VerticalScrollBarVisibility="Auto">
+                    <ListBox BorderThickness="0" Background="Transparent" Margin="-4"
+                             ItemsSource="{Binding FilteredStyles}" SelectedItem="{Binding SelectedStyle}"
+                             ItemContainerStyle="{StaticResource StyleCardItem}"
+                             ScrollViewer.VerticalScrollBarVisibility="Disabled"
+                             ScrollViewer.HorizontalScrollBarVisibility="Disabled">
+                        <ListBox.ItemsPanel>
+                            <ItemsPanelTemplate>
+                                <WrapPanel />
+                            </ItemsPanelTemplate>
+                        </ListBox.ItemsPanel>
+                        <ListBox.ItemTemplate>
+                            <DataTemplate>
+                                <Border x:Name="Card" Width="112" Margin="3,3" CornerRadius="12" ClipToBounds="True"
+                                        Background="{DynamicResource Color.SurfaceElevated}"
+                                        BorderBrush="{DynamicResource Color.Border}" BorderThickness="1.4">
+                                    <StackPanel>
+                                        <Border Height="72" Background="{Binding TileBrush}">
+                                            <Grid>
+                                                <controls:VioraIcon Geometry="{StaticResource Icon.WandMagicSparkles}" Width="22" Height="22"
+                                                                    Foreground="#59FFFFFF" HorizontalAlignment="Center" VerticalAlignment="Center" />
+                                                <Border x:Name="CheckBadge" Width="19" Height="19" CornerRadius="10" Background="{DynamicResource Color.Primary}"
+                                                        HorizontalAlignment="Right" VerticalAlignment="Top" Margin="0,7,7,0" Visibility="Collapsed"
+                                                        Effect="{DynamicResource Shadow.Card}">
+                                                    <controls:VioraIcon Geometry="{StaticResource Icon.Check}" Width="9" Height="9" Foreground="White" />
+                                                </Border>
+                                            </Grid>
+                                        </Border>
+                                        <TextBlock Text="{Binding Name}" FontSize="11.5" Margin="0,7,0,8" TextTrimming="CharacterEllipsis"
+                                                   Foreground="{DynamicResource Color.Text.Primary}" HorizontalAlignment="Center" />
+                                    </StackPanel>
+                                </Border>
+                                <DataTemplate.Triggers>
+                                    <DataTrigger Binding="{Binding IsSelected, RelativeSource={RelativeSource AncestorType=ListBoxItem}}" Value="True">
+                                        <Setter TargetName="Card" Property="BorderBrush" Value="{DynamicResource Color.Primary}" />
+                                        <Setter TargetName="Card" Property="Effect" Value="{DynamicResource Shadow.PrimaryGlow}" />
+                                        <Setter TargetName="CheckBadge" Property="Visibility" Value="Visible" />
+                                    </DataTrigger>
+                                </DataTemplate.Triggers>
+                            </DataTemplate>
+                        </ListBox.ItemTemplate>
+                    </ListBox>
+                </ScrollViewer>
+
+                <!-- 底部:高级设置 + CTA -->
+                <StackPanel Grid.Row="3" Margin="0,12,0,0">
+                    <ToggleButton x:Name="AdvancedToggle" IsChecked="True" FocusVisualStyle="{x:Null}" Cursor="Hand">
+                        <ToggleButton.Template>
+                            <ControlTemplate TargetType="ToggleButton">
+                                <Border Background="Transparent" Padding="2,6">
+                                    <StackPanel Orientation="Horizontal">
+                                        <controls:VioraIcon Geometry="{StaticResource Icon.Gear}" Width="14" Height="14"
+                                                            Foreground="{DynamicResource Color.Text.Secondary}" />
+                                        <TextBlock Text="{loc:Translate Stylize.Advanced}" FontSize="13" FontWeight="SemiBold" Margin="9,0,0,0"
+                                                   Foreground="{DynamicResource Color.Text.Primary}" VerticalAlignment="Center" />
+                                        <controls:VioraIcon x:Name="Chevron" Geometry="{StaticResource Icon.ChevronDown}" Width="11" Height="11"
+                                                            Margin="0,1,0,0" RenderTransformOrigin="0.5,0.5"
+                                                            Foreground="{DynamicResource Color.Text.Secondary}">
+                                            <controls:VioraIcon.RenderTransform>
+                                                <RotateTransform Angle="0" />
+                                            </controls:VioraIcon.RenderTransform>
+                                        </controls:VioraIcon>
+                                    </StackPanel>
+                                </Border>
+                                <ControlTemplate.Triggers>
+                                    <Trigger Property="IsChecked" Value="False">
+                                        <Trigger.EnterActions>
+                                            <BeginStoryboard>
+                                                <Storyboard>
+                                                    <DoubleAnimation Storyboard.TargetName="Chevron" Storyboard.TargetProperty="(RenderTransform).Angle"
+                                                                     To="-90" Duration="0:0:0.15" />
+                                                </Storyboard>
+                                            </BeginStoryboard>
+                                        </Trigger.EnterActions>
+                                        <Trigger.ExitActions>
+                                            <BeginStoryboard>
+                                                <Storyboard>
+                                                    <DoubleAnimation Storyboard.TargetName="Chevron" Storyboard.TargetProperty="(RenderTransform).Angle"
+                                                                     To="0" Duration="0:0:0.15" />
+                                                </Storyboard>
+                                            </BeginStoryboard>
+                                        </Trigger.ExitActions>
+                                    </Trigger>
+                                </ControlTemplate.Triggers>
+                            </ControlTemplate>
+                        </ToggleButton.Template>
+                    </ToggleButton>
+
+                    <StackPanel Visibility="{Binding IsChecked, ElementName=AdvancedToggle, Converter={StaticResource BoolToVisibility}}" Margin="2,8,0,0">
+                        <ItemsControl ItemsSource="{Binding Parameters}">
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate>
+                                    <StackPanel Margin="0,0,0,12">
+                                        <Grid>
+                                            <TextBlock Text="{Binding Label}" FontSize="12" Foreground="{DynamicResource Color.Text.Primary}" VerticalAlignment="Center" />
+                                            <Border HorizontalAlignment="Right" Background="{DynamicResource Color.SurfaceElevated}"
+                                                    CornerRadius="6" Padding="8,2" BorderBrush="{DynamicResource Color.Border}" BorderThickness="1">
+                                                <TextBlock Text="{Binding ValueDisplay}" FontSize="11.5" FontWeight="SemiBold"
+                                                           Foreground="{DynamicResource Color.Primary}" />
+                                            </Border>
+                                        </Grid>
+                                        <Slider Style="{DynamicResource VioraSlider}" Minimum="{Binding Minimum}" Maximum="{Binding Maximum}"
+                                                Value="{Binding SliderValue, Mode=TwoWay}" TickFrequency="{Binding Step}"
+                                                IsSnapToTickEnabled="True" Margin="0,6,0,0" />
+                                    </StackPanel>
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+
+                        <CheckBox Style="{StaticResource VioraCheck}" IsChecked="{Binding AiQualityMode}" Margin="0,2,0,2">
+                            <StackPanel Orientation="Horizontal">
+                                <TextBlock Text="{loc:Translate Stylize.AiQuality}" />
+                                <controls:VioraIcon Geometry="{StaticResource Icon.CircleQuestion}" Width="13" Height="13" Margin="7,1,0,0"
+                                                    Foreground="{DynamicResource Color.Text.Secondary}"
+                                                    ToolTip="{loc:Translate Stylize.AiQuality.Tip}" />
+                            </StackPanel>
+                        </CheckBox>
+                    </StackPanel>
+
+                    <!-- CTA -->
+                    <Button Command="{Binding RunCommand}" Height="52" Margin="0,10,0,0" FocusVisualStyle="{x:Null}" Cursor="Hand">
+                        <Button.Template>
+                            <ControlTemplate TargetType="Button">
+                                <Border x:Name="Root" Background="{DynamicResource Brush.Brand}" CornerRadius="15"
+                                        Effect="{DynamicResource Shadow.BrandGlow}" Padding="18,0">
+                                    <Grid>
+                                        <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
+                                            <controls:VioraIcon Geometry="{StaticResource Icon.WandMagicSparkles}" Width="17" Height="17" Foreground="White" VerticalAlignment="Center" />
+                                            <TextBlock Text="{Binding DataContext.CtaText, RelativeSource={RelativeSource AncestorType=UserControl}}"
+                                                       FontSize="15" FontWeight="Bold" Foreground="White" Margin="10,0,0,0" VerticalAlignment="Center" />
+                                        </StackPanel>
+                                        <TextBlock Text="Ctrl + Enter" FontSize="11" Foreground="#C8FFFFFF"
+                                                   HorizontalAlignment="Right" VerticalAlignment="Center" />
+                                    </Grid>
+                                </Border>
+                                <ControlTemplate.Triggers>
+                                    <Trigger Property="IsMouseOver" Value="True">
+                                        <Setter TargetName="Root" Property="Opacity" Value="0.94" />
+                                    </Trigger>
+                                    <Trigger Property="IsPressed" Value="True">
+                                        <Setter TargetName="Root" Property="Opacity" Value="0.86" />
+                                    </Trigger>
+                                    <Trigger Property="IsEnabled" Value="False">
+                                        <Setter TargetName="Root" Property="Opacity" Value="0.45" />
+                                        <Setter TargetName="Root" Property="Effect" Value="{x:Null}" />
+                                    </Trigger>
+                                </ControlTemplate.Triggers>
+                            </ControlTemplate>
+                        </Button.Template>
+                    </Button>
+                </StackPanel>
+            </Grid>
+        </Border>
+    </Grid>
+</UserControl>

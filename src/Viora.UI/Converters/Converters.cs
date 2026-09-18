@@ -120,6 +120,47 @@ public sealed class TranslateKeyConverter : IValueConverter
 }
 
 /// <summary>
+/// Icon key (e.g. "Gear") → geometry from the generated icon library (Assets/Icons.xaml,
+/// key "Icon." + name). View models stay string-keyed so they never touch WPF resources.
+/// </summary>
+public sealed class IconKeyConverter : IValueConverter
+{
+    public object? Convert(object? value, Type targetType, object parameter, CultureInfo culture) =>
+        value is string key
+            ? System.Windows.Application.Current.TryFindResource("Icon." + key)
+            : null;
+
+    public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture) =>
+        throw new NotSupportedException();
+}
+
+/// <summary>Language code (value) → display name ("中文" / "English").</summary>
+public sealed class LanguageDisplayNameConverter : IValueConverter
+{
+    public object Convert(object? value, Type targetType, object parameter, CultureInfo culture) =>
+        Viora.UI.Shell.ShellViewModel.LanguageDisplayName(value as string ?? string.Empty);
+
+    public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture) =>
+        throw new NotSupportedException();
+}
+
+/// <summary>
+/// Language code (value) == display name (parameter, the current language) — drives the
+/// check mark on language menu items.
+/// </summary>
+public sealed class LanguageEqualsCurrentConverter : IValueConverter
+{
+    public object Convert(object? value, Type targetType, object parameter, CultureInfo culture) =>
+        string.Equals(
+            Viora.UI.Shell.ShellViewModel.LanguageDisplayName(value as string ?? string.Empty),
+            parameter as string,
+            StringComparison.Ordinal);
+
+    public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture) =>
+        throw new NotSupportedException();
+}
+
+/// <summary>
 /// value.ToString() == parameter.ToString() → bool. ConvertBack: true → Enum.Parse(targetType,
 /// parameter) — lets a group of RadioButtons bind one enum (compare mode switcher).
 /// </summary>

@@ -1,5 +1,4 @@
 using System.Windows;
-using Viora.UI.Pages.Plugins;
 using Viora.UI.Services;
 
 namespace Viora.App.Hosting;

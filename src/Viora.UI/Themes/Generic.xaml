@@ -2,11 +2,10 @@
     xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
     <ResourceDictionary.MergedDictionaries>
+        <ResourceDictionary Source="pack://application:,,,/Viora.UI;component/Assets/Icons.xaml" />
         <ResourceDictionary Source="pack://application:,,,/Viora.UI;component/Themes/Core.xaml" />
         <ResourceDictionary Source="pack://application:,,,/Viora.UI;component/Themes/Converters.xaml" />
         <ResourceDictionary Source="pack://application:,,,/Viora.UI;component/Themes/Tokens.xaml" />
-        <ResourceDictionary Source="pack://application:,,,/Viora.UI;component/Themes/Navigation.xaml" />
-        <ResourceDictionary Source="pack://application:,,,/Viora.UI;component/Themes/PageChrome.xaml" />
         <ResourceDictionary Source="pack://application:,,,/Viora.UI;component/Themes/Controls.xaml" />
     </ResourceDictionary.MergedDictionaries>
 </ResourceDictionary>

@@ -3,46 +3,48 @@
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
 
     <!--
-        Viora Fluent Design Tokens (dark, default)
-        Material Design 3 tonal palette + Fluent elevation/state-layer language.
+        Viora palette: Brand (deep blue-black + violet→blue gradient, dark, DEFAULT)
+
+        The Viora brand look from the redesign spec:
+        深色背景 + 紫蓝渐变 + 半透明玻璃 + 柔和发光.
         All page XAML consumes these names only; ThemeManager swaps this file
-        for Tokens.Light.xaml at runtime.
+        for other Tokens.*.xaml palettes at runtime.
     -->
 
-    <!-- ============ MD3 tonal palette (dark) ============ -->
-    <Color x:Key="Color.PrimaryColor">#FF82B1FF</Color>
-    <Color x:Key="Color.OnPrimaryColor">#FF0031CB</Color>
-    <Color x:Key="Color.PrimaryContainerColor">#FF1E41AF</Color>
-    <Color x:Key="Color.OnPrimaryContainerColor">#FFDDE1FF</Color>
+    <!-- ============ Tonal palette (dark) ============ -->
+    <Color x:Key="Color.PrimaryColor">#FF8F7BFF</Color>
+    <Color x:Key="Color.OnPrimaryColor">#FF180F4D</Color>
+    <Color x:Key="Color.PrimaryContainerColor">#FF3A2F86</Color>
+    <Color x:Key="Color.OnPrimaryContainerColor">#FFE6DFFF</Color>
 
-    <Color x:Key="Color.SecondaryColor">#FF7FD9CC</Color>
-    <Color x:Key="Color.SecondaryContainerColor">#FF00494B</Color>
+    <Color x:Key="Color.SecondaryColor">#FF4DD8E6</Color>
+    <Color x:Key="Color.SecondaryContainerColor">#FF0E4A56</Color>
 
-    <Color x:Key="Color.TertiaryColor">#FFC3B8FF</Color>
-    <Color x:Key="Color.TertiaryContainerColor">#FF4B3BA5</Color>
+    <Color x:Key="Color.TertiaryColor">#FF5B8CFF</Color>
+    <Color x:Key="Color.TertiaryContainerColor">#FF1E3A8A</Color>
 
-    <Color x:Key="Color.BackgroundColor">#FF14141B</Color>
-    <Color x:Key="Color.SurfaceColor">#FF1B1B23</Color>
-    <Color x:Key="Color.SurfaceElevatedColor">#FF23232E</Color>
-    <Color x:Key="Color.SurfaceHighColor">#FF2C2C38</Color>
+    <Color x:Key="Color.BackgroundColor">#FF0B1020</Color>
+    <Color x:Key="Color.SurfaceColor">#FF121830</Color>
+    <Color x:Key="Color.SurfaceElevatedColor">#FF182041</Color>
+    <Color x:Key="Color.SurfaceHighColor">#FF212B52</Color>
 
-    <Color x:Key="Color.TextPrimaryColor">#FFE4E1F0</Color>
-    <Color x:Key="Color.TextSecondaryColor">#FFA9A7BD</Color>
-    <Color x:Key="Color.TextDisabledColor">#FF605F72</Color>
+    <Color x:Key="Color.TextPrimaryColor">#FFECEFFB</Color>
+    <Color x:Key="Color.TextSecondaryColor">#FF9AA3C7</Color>
+    <Color x:Key="Color.TextDisabledColor">#FF59618A</Color>
 
-    <Color x:Key="Color.BorderColor">#FF37374A</Color>
-    <Color x:Key="Color.OutlineColor">#FF4A4A60</Color>
-    <Color x:Key="Color.DividerColor">#FF2A2A38</Color>
+    <Color x:Key="Color.BorderColor">#FF26305A</Color>
+    <Color x:Key="Color.OutlineColor">#FF39456F</Color>
+    <Color x:Key="Color.DividerColor">#FF1C2444</Color>
 
-    <Color x:Key="Color.DangerColor">#FFFFB4AB</Color>
+    <Color x:Key="Color.DangerColor">#FFFF8A93</Color>
     <Color x:Key="Color.DangerContainerColor">#FF93000A</Color>
-    <Color x:Key="Color.SuccessColor">#FF7ED9A0</Color>
-    <Color x:Key="Color.WarningColor">#FFFFD980</Color>
+    <Color x:Key="Color.SuccessColor">#FF6FDDA8</Color>
+    <Color x:Key="Color.WarningColor">#FFFFD37A</Color>
 
     <!-- State layers (Fluent): hover/press overlays composited over any surface -->
     <Color x:Key="Color.StateHoverColor">#14FFFFFF</Color>
     <Color x:Key="Color.StatePressedColor">#1FFFFFFF</Color>
-    <Color x:Key="Color.StateSelectedColor">#2E82B1FF</Color>
+    <Color x:Key="Color.StateSelectedColor">#2E8F7BFF</Color>
 
     <!-- ============ Brushes ============ -->
     <SolidColorBrush x:Key="Color.Primary" Color="{StaticResource Color.PrimaryColor}" />
@@ -79,8 +81,26 @@
 
     <!-- Legacy aliases (v1 style names keep resolving during migration) -->
     <SolidColorBrush x:Key="Color.Accent" Color="{StaticResource Color.PrimaryColor}" />
-    <SolidColorBrush x:Key="Color.AccentHover" Color="#FF9DBEFF" />
-    <SolidColorBrush x:Key="Color.AccentPressed" Color="#FF6A97E8" />
+    <SolidColorBrush x:Key="Color.AccentHover" Color="#FFA493FF" />
+    <SolidColorBrush x:Key="Color.AccentPressed" Color="#FF7C68F0" />
     <SolidColorBrush x:Key="Color.AccentText" Color="{StaticResource Color.OnPrimaryColor}" />
+
+    <!-- ============ Brand gradients (Viora 紫→蓝→青) ============ -->
+    <!-- Primary action gradient: violet → blue → cyan, diagonal (开始风格化 CTA). -->
+    <LinearGradientBrush x:Key="Brush.Brand" StartPoint="0,0" EndPoint="1,1">
+        <GradientStop Color="#FF9F7CFF" Offset="0" />
+        <GradientStop Color="#FF5E8BFF" Offset="0.55" />
+        <GradientStop Color="#FF43D2E8" Offset="1" />
+    </LinearGradientBrush>
+
+    <!-- Softer variant for selected nav cards / selected style cards. -->
+    <LinearGradientBrush x:Key="Brush.BrandSoft" StartPoint="0,0" EndPoint="1,1">
+        <GradientStop Color="#C08F7BFF" Offset="0" />
+        <GradientStop Color="#805B8CFF" Offset="1" />
+    </LinearGradientBrush>
+
+    <!-- Glass card wash: barely-lighter translucent layer over the background. -->
+    <SolidColorBrush x:Key="Brush.Glass" Color="#14FFFFFF" />
+    <SolidColorBrush x:Key="Brush.GlassStrong" Color="#22FFFFFF" />
 
 </ResourceDictionary>

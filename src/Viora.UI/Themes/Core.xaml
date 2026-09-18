@@ -8,7 +8,8 @@
         (Tokens / Tokens.Ocean / ... ) which ThemeManager swaps at runtime.
         Typography foregrounds use DynamicResource so palettes can change live.
     -->
-    <FontFamily x:Key="Font.Family">Segoe UI Variable Display, Segoe UI, Microsoft YaHei UI</FontFamily>
+    <!-- 中文按规范落到 Microsoft YaHei UI;西文优先 Inter(缺失时自动回退)。 -->
+    <FontFamily x:Key="Font.Family">Inter, Segoe UI Variable Display, Segoe UI, Microsoft YaHei UI</FontFamily>
 
     <Style x:Key="Typography.Title" TargetType="TextBlock">
         <Setter Property="FontFamily" Value="{StaticResource Font.Family}" />
@@ -46,7 +47,8 @@
     <DropShadowEffect x:Key="Shadow.Card" BlurRadius="12" ShadowDepth="2" Direction="270" Opacity="0.24" Color="#FF000000" />
     <DropShadowEffect x:Key="Shadow.CardHover" BlurRadius="20" ShadowDepth="4" Direction="270" Opacity="0.34" Color="#FF000000" />
     <DropShadowEffect x:Key="Shadow.Flyout" BlurRadius="28" ShadowDepth="6" Direction="270" Opacity="0.44" Color="#FF000000" />
-    <DropShadowEffect x:Key="Shadow.PrimaryGlow" BlurRadius="14" ShadowDepth="0" Opacity="0.4" Color="#FF82B1FF" />
+    <DropShadowEffect x:Key="Shadow.PrimaryGlow" BlurRadius="14" ShadowDepth="0" Opacity="0.4" Color="#FF8F7BFF" />
+    <DropShadowEffect x:Key="Shadow.BrandGlow" BlurRadius="18" ShadowDepth="0" Opacity="0.45" Color="#FF7C68F0" />
 
     <Duration x:Key="Motion.Quick">0:0:0.15</Duration>
     <Duration x:Key="Motion.Standard">0:0:0.25</Duration>

@@ -1,25 +1,41 @@
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Media.Animation;
-using Viora.UI.Theming;
 
 namespace Viora.UI.Shell;
 
 /// <summary>
-/// Shell chrome: responsive sidebar (rail ⇄ full; width snapped instantly to avoid
-/// animation/label race), page enter transition (fade + slide), rail tooltips.
+/// Shell chrome: page enter transition (fade + slide) and maximized-frame compensation
+/// (WindowChrome bleeds past monitor edges by the resize border when maximized).
 /// </summary>
 public partial class ShellView : UserControl
 {
+    /// <summary>Inset applied to the whole shell while the window is maximized.</summary>
+    private const double MaximizedInset = 7;
+
     private object? _lastPage;
 
     public ShellView()
     {
         InitializeComponent();
         DataContextChanged += OnDataContextChanged;
+        Loaded += (_, _) => HookWindow();
     }
 
     private ShellViewModel? ViewModel => DataContext as ShellViewModel;
+
+    private void HookWindow()
+    {
+        var win = Window.GetWindow(this);
+        if (win is null) return;
+        win.StateChanged += (_, _) =>
+        {
+            Root.Margin = win.WindowState == WindowState.Maximized
+                ? new Thickness(MaximizedInset)
+                : new Thickness(0);
+            ViewModel?.RefreshWindowState();
+        };
+    }
 
     private void OnDataContextChanged(object sender, DependencyPropertyChangedEventArgs e)
     {

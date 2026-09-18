@@ -4,12 +4,28 @@
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
     xmlns:shell="clr-namespace:Viora.UI.Shell;assembly=Viora.UI"
     Title="Viora"
-    Width="960"
-    Height="620"
-    MinWidth="480"
-    MinHeight="360"
+    Width="1440"
+    Height="900"
+    MinWidth="1280"
+    MinHeight="720"
+    WindowStyle="SingleBorderWindow"
     Background="{DynamicResource Color.Background}"
     Icon="pack://application:,,,/Viora;component/viora.ico"
     WindowStartupLocation="CenterScreen">
+
+    <!--
+        Integrated title bar: the window keeps its native frame (resize / snap / DWM
+        rounded corners) while WindowChrome hands the caption area to the shell's
+        custom top bar. Aero caption buttons are off — the shell draws its own.
+    -->
+    <WindowChrome.WindowChrome>
+        <WindowChrome
+            CaptionHeight="52"
+            ResizeBorderThickness="6"
+            GlassFrameThickness="0"
+            CornerRadius="0"
+            UseAeroCaptionButtons="False" />
+    </WindowChrome.WindowChrome>
+
     <shell:ShellView />
 </Window>

@@ -7,7 +7,6 @@ using Viora.Core.Pipeline;
 using Viora.Core.Settings;
 using Viora.UI.Hosting;
 using Viora.UI.Localization;
-using Viora.UI.Pages.Plugins;
 using Viora.UI.Services;
 
 namespace Viora.App;

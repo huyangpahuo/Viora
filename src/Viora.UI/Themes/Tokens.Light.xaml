@@ -79,5 +79,20 @@
     <SolidColorBrush x:Key="Color.AccentPressed" Color="#FF2847B4" />
     <SolidColorBrush x:Key="Color.AccentText" Color="{StaticResource Color.OnPrimaryColor}" />
 
+
+    <!-- ============ Brand gradients (per-palette adaptation) ============ -->
+    <LinearGradientBrush x:Key="Brush.Brand" StartPoint="0,0" EndPoint="1,1">
+        <GradientStop Color="{StaticResource Color.PrimaryColor}" Offset="0" />
+        <GradientStop Color="{StaticResource Color.TertiaryColor}" Offset="0.55" />
+        <GradientStop Color="{StaticResource Color.SecondaryColor}" Offset="1" />
+    </LinearGradientBrush>
+    <LinearGradientBrush x:Key="Brush.BrandSoft" StartPoint="0,0" EndPoint="1,1">
+        <GradientStop Color="#C03053C9" Offset="0" />
+        <GradientStop Color="#805F55C2" Offset="1" />
+    </LinearGradientBrush>
+    <SolidColorBrush x:Key="Brush.Glass" Color="#14FFFFFF" />
+    <SolidColorBrush x:Key="Brush.GlassStrong" Color="#22FFFFFF" />
+
 </ResourceDictionary>
+
 

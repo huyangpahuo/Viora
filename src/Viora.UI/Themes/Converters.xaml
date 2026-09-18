@@ -13,5 +13,8 @@
     <conv:ResponsiveGutterConverter x:Key="ResponsiveGutter" />
     <conv:SidebarWidthConverter x:Key="SidebarWidth" />
     <conv:TranslateKeyConverter x:Key="TranslateKey" />
+    <conv:IconKeyConverter x:Key="IconKey" />
+    <conv:LanguageDisplayNameConverter x:Key="LangNameOf" />
+    <conv:LanguageEqualsCurrentConverter x:Key="LangNameEquals" />
     <conv:EqualityConverter x:Key="Equals" />
 </ResourceDictionary>

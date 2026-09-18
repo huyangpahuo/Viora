@@ -1,31 +1,38 @@
 using System.Collections.ObjectModel;
-using System.ComponentModel;
-using System.Windows.Data;
+using System.Windows;
 using CommunityToolkit.Mvvm.ComponentModel;
-using Microsoft.Extensions.DependencyInjection;
 using CommunityToolkit.Mvvm.Input;
+using Microsoft.Extensions.DependencyInjection;
+using Viora.Core.Localization;
+using Viora.Core.Settings;
 using Viora.UI.Localization;
-using Viora.UI.Theming;
 
 namespace Viora.UI.Shell;
 
-/// <summary>One sidebar entry. GroupKey drives the visual clustering (Create / System / Information).</summary>
+/// <summary>
+/// One sidebar entry. IconKey indexes the generated geometry library (Assets/Icons.xaml);
+/// TitleKey/SubtitleKey are localization keys. Section drives placement: core功能在上,
+/// aux(关于/帮助/反馈)固定在侧栏底部。
+/// </summary>
 public partial class NavigationItem : ObservableObject
 {
-    public NavigationItem(string groupKey, string titleKey, string glyph, Type pageType, int order)
+    public NavigationItem(string section, string titleKey, string? subtitleKey, string iconKey, Type pageType, int order)
     {
-        GroupKey = groupKey;
+        Section = section;
         TitleKey = titleKey;
-        Glyph = glyph;
+        SubtitleKey = subtitleKey;
+        IconKey = iconKey;
         PageType = pageType;
         Order = order;
     }
 
-    public string GroupKey { get; }
+    public string Section { get; }
 
     public string TitleKey { get; }
 
-    public string Glyph { get; }
+    public string? SubtitleKey { get; }
+
+    public string IconKey { get; }
 
     public Type PageType { get; }
 
@@ -33,61 +40,60 @@ public partial class NavigationItem : ObservableObject
 
     public string Title => Tr.Get(TitleKey);
 
-    public void RefreshTitle() => OnPropertyChanged(nameof(Title));
+    public string? Subtitle => SubtitleKey is null ? null : Tr.Get(SubtitleKey);
+
+    public bool HasSubtitle => SubtitleKey is not null;
+
+    public void Refresh() { OnPropertyChanged(nameof(Title)); OnPropertyChanged(nameof(Subtitle)); }
 }
 
 /// <summary>
-/// Sidebar navigation shell. Pages are resolved from DI by type and cached.
-/// One grouped list (single selection — group ListBoxes would each keep their own
-/// highlight and scroll position, drifting the sidebar). Responsive: LayoutState
-/// drives IsSidebarCompact from the window width; the hamburger toggles SidebarOpen.
+/// Sidebar navigation + integrated top bar (brand / language / window controls).
+/// Pages resolve from DI by type and cache; placeholder pages inherit the nav title.
 /// </summary>
 public partial class ShellViewModel : ObservableObject
 {
     private readonly IServiceProvider _services;
+    private readonly ILocalizationService _localization;
+    private readonly ISettingsService _settings;
 
     private readonly Dictionary<Type, object> _pageCache = new();
 
-    public ShellViewModel(IServiceProvider services)
+    public ShellViewModel(IServiceProvider services, ILocalizationService localization, ISettingsService settings)
     {
         _services = services;
+        _localization = localization;
+        _settings = settings;
 
         Items = new ObservableCollection<NavigationItem>
         {
-            // 创作
-            new(NavGroupKeys.Create, "Nav.Home", "\uE80F", typeof(Pages.Home.HomePage), 0),
-            new(NavGroupKeys.Create, "Nav.Convert", "\uE8E5", typeof(Pages.Convert.ConvertPage), 1),
-            // 社区(独立分组:未来承接插件分享)
-            new(NavGroupKeys.Community, "Nav.Community", "\uE902", typeof(Pages.Community.CommunityPage), 2),
-            // 系统
-            new(NavGroupKeys.System, "Nav.Plugins", "\uE116", typeof(Pages.Plugins.PluginsPage), 3),
-            new(NavGroupKeys.System, "Nav.Settings", "\uE713", typeof(Pages.Settings.SettingsPage), 4),
-            // 信息(帮助与反馈内容并入关于页)
-            new(NavGroupKeys.Information, "Nav.About", "\uE946", typeof(Pages.About.AboutPage), 5),
-            new(NavGroupKeys.Information, "Nav.Sponsor", "\uE734", typeof(Pages.Sponsor.SponsorPage), 6),
-            new(NavGroupKeys.Information, "Nav.Legal", "\uE8B7", typeof(Pages.Legal.LegalPage), 7),
+            new(Sections.Core, "Nav.Stylize", "Nav.Stylize.Sub", "WandMagicSparkles", typeof(Pages.Stylize.StylizePage), 0),
+            new(Sections.Core, "Nav.MyWorks", "Nav.MyWorks.Sub", "Images", typeof(Pages.Placeholder.PlaceholderPage), 1),
+            new(Sections.Core, "Nav.PluginMarket", "Nav.PluginMarket.Sub", "PuzzlePiece", typeof(Pages.Placeholder.PlaceholderPage), 2),
+            new(Sections.Core, "Nav.Settings", "Nav.Settings.Sub", "Gear", typeof(Pages.Placeholder.PlaceholderPage), 3),
+            new(Sections.Aux, "Nav.About", null, "CircleInfo", typeof(Pages.Placeholder.PlaceholderPage), 4),
+            new(Sections.Aux, "Nav.Help", null, "CircleQuestion", typeof(Pages.Placeholder.PlaceholderPage), 5),
+            new(Sections.Aux, "Nav.Feedback", null, "Envelope", typeof(Pages.Placeholder.PlaceholderPage), 6),
         };
-
-        var view = CollectionViewSource.GetDefaultView(Items);
-        view.GroupDescriptions.Add(new PropertyGroupDescription(nameof(NavigationItem.GroupKey)));
-        NavView = view;
 
         SelectedItem = Items[0];
 
-        var layout = LayoutState.Current;
-        layout.PropertyChanged += (_, e) =>
-        {
-            if (e.PropertyName is nameof(LayoutState.IsSidebarCompact) or nameof(LayoutState.SidebarOpen))
-                OnPropertyChanged(nameof(IsSidebarCompact));
-        };
-        RecomputeCompact(layout);
+        Languages = localization.AvailableLanguages.ToList();
+        RefreshLanguageState();
 
         LocalizationSource.Current.PropertyChanged += (_, _) =>
         {
-            foreach (var item in Items) item.RefreshTitle();
+            foreach (var item in Items) item.Refresh();
             OnPropertyChanged(nameof(AppTitle));
             OnPropertyChanged(nameof(AppTagline));
+            RefreshLanguageState();
         };
+    }
+
+    public static class Sections
+    {
+        public const string Core = "Core";
+        public const string Aux = "Aux";
     }
 
     public string AppTitle => Tr.Get("App.Name");
@@ -96,38 +102,67 @@ public partial class ShellViewModel : ObservableObject
 
     public ObservableCollection<NavigationItem> Items { get; }
 
-    /// <summary>Grouped view over Items — one ListBox, one selection, fixed layout.</summary>
-    public System.ComponentModel.ICollectionView NavView { get; }
+    /// <summary>Core功能(风格化/我的作品/插件市场/设置)。</summary>
+    public IEnumerable<NavigationItem> CoreItems => Items.Where(i => i.Section == Sections.Core);
+
+    /// <summary>底部辅助导航(关于/帮助/反馈)。</summary>
+    public IEnumerable<NavigationItem> AuxItems => Items.Where(i => i.Section == Sections.Aux);
 
     [ObservableProperty]
     private NavigationItem? _selectedItem;
 
-    /// <summary>True = icon rail (labels hidden). Mirror of LayoutState for binding.</summary>
-    public bool IsSidebarCompact => LayoutState.Current.IsSidebarCompact;
+    // ---------- 顶栏:语言 ----------
+
+    public IReadOnlyList<string> Languages { get; }
+
+    [ObservableProperty]
+    private string _currentLanguageName = string.Empty;
+
+    private void RefreshLanguageState() => CurrentLanguageName = LanguageDisplayName(_localization.CurrentLanguage);
+
+    public static string LanguageDisplayName(string code) => code switch
+    {
+        "zh-Hans" or "zh" => "中文",
+        "en" => "English",
+        _ => code,
+    };
 
     [RelayCommand]
-    private void ToggleSidebar()
+    private void SetLanguage(string code)
     {
-        var layout = LayoutState.Current;
-        // If currently auto-collapsed because the window is narrow, the toggle re-pins open;
-        // otherwise it flips the pin.
-        layout.SidebarOpen = layout.IsSidebarCompact;
-        RecomputeCompact(layout);
+        if (code == _localization.CurrentLanguage) return;
+        _settings.Current.Language.Language = code;
+        _ = _settings.SaveAsync();
+        _localization.SetLanguage(code);
+        RefreshLanguageState();
     }
 
-    private static void RecomputeCompact(LayoutState layout)
+    // ---------- 顶栏:窗口控制 ----------
+
+    [RelayCommand]
+    private void Minimize()
     {
-        bool compact = layout.WindowWidth < LayoutState.CompactSidebarWidth || !layout.SidebarOpen;
-        if (compact != layout.IsSidebarCompact) layout.IsSidebarCompact = compact;
+        var win = Application.Current.MainWindow;
+        if (win is not null) win.WindowState = WindowState.Minimized;
     }
 
-    /// <summary>Called by the shell window on SizeChanged.</summary>
-    public static void UpdateLayoutSize(double width, double height)
+    [RelayCommand]
+    private void MaximizeOrRestore()
     {
-        var layout = LayoutState.Current;
-        layout.UpdateSize(width, height);
-        RecomputeCompact(layout);
+        var win = Application.Current.MainWindow;
+        if (win is null) return;
+        win.WindowState = win.WindowState == WindowState.Maximized ? WindowState.Normal : WindowState.Maximized;
     }
+
+    [RelayCommand]
+    private void CloseApp() => Application.Current.MainWindow?.Close();
+
+    public bool IsMaximized => Application.Current.MainWindow?.WindowState == WindowState.Maximized;
+
+    /// <summary>ShellView 监听到窗口 StateChanged 时调用,刷新最大化/还原图标。</summary>
+    public void RefreshWindowState() => OnPropertyChanged(nameof(IsMaximized));
+
+    // ---------- 页面承载 ----------
 
     public object? CurrentPage
     {
@@ -139,20 +174,15 @@ public partial class ShellViewModel : ObservableObject
                 page = _services.GetRequiredService(SelectedItem.PageType);
                 _pageCache[SelectedItem.PageType] = page;
             }
+            // 占位页共享一个类,标题/副标题每次切换都要跟随当前导航项。
+            if (page is Pages.Placeholder.PlaceholderPage placeholder)
+            {
+                placeholder.TitleKey = SelectedItem.TitleKey;
+                placeholder.SubtitleKey = SelectedItem.SubtitleKey;
+            }
             return page;
         }
     }
 
     partial void OnSelectedItemChanged(NavigationItem? value) => OnPropertyChanged(nameof(CurrentPage));
-
-    [RelayCommand]
-    private void Navigate(NavigationItem item) => SelectedItem = item;
-}
-
-public static class NavGroupKeys
-{
-    public const string Create = "Nav.Group.Create";
-    public const string Community = "Nav.Group.Community";
-    public const string System = "Nav.Group.System";
-    public const string Information = "Nav.Group.Information";
 }
