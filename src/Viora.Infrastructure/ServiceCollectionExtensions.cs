@@ -10,6 +10,8 @@ using Viora.Infrastructure.Logging;
 using Viora.Infrastructure.Pipeline;
 using Viora.Infrastructure.Plugins;
 using Viora.Infrastructure.Settings;
+using Viora.Infrastructure.Works;
+using Viora.Core.Works;
 
 namespace Viora.Infrastructure;
 
@@ -26,6 +28,7 @@ public static class ServiceCollectionExtensions
         services.AddSingleton<IPluginHost>(sp => sp.GetRequiredService<AssemblyPluginHost>());
         services.AddSingleton<IPluginContext>(sp => sp.GetRequiredService<AssemblyPluginHost>().Context);
         services.AddSingleton<IImportService, ImportService>();
+        services.AddSingleton<IWorksStore, JsonWorksStore>();
         return services;
     }
 }

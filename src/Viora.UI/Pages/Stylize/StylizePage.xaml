@@ -32,8 +32,8 @@
                 <Setter.Value>
                     <ControlTemplate TargetType="ListBoxItem">
                         <Border x:Name="Root" Width="76" Height="60" CornerRadius="9" Margin="3,0"
-                                BorderThickness="2" BorderBrush="Transparent" ClipToBounds="True">
-                            <ContentPresenter />
+                                BorderThickness="2" BorderBrush="Transparent">
+                            <Border CornerRadius="7" Background="{Binding SourceImage, Converter={StaticResource ImageToBrush}}" />
                         </Border>
                         <ControlTemplate.Triggers>
                             <Trigger Property="IsMouseOver" Value="True">
@@ -74,36 +74,6 @@
                             <Trigger Property="IsChecked" Value="True">
                                 <Setter TargetName="Underline" Property="Background" Value="{DynamicResource Brush.Brand}" />
                                 <Setter Property="Foreground" Value="{DynamicResource Color.Text.Primary}" />
-                            </Trigger>
-                        </ControlTemplate.Triggers>
-                    </ControlTemplate>
-                </Setter.Value>
-            </Setter>
-        </Style>
-
-        <!-- 风格分类 chip -->
-        <Style x:Key="CategoryChipItem" TargetType="ListBoxItem">
-            <Setter Property="Foreground" Value="{DynamicResource Color.Text.Secondary}" />
-            <Setter Property="FontSize" Value="12" />
-            <Setter Property="FontFamily" Value="{StaticResource Font.Family}" />
-            <Setter Property="Cursor" Value="Hand" />
-            <Setter Property="FocusVisualStyle" Value="{x:Null}" />
-            <Setter Property="Margin" Value="0,0,8,0" />
-            <Setter Property="Template">
-                <Setter.Value>
-                    <ControlTemplate TargetType="ListBoxItem">
-                        <Border x:Name="Pill" Background="{DynamicResource Brush.Glass}" CornerRadius="15" Padding="13,5">
-                            <ContentPresenter VerticalAlignment="Center" RecognizesAccessKey="True" />
-                        </Border>
-                        <ControlTemplate.Triggers>
-                            <Trigger Property="IsMouseOver" Value="True">
-                                <Setter TargetName="Pill" Property="Background" Value="{DynamicResource Color.StateHover}" />
-                                <Setter Property="Foreground" Value="{DynamicResource Color.Text.Primary}" />
-                            </Trigger>
-                            <Trigger Property="IsSelected" Value="True">
-                                <Setter TargetName="Pill" Property="Background" Value="{DynamicResource Color.Primary}" />
-                                <Setter Property="Foreground" Value="{DynamicResource Color.OnPrimary}" />
-                                <Setter Property="FontWeight" Value="SemiBold" />
                             </Trigger>
                         </ControlTemplate.Triggers>
                     </ControlTemplate>
@@ -372,8 +342,9 @@
                         </Button>
                     </StackPanel>
 
-                    <!-- 缩略图列表 -->
-                    <ListBox Grid.Column="1" BorderThickness="0" Background="Transparent"
+                    <!-- 缩略图列表(滚轮横向滚动;新图加入自动滚到位) -->
+                    <ListBox x:Name="ThumbsList" Grid.Column="1" BorderThickness="0" Background="Transparent"
+                             PreviewMouseWheel="OnThumbsWheel"
                              ItemsSource="{Binding Items}" SelectedItem="{Binding SelectedItem}"
                              ItemContainerStyle="{StaticResource ThumbItem}"
                              ScrollViewer.VerticalScrollBarVisibility="Disabled"
@@ -456,8 +427,10 @@
                                     <Border x:Name="Sample" Background="{DynamicResource Brush.Glass}" CornerRadius="12" Padding="12"
                                             BorderBrush="{DynamicResource Color.Border}" BorderThickness="1" Cursor="Hand">
                                         <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
-                                            <Border Width="52" Height="52" CornerRadius="9" ClipToBounds="True">
-                                                <Image Source="pack://application:,,,/Viora.UI;component/sample.jpg" Stretch="UniformToFill" />
+                                            <Border Width="52" Height="52" CornerRadius="9">
+                                                <Border.Background>
+                                                    <ImageBrush ImageSource="pack://application:,,,/Viora.UI;component/sample.jpg" Stretch="UniformToFill" />
+                                                </Border.Background>
                                             </Border>
                                             <StackPanel Margin="11,0,0,0" VerticalAlignment="Center">
                                                 <TextBlock Text="{loc:Translate Stylize.Sample.Title}" FontSize="13" FontWeight="SemiBold"
@@ -477,17 +450,218 @@
                         </Button>
                     </Grid>
 
-                    <!-- 批量处理占位 -->
-                    <StackPanel Margin="0,14,0,6" Visibility="{Binding IsBatchMode, Converter={StaticResource BoolToVisibility}}">
-                        <TextBlock Text="{loc:Translate Stylize.Tab.Batch.Empty}" FontSize="12.5"
-                                   Foreground="{DynamicResource Color.Text.Secondary}" HorizontalAlignment="Center" Margin="0,6" />
-                    </StackPanel>
+                    <!-- 批量处理:队列 + 执行 -->
+                    <Grid Margin="0,12,0,2" Visibility="{Binding IsBatchMode, Converter={StaticResource BoolToVisibility}}"
+                          AllowDrop="True" Drop="OnBatchDrop" DragOver="OnDragOver">
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto" />
+                            <RowDefinition Height="Auto" />
+                        </Grid.RowDefinitions>
+                        <Grid Grid.Row="0">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="190" />
+                                <ColumnDefinition Width="12" />
+                                <ColumnDefinition Width="*" />
+                            </Grid.ColumnDefinitions>
 
-                    <!-- 历史记录占位 -->
-                    <StackPanel Margin="0,14,0,6" Visibility="{Binding IsHistoryMode, Converter={StaticResource BoolToVisibility}}">
-                        <TextBlock Text="{loc:Translate Stylize.Tab.History.Empty}" FontSize="12.5"
-                                   Foreground="{DynamicResource Color.Text.Secondary}" HorizontalAlignment="Center" Margin="0,6" />
-                    </StackPanel>
+                            <!-- 加入图片(点击/拖入) -->
+                            <Button Grid.Column="0" Command="{Binding AddBatchFromPickerCommand}"
+                                    HorizontalAlignment="Stretch" HorizontalContentAlignment="Stretch" Height="96">
+                                <Button.Template>
+                                    <ControlTemplate TargetType="Button">
+                                        <Grid Cursor="Hand">
+                                            <Rectangle x:Name="Drop" Fill="{DynamicResource Brush.Glass}"
+                                                       Stroke="{DynamicResource Color.Outline}" StrokeThickness="1.4"
+                                                       StrokeDashArray="5 4" RadiusX="12" RadiusY="12" />
+                                            <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center">
+                                                <controls:VioraIcon Geometry="{StaticResource Icon.FileImage}" Width="19" Height="19"
+                                                                    Foreground="{DynamicResource Color.Primary}" HorizontalAlignment="Center" />
+                                                <TextBlock Text="{loc:Translate Stylize.Batch.Add}" FontSize="11.5" Margin="0,7,0,0"
+                                                           Foreground="{DynamicResource Color.Text.Primary}" HorizontalAlignment="Center" />
+                                                <TextBlock Text="{loc:Translate Stylize.Batch.AddHint}" FontSize="9.5" Margin="0,3,0,0"
+                                                           Foreground="{DynamicResource Color.Text.Secondary}" HorizontalAlignment="Center" />
+                                            </StackPanel>
+                                        </Grid>
+                                        <ControlTemplate.Triggers>
+                                            <Trigger Property="IsMouseOver" Value="True">
+                                                <Setter TargetName="Drop" Property="Stroke" Value="{DynamicResource Color.Primary}" />
+                                            </Trigger>
+                                        </ControlTemplate.Triggers>
+                                    </ControlTemplate>
+                                </Button.Template>
+                            </Button>
+
+                            <!-- 队列 -->
+                            <ScrollViewer Grid.Column="2" HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Disabled">
+                                <ItemsControl ItemsSource="{Binding BatchQueue}">
+                                    <ItemsControl.ItemsPanel>
+                                        <ItemsPanelTemplate>
+                                            <StackPanel Orientation="Horizontal" />
+                                        </ItemsPanelTemplate>
+                                    </ItemsControl.ItemsPanel>
+                                    <ItemsControl.ItemTemplate>
+                                        <DataTemplate>
+                                            <Border CornerRadius="10" Padding="7" Margin="0,0,8,0" Width="180"
+                                                    Background="{DynamicResource Brush.Glass}" BorderBrush="{DynamicResource Color.Border}" BorderThickness="1">
+                                                <StackPanel Orientation="Horizontal">
+                                                    <Border Width="52" Height="40" CornerRadius="7"
+                                                            Background="{Binding SourceImage, Converter={StaticResource ImageToBrush}}" />
+                                                    <StackPanel Margin="8,0,0,0" VerticalAlignment="Center" MaxWidth="86">
+                                                        <TextBlock Text="{Binding Title}" FontSize="11" FontWeight="SemiBold"
+                                                                   Foreground="{DynamicResource Color.Text.Primary}" TextTrimming="CharacterEllipsis" />
+                                                        <!-- 状态:待处理 / 处理中 / 完成 / 失败 -->
+                                                        <controls:VioraIcon Geometry="{StaticResource Icon.Ellipsis}" Width="11" Height="11" Margin="0,4,0,0"
+                                                                            HorizontalAlignment="Left" Foreground="{DynamicResource Color.Text.Disabled}">
+                                                            <controls:VioraIcon.Style>
+                                                                <Style TargetType="controls:VioraIcon" BasedOn="{StaticResource {x:Type controls:VioraIcon}}">
+                                                                    <Setter Property="Visibility" Value="Visible" />
+                                                                    <Style.Triggers>
+                                                                        <DataTrigger Binding="{Binding BatchState}" Value="Running">
+                                                                            <Setter Property="Visibility" Value="Collapsed" />
+                                                                        </DataTrigger>
+                                                                        <DataTrigger Binding="{Binding BatchState}" Value="Done">
+                                                                            <Setter Property="Visibility" Value="Collapsed" />
+                                                                        </DataTrigger>
+                                                                        <DataTrigger Binding="{Binding BatchState}" Value="Failed">
+                                                                            <Setter Property="Visibility" Value="Collapsed" />
+                                                                        </DataTrigger>
+                                                                    </Style.Triggers>
+                                                                </Style>
+                                                            </controls:VioraIcon.Style>
+                                                        </controls:VioraIcon>
+                                                        <ProgressBar IsIndeterminate="True" Width="30" Height="4" Margin="0,5,0,0" HorizontalAlignment="Left"
+                                                                     Foreground="{DynamicResource Color.Primary}" Background="{DynamicResource Color.SurfaceHigh}" BorderThickness="0">
+                                                            <ProgressBar.Visibility>
+                                                                <Binding Path="BatchState" Converter="{StaticResource EqualsToVisibility}" />
+                                                            </ProgressBar.Visibility>
+                                                        </ProgressBar>
+                                                        <controls:VioraIcon Geometry="{StaticResource Icon.CircleCheck}" Width="13" Height="13" Margin="0,4,0,0"
+                                                                            HorizontalAlignment="Left" Foreground="{DynamicResource Color.Success}">
+                                                            <controls:VioraIcon.Style>
+                                                                <Style TargetType="controls:VioraIcon" BasedOn="{StaticResource {x:Type controls:VioraIcon}}">
+                                                                    <Setter Property="Visibility" Value="Collapsed" />
+                                                                    <Style.Triggers>
+                                                                        <DataTrigger Binding="{Binding BatchState}" Value="Done">
+                                                                            <Setter Property="Visibility" Value="Visible" />
+                                                                        </DataTrigger>
+                                                                    </Style.Triggers>
+                                                                </Style>
+                                                            </controls:VioraIcon.Style>
+                                                        </controls:VioraIcon>
+                                                        <controls:VioraIcon Geometry="{StaticResource Icon.CircleXmark}" Width="13" Height="13" Margin="0,4,0,0"
+                                                                            HorizontalAlignment="Left" Foreground="{DynamicResource Color.Danger}">
+                                                            <controls:VioraIcon.Style>
+                                                                <Style TargetType="controls:VioraIcon" BasedOn="{StaticResource {x:Type controls:VioraIcon}}">
+                                                                    <Setter Property="Visibility" Value="Collapsed" />
+                                                                    <Style.Triggers>
+                                                                        <DataTrigger Binding="{Binding BatchState}" Value="Failed">
+                                                                            <Setter Property="Visibility" Value="Visible" />
+                                                                        </DataTrigger>
+                                                                    </Style.Triggers>
+                                                                </Style>
+                                                            </controls:VioraIcon.Style>
+                                                        </controls:VioraIcon>
+                                                    </StackPanel>
+                                                    <Button Style="{DynamicResource IconButton}" Width="24" Height="24" VerticalAlignment="Top"
+                                                            Command="{Binding DataContext.RemoveFromBatchCommand, RelativeSource={RelativeSource AncestorType=ItemsControl}}"
+                                                            CommandParameter="{Binding}" ToolTip="{loc:Translate Stylize.Batch.Remove}">
+                                                        <controls:VioraIcon Geometry="{StaticResource Icon.Xmark}" Width="9" Height="9"
+                                                                            Foreground="{Binding Foreground, RelativeSource={RelativeSource AncestorType=Button}}" />
+                                                    </Button>
+                                                </StackPanel>
+                                            </Border>
+                                        </DataTemplate>
+                                    </ItemsControl.ItemTemplate>
+                                </ItemsControl>
+                            </ScrollViewer>
+                        </Grid>
+
+                        <!-- 执行行:开始 / 进度 / 取消 -->
+                        <Grid Grid.Row="1" Margin="0,12,0,2">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="Auto" />
+                                <ColumnDefinition Width="*" />
+                                <ColumnDefinition Width="Auto" />
+                            </Grid.ColumnDefinitions>
+                            <Button Command="{Binding StartBatchCommand}" MinWidth="150" Height="38" FocusVisualStyle="{x:Null}" Cursor="Hand">
+                                <Button.Template>
+                                    <ControlTemplate TargetType="Button">
+                                        <Border x:Name="Root" Background="{DynamicResource Brush.Brand}" CornerRadius="12"
+                                                Effect="{DynamicResource Shadow.BrandGlow}" Padding="18,0">
+                                            <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" VerticalAlignment="Center">
+                                                <controls:VioraIcon Geometry="{StaticResource Icon.WandMagicSparkles}" Width="14" Height="14" Foreground="White" />
+                                                <TextBlock Text="{loc:Translate Stylize.Batch.Start}" FontSize="13" FontWeight="Bold"
+                                                           Foreground="White" Margin="8,0,0,0" VerticalAlignment="Center" />
+                                            </StackPanel>
+                                        </Border>
+                                        <ControlTemplate.Triggers>
+                                            <Trigger Property="IsMouseOver" Value="True">
+                                                <Setter TargetName="Root" Property="Opacity" Value="0.93" />
+                                            </Trigger>
+                                            <Trigger Property="IsEnabled" Value="False">
+                                                <Setter TargetName="Root" Property="Opacity" Value="0.45" />
+                                                <Setter TargetName="Root" Property="Effect" Value="{x:Null}" />
+                                            </Trigger>
+                                        </ControlTemplate.Triggers>
+                                    </ControlTemplate>
+                                </Button.Template>
+                            </Button>
+
+                            <StackPanel Grid.Column="1" Margin="14,0,0,0" VerticalAlignment="Center" IsHitTestVisible="False">
+                                <TextBlock Text="{Binding BatchProgressText}" FontSize="11.5"
+                                           Foreground="{DynamicResource Color.Text.Secondary}" />
+                                <ProgressBar Height="4" Minimum="0" Maximum="1" Margin="0,6,16,0"
+                                             Value="{Binding BatchProgressFraction, Mode=OneWay}" IsIndeterminate="{Binding IsBatchRunning, Mode=OneWay}"
+                                             Foreground="{DynamicResource Color.Primary}" Background="{DynamicResource Color.SurfaceHigh}" BorderThickness="0" />
+                            </StackPanel>
+
+                            <Button Grid.Column="2" Style="{DynamicResource SecondaryButton}" Height="34" Padding="14,0"
+                                    Command="{Binding CancelBatchCommand}" Visibility="{Binding IsBatchRunning, Converter={StaticResource BoolToVisibility}}"
+                                    Content="{loc:Translate Stylize.Cancel}" />
+                        </Grid>
+                    </Grid>
+
+                    <!-- 历史记录:最近作品缩略图,点击回看 -->
+                    <Grid Margin="0,12,0,2" MinHeight="86" Visibility="{Binding IsHistoryMode, Converter={StaticResource BoolToVisibility}}">
+                        <ScrollViewer HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Disabled" PreviewMouseWheel="OnHistoryWheel">
+                            <ItemsControl ItemsSource="{Binding HistoryItems}" Margin="0,0,0,4">
+                                <ItemsControl.ItemsPanel>
+                                    <ItemsPanelTemplate>
+                                        <StackPanel Orientation="Horizontal" />
+                                    </ItemsPanelTemplate>
+                                </ItemsControl.ItemsPanel>
+                                <ItemsControl.ItemTemplate>
+                                    <DataTemplate>
+                                        <Button Margin="0,0,10,0" Command="{Binding DataContext.OpenHistoryCommand, RelativeSource={RelativeSource AncestorType=ItemsControl}}"
+                                                CommandParameter="{Binding}" Cursor="Hand" FocusVisualStyle="{x:Null}">
+                                            <Button.Template>
+                                                <ControlTemplate TargetType="Button">
+                                                    <Grid Width="104">
+                                                        <Border x:Name="Thumb" Height="66" CornerRadius="9" BorderBrush="{DynamicResource Color.Border}"
+                                                                BorderThickness="1" Background="{Binding Thumbnail, Converter={StaticResource ImageToBrush}}" />
+                                                        <Border VerticalAlignment="Bottom" Background="{DynamicResource Color.Scrim}" CornerRadius="0,0,9,9" Padding="7,2">
+                                                            <TextBlock Text="{Binding StyleName}" FontSize="9.5" Foreground="{DynamicResource Color.Text.Primary}"
+                                                                       TextTrimming="CharacterEllipsis" />
+                                                        </Border>
+                                                        <TextBlock Text="{Binding TimeDisplay}" FontSize="9" Margin="0,70,0,0" HorizontalAlignment="Left"
+                                                                   Foreground="{DynamicResource Color.Text.Secondary}" />
+                                                    </Grid>
+                                                    <ControlTemplate.Triggers>
+                                                        <Trigger Property="IsMouseOver" Value="True">
+                                                            <Setter TargetName="Thumb" Property="BorderBrush" Value="{DynamicResource Color.Primary}" />
+                                                        </Trigger>
+                                                    </ControlTemplate.Triggers>
+                                                </ControlTemplate>
+                                            </Button.Template>
+                                        </Button>
+                                    </DataTemplate>
+                                </ItemsControl.ItemTemplate>
+                            </ItemsControl>
+                        </ScrollViewer>
+                        <TextBlock Text="{loc:Translate Stylize.Tab.History.Empty}" FontSize="12.5" HorizontalAlignment="Center" VerticalAlignment="Center"
+                                   Foreground="{DynamicResource Color.Text.Secondary}"
+                                   Visibility="{Binding HasHistory, Converter={StaticResource InverseBoolToVisibility}}" />
+                    </Grid>
                 </StackPanel>
             </Border>
         </Grid>
@@ -525,7 +699,7 @@
                 <!-- 分类 chips -->
                 <ListBox Grid.Row="1" Margin="0,6,0,12" BorderThickness="0" Background="Transparent" Padding="0"
                          ItemsSource="{Binding CategoryFilters}" SelectedItem="{Binding CategoryFilter}"
-                         ItemContainerStyle="{StaticResource CategoryChipItem}"
+                         ItemContainerStyle="{StaticResource ChipPillItem}"
                          ScrollViewer.VerticalScrollBarVisibility="Disabled"
                          ScrollViewer.HorizontalScrollBarVisibility="Disabled">
                     <ListBox.ItemsPanel>
@@ -540,10 +714,15 @@
                     </ListBox.ItemTemplate>
                 </ListBox>
 
-                <!-- 风格卡片网格 -->
-                <ScrollViewer Grid.Row="2" VerticalScrollBarVisibility="Auto">
+                <!-- 风格卡片网格(分页) -->
+                <Grid Grid.Row="2">
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="*" />
+                        <RowDefinition Height="Auto" />
+                    </Grid.RowDefinitions>
+                    <ScrollViewer x:Name="StylesScroll" Grid.Row="0" VerticalScrollBarVisibility="Auto" PreviewMouseWheel="OnListWheel">
                     <ListBox BorderThickness="0" Background="Transparent" Margin="-4"
-                             ItemsSource="{Binding FilteredStyles}" SelectedItem="{Binding SelectedStyle}"
+                             ItemsSource="{Binding PagedStyles}" SelectedItem="{Binding SelectedStyle}"
                              ItemContainerStyle="{StaticResource StyleCardItem}"
                              ScrollViewer.VerticalScrollBarVisibility="Disabled"
                              ScrollViewer.HorizontalScrollBarVisibility="Disabled">
@@ -554,11 +733,11 @@
                         </ListBox.ItemsPanel>
                         <ListBox.ItemTemplate>
                             <DataTemplate>
-                                <Border x:Name="Card" Width="112" Margin="3,3" CornerRadius="12" ClipToBounds="True"
+                                <Border x:Name="Card" Width="112" Margin="3,3" CornerRadius="12"
                                         Background="{DynamicResource Color.SurfaceElevated}"
                                         BorderBrush="{DynamicResource Color.Border}" BorderThickness="1.4">
                                     <StackPanel>
-                                        <Border Height="72" Background="{Binding TileBrush}">
+                                        <Border Height="72" Background="{Binding TileBrush}" CornerRadius="10.5,10.5,0,0">
                                             <Grid>
                                                 <controls:VioraIcon Geometry="{StaticResource Icon.WandMagicSparkles}" Width="22" Height="22"
                                                                     Foreground="#59FFFFFF" HorizontalAlignment="Center" VerticalAlignment="Center" />
@@ -583,7 +762,11 @@
                             </DataTemplate>
                         </ListBox.ItemTemplate>
                     </ListBox>
-                </ScrollViewer>
+                    </ScrollViewer>
+                    <controls:Pager Grid.Row="1" Margin="0,8,0,0" PageSize="12"
+                                    TotalItems="{Binding StyleTotalItems}" CurrentPage="{Binding StylePage, Mode=TwoWay}"
+                                    Visibility="{Binding StylePagerVisible, Converter={StaticResource BoolToVisibility}}" />
+                </Grid>
 
                 <!-- 底部:高级设置 + CTA -->
                 <StackPanel Grid.Row="3" Margin="0,12,0,0">

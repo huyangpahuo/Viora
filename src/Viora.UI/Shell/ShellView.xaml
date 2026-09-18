@@ -44,53 +44,6 @@
             </Setter>
         </Style>
 
-        <Style x:Key="DarkContextMenu" TargetType="ContextMenu">
-            <Setter Property="Background" Value="{DynamicResource Color.SurfaceElevated}" />
-            <Setter Property="BorderBrush" Value="{DynamicResource Color.Outline}" />
-            <Setter Property="BorderThickness" Value="1" />
-            <Setter Property="Padding" Value="4" />
-            <Setter Property="Template">
-                <Setter.Value>
-                    <ControlTemplate TargetType="ContextMenu">
-                        <Border Background="{TemplateBinding Background}" BorderBrush="{TemplateBinding BorderBrush}"
-                                BorderThickness="{TemplateBinding BorderThickness}" CornerRadius="10" Padding="{TemplateBinding Padding}"
-                                Effect="{DynamicResource Shadow.Flyout}">
-                            <ItemsPresenter />
-                        </Border>
-                    </ControlTemplate>
-                </Setter.Value>
-            </Setter>
-        </Style>
-
-        <Style x:Key="DarkMenuItem" TargetType="MenuItem">
-            <Setter Property="Foreground" Value="{DynamicResource Color.Text.Primary}" />
-            <Setter Property="FontSize" Value="13" />
-            <Setter Property="FontFamily" Value="{StaticResource Font.Family}" />
-            <Setter Property="Template">
-                <Setter.Value>
-                    <ControlTemplate TargetType="MenuItem">
-                        <Border x:Name="Root" Background="Transparent" CornerRadius="6" Padding="10,7">
-                            <Grid>
-                                <Grid.ColumnDefinitions>
-                                    <ColumnDefinition Width="*" />
-                                    <ColumnDefinition Width="Auto" />
-                                </Grid.ColumnDefinitions>
-                                <ContentPresenter ContentSource="Header" VerticalAlignment="Center" />
-                                <controls:VioraIcon Grid.Column="1" Geometry="{StaticResource Icon.Check}" Width="12" Height="12"
-                                                    Foreground="{DynamicResource Color.Primary}"
-                                                    Visibility="{Binding IsChecked, RelativeSource={RelativeSource TemplatedParent}, Converter={StaticResource BoolToVisibility}}" />
-                            </Grid>
-                        </Border>
-                        <ControlTemplate.Triggers>
-                            <Trigger Property="IsHighlighted" Value="True">
-                                <Setter TargetName="Root" Property="Background" Value="{DynamicResource Color.StateSelected}" />
-                            </Trigger>
-                        </ControlTemplate.Triggers>
-                    </ControlTemplate>
-                </Setter.Value>
-            </Setter>
-        </Style>
-
         <!-- ============ 窗口控制按钮 ============ -->
         <Style x:Key="CaptionButton" TargetType="Button">
             <Setter Property="Width" Value="44" />

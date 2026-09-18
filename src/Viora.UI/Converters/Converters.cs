@@ -134,6 +134,42 @@ public sealed class IconKeyConverter : IValueConverter
         throw new NotSupportedException();
 }
 
+/// <summary>ImageSource → UniformToFill ImageBrush. Rounded Borders must paint the
+/// image as their own background — WPF's ClipToBounds does not clip children to
+/// CornerRadius, so a raw Image child would poke square corners out of the frame.</summary>
+public sealed class ImageToBrushConverter : IValueConverter
+{
+    public object? Convert(object? value, Type targetType, object parameter, CultureInfo culture) =>
+        value is System.Windows.Media.ImageSource source
+            ? new System.Windows.Media.ImageBrush(source) { Stretch = System.Windows.Media.Stretch.UniformToFill }
+            : null;
+
+    public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture) =>
+        throw new NotSupportedException();
+}
+
+/// <summary>value.ToString() == parameter → Visible(批量队列状态图标)。</summary>
+public sealed class EqualsToVisibilityConverter : IValueConverter
+{
+    public object Convert(object? value, Type targetType, object parameter, CultureInfo culture) =>
+        string.Equals(value?.ToString(), parameter?.ToString(), StringComparison.Ordinal)
+            ? Visibility.Visible
+            : Visibility.Collapsed;
+
+    public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture) =>
+        throw new NotSupportedException();
+}
+
+/// <summary>空字符串 → Visible(TextBox 占位文本)。</summary>
+public sealed class StringEmptyToVisibilityConverter : IValueConverter
+{
+    public object Convert(object? value, Type targetType, object parameter, CultureInfo culture) =>
+        string.IsNullOrEmpty(value as string) ? Visibility.Visible : Visibility.Collapsed;
+
+    public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture) =>
+        throw new NotSupportedException();
+}
+
 /// <summary>Language code (value) → display name ("中文" / "English").</summary>
 public sealed class LanguageDisplayNameConverter : IValueConverter
 {

@@ -1,6 +1,7 @@
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
+using System.Windows.Media;
 using Viora.UI.Pages.Stylize;
 
 namespace Viora.UI.Pages.Stylize;
@@ -39,6 +40,9 @@ public partial class StylizePage : UserControl
 
     private StylizeViewModel ViewModel => (StylizeViewModel)DataContext;
 
+    /// <summary>缩略图条内部 ScrollViewer(横向滚动宿主),惰性解析。</summary>
+    private ScrollViewer? _thumbsScroll;
+
     private void WireViewModel()
     {
         if (_wiredViewModel == ViewModel) return;
@@ -53,7 +57,59 @@ public partial class StylizePage : UserControl
             {
                 UpdateSplitLayout();
             }
+            else if (e.PropertyName is nameof(StylizeViewModel.SelectedItem) or nameof(StylizeViewModel.HasImage))
+            {
+                // 选中/插入新图 → 缩略图条自动滚到该图
+                if (ViewModel.SelectedItem is not null)
+                    ThumbsList.ScrollIntoView(ViewModel.SelectedItem);
+            }
         };
+
+        ViewModel.Items.CollectionChanged += (_, e) =>
+        {
+            if (e.Action == System.Collections.Specialized.NotifyCollectionChangedAction.Add && e.NewItems is not null)
+                foreach (var item in e.NewItems)
+                    ThumbsList.ScrollIntoView(item);
+        };
+    }
+
+    /// <summary>缩略图条滚轮 → 横向滚动(每次插入新图也会跟随,见 WireViewModel)。</summary>
+    private void OnThumbsWheel(object sender, MouseWheelEventArgs e)
+    {
+        if (_thumbsScroll is null) _thumbsScroll = FindDescendantScrollViewer(ThumbsList);
+        if (_thumbsScroll is null) return;
+        _thumbsScroll.ScrollToHorizontalOffset(_thumbsScroll.HorizontalOffset - e.Delta * 0.6);
+        e.Handled = true;
+    }
+
+    /// <summary>历史记录条滚轮 → 横向滚动。</summary>
+    private void OnHistoryWheel(object sender, MouseWheelEventArgs e)
+    {
+        if (sender is ScrollViewer sv)
+        {
+            sv.ScrollToHorizontalOffset(sv.HorizontalOffset - e.Delta * 0.6);
+            e.Handled = true;
+        }
+    }
+
+    private static ScrollViewer? FindDescendantScrollViewer(DependencyObject root)
+    {
+        int count = VisualTreeHelper.GetChildrenCount(root);
+        for (int i = 0; i < count; i++)
+        {
+            var child = VisualTreeHelper.GetChild(root, i);
+            if (child is ScrollViewer sv) return sv;
+            var found = FindDescendantScrollViewer(child);
+            if (found is not null) return found;
+        }
+        return null;
+    }
+
+    /// <summary>批量面板拖拽入队。</summary>
+    private void OnBatchDrop(object sender, DragEventArgs e)
+    {
+        if (e.Data.GetData(DataFormats.FileDrop) is string[] files && files.Length > 0)
+            _ = ViewModel.AddBatchFilesAsync(files);
     }
 
     // ---------- 分割布局 ----------
@@ -151,6 +207,16 @@ public partial class StylizePage : UserControl
     private void OnDoubleResetSplit(object sender, MouseButtonEventArgs e)
     {
         if (ViewModel.ShowCompareSplit) ViewModel.ResetSplitCommand.Execute(null);
+    }
+
+    /// <summary>风格卡片列表滚轮:外层 ScrollViewer 统一滚动(内层禁滚,事件被截获)。</summary>
+    private void OnListWheel(object sender, MouseWheelEventArgs e)
+    {
+        if (sender is ScrollViewer sv)
+        {
+            sv.ScrollToVerticalOffset(sv.VerticalOffset - e.Delta * 0.6);
+            e.Handled = true;
+        }
     }
 
     private void OnViewportWheel(object sender, MouseWheelEventArgs e)

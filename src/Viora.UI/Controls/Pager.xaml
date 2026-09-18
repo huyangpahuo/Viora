@@ -1,0 +1,25 @@
+<UserControl
+    x:Class="Viora.UI.Controls.Pager"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:controls="clr-namespace:Viora.UI.Controls">
+
+    <!--
+        通用分页条:「‹ 1 2 3 … 9 ›」。
+        箭头来自 icon库 几何(Icon.ChevronLeft/Right);页码胶囊,当前页高亮。
+        用法:绑定 TotalItems + PageSize,TwoWay 绑定 CurrentPage,自行监听变化刷新列表。
+    -->
+    <StackPanel x:Name="Root" Orientation="Horizontal" HorizontalAlignment="Center" VerticalAlignment="Center">
+        <Button x:Name="PrevButton" Style="{DynamicResource IconButton}" Width="28" Height="28" Click="OnPrevClick">
+            <controls:VioraIcon Geometry="{StaticResource Icon.ChevronLeft}" Width="11" Height="11"
+                                Foreground="{Binding Foreground, RelativeSource={RelativeSource AncestorType=Button}}" />
+        </Button>
+
+        <StackPanel x:Name="PageNumbers" Orientation="Horizontal" Margin="4,0" />
+
+        <Button x:Name="NextButton" Style="{DynamicResource IconButton}" Width="28" Height="28" Click="OnNextClick">
+            <controls:VioraIcon Geometry="{StaticResource Icon.ChevronRight}" Width="11" Height="11"
+                                Foreground="{Binding Foreground, RelativeSource={RelativeSource AncestorType=Button}}" />
+        </Button>
+    </StackPanel>
+</UserControl>

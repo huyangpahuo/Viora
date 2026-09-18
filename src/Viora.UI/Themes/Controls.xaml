@@ -4,8 +4,9 @@
     xmlns:controls="clr-namespace:Viora.UI.Controls"
     xmlns:conv="clr-namespace:Viora.UI.Converters">
 
-    <!-- Local instance: deferred templates resolve StaticResource only within this file. -->
+    <!-- Local instances: deferred templates resolve StaticResource only within this file. -->
     <DropShadowEffect x:Key="LocalFlyoutShadow" BlurRadius="28" ShadowDepth="6" Direction="270" Opacity="0.5" Color="#FF000000" />
+    <conv:BoolToVisibilityConverter x:Key="LocalBoolToVisibility" />
 
     <!--
         Viora Fluent control styles (Material 3 language):
@@ -122,6 +123,115 @@
                 </Setter>
             </Trigger>
         </Style.Triggers>
+    </Style>
+
+    <!-- ============ 深色右键/下拉菜单(语言切换、卡片更多菜单共用) ============ -->
+    <Style x:Key="DarkContextMenu" TargetType="ContextMenu">
+        <Setter Property="Background" Value="{DynamicResource Color.SurfaceElevated}" />
+        <Setter Property="BorderBrush" Value="{DynamicResource Color.Outline}" />
+        <Setter Property="BorderThickness" Value="1" />
+        <Setter Property="Padding" Value="4" />
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="ContextMenu">
+                    <Border Background="{TemplateBinding Background}" BorderBrush="{TemplateBinding BorderBrush}"
+                            BorderThickness="{TemplateBinding BorderThickness}" CornerRadius="10" Padding="{TemplateBinding Padding}"
+                            Effect="{DynamicResource Shadow.Flyout}">
+                        <ItemsPresenter />
+                    </Border>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
+    <Style x:Key="DarkMenuItem" TargetType="MenuItem">
+        <Setter Property="Foreground" Value="{DynamicResource Color.Text.Primary}" />
+        <Setter Property="FontSize" Value="13" />
+        <Setter Property="FontFamily" Value="{StaticResource Font.Family}" />
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="MenuItem">
+                    <Border x:Name="Root" Background="Transparent" CornerRadius="6" Padding="10,7">
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*" />
+                                <ColumnDefinition Width="Auto" />
+                            </Grid.ColumnDefinitions>
+                            <ContentPresenter ContentSource="Header" VerticalAlignment="Center" />
+                            <!-- ContextMenu 是独立视觉树,必须 DynamicResource 才能命中应用级图标库 -->
+                            <controls:VioraIcon Grid.Column="1" Geometry="{DynamicResource Icon.Check}" Width="12" Height="12"
+                                                Foreground="{DynamicResource Color.Primary}"
+                                                Visibility="{Binding IsChecked, RelativeSource={RelativeSource TemplatedParent}, Converter={StaticResource LocalBoolToVisibility}}" />
+                        </Grid>
+                    </Border>
+                    <ControlTemplate.Triggers>
+                        <Trigger Property="IsHighlighted" Value="True">
+                            <Setter TargetName="Root" Property="Background" Value="{DynamicResource Color.StateSelected}" />
+                        </Trigger>
+                    </ControlTemplate.Triggers>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
+    <!-- ============ Chip 胶囊单选列表项(风格分类 / 作品筛选共用) ============ -->
+    <Style x:Key="ChipPillItem" TargetType="ListBoxItem">
+        <Setter Property="Foreground" Value="{DynamicResource Color.Text.Secondary}" />
+        <Setter Property="FontSize" Value="12" />
+        <Setter Property="FontFamily" Value="{StaticResource Font.Family}" />
+        <Setter Property="Cursor" Value="Hand" />
+        <Setter Property="FocusVisualStyle" Value="{x:Null}" />
+        <Setter Property="Margin" Value="0,0,8,0" />
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="ListBoxItem">
+                    <Border x:Name="Pill" Background="{DynamicResource Brush.Glass}" CornerRadius="15" Padding="13,5">
+                        <ContentPresenter VerticalAlignment="Center" RecognizesAccessKey="True" />
+                    </Border>
+                    <ControlTemplate.Triggers>
+                        <Trigger Property="IsMouseOver" Value="True">
+                            <Setter TargetName="Pill" Property="Background" Value="{DynamicResource Color.StateHover}" />
+                            <Setter Property="Foreground" Value="{DynamicResource Color.Text.Primary}" />
+                        </Trigger>
+                        <Trigger Property="IsSelected" Value="True">
+                            <Setter TargetName="Pill" Property="Background" Value="{DynamicResource Color.Primary}" />
+                            <Setter Property="Foreground" Value="{DynamicResource Color.OnPrimary}" />
+                            <Setter Property="FontWeight" Value="SemiBold" />
+                        </Trigger>
+                    </ControlTemplate.Triggers>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
+    <!-- ============ 分页页码按钮(Pager 控件) ============ -->
+    <Style x:Key="PagerPageButton" TargetType="ToggleButton">
+        <Setter Property="Foreground" Value="{DynamicResource Color.Text.Secondary}" />
+        <Setter Property="FontSize" Value="12" />
+        <Setter Property="FontFamily" Value="{StaticResource Font.Family}" />
+        <Setter Property="Background" Value="Transparent" />
+        <Setter Property="FocusVisualStyle" Value="{x:Null}" />
+        <Setter Property="Cursor" Value="Hand" />
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="ToggleButton">
+                    <Border x:Name="Pill" Background="{TemplateBinding Background}" CornerRadius="9">
+                        <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center" />
+                    </Border>
+                    <ControlTemplate.Triggers>
+                        <Trigger Property="IsMouseOver" Value="True">
+                            <Setter TargetName="Pill" Property="Background" Value="{DynamicResource Color.StateHover}" />
+                            <Setter Property="Foreground" Value="{DynamicResource Color.Text.Primary}" />
+                        </Trigger>
+                        <Trigger Property="IsChecked" Value="True">
+                            <Setter TargetName="Pill" Property="Background" Value="{DynamicResource Color.Primary}" />
+                            <Setter Property="Foreground" Value="{DynamicResource Color.OnPrimary}" />
+                            <Setter Property="FontWeight" Value="SemiBold" />
+                        </Trigger>
+                    </ControlTemplate.Triggers>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
     </Style>
 
     <!-- ============ Filled (primary) button ============ -->

@@ -3,6 +3,7 @@ using System.Windows;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
 using Viora.Core.Localization;
 using Viora.Core.Settings;
 using Viora.UI.Localization;
@@ -56,19 +57,22 @@ public partial class ShellViewModel : ObservableObject
     private readonly IServiceProvider _services;
     private readonly ILocalizationService _localization;
     private readonly ISettingsService _settings;
+    private readonly ILogger<ShellViewModel> _logger;
 
     private readonly Dictionary<Type, object> _pageCache = new();
 
-    public ShellViewModel(IServiceProvider services, ILocalizationService localization, ISettingsService settings)
+    public ShellViewModel(IServiceProvider services, ILocalizationService localization, ISettingsService settings,
+        ILogger<ShellViewModel> logger)
     {
         _services = services;
         _localization = localization;
         _settings = settings;
+        _logger = logger;
 
         Items = new ObservableCollection<NavigationItem>
         {
             new(Sections.Core, "Nav.Stylize", "Nav.Stylize.Sub", "WandMagicSparkles", typeof(Pages.Stylize.StylizePage), 0),
-            new(Sections.Core, "Nav.MyWorks", "Nav.MyWorks.Sub", "Images", typeof(Pages.Placeholder.PlaceholderPage), 1),
+            new(Sections.Core, "Nav.MyWorks", "Nav.MyWorks.Sub", "Images", typeof(Pages.MyWorks.MyWorksPage), 1),
             new(Sections.Core, "Nav.PluginMarket", "Nav.PluginMarket.Sub", "PuzzlePiece", typeof(Pages.Placeholder.PlaceholderPage), 2),
             new(Sections.Core, "Nav.Settings", "Nav.Settings.Sub", "Gear", typeof(Pages.Placeholder.PlaceholderPage), 3),
             new(Sections.Aux, "Nav.About", null, "CircleInfo", typeof(Pages.Placeholder.PlaceholderPage), 4),
@@ -171,7 +175,16 @@ public partial class ShellViewModel : ObservableObject
             if (SelectedItem is null) return null;
             if (!_pageCache.TryGetValue(SelectedItem.PageType, out var page))
             {
-                page = _services.GetRequiredService(SelectedItem.PageType);
+                try
+                {
+                    page = _services.GetRequiredService(SelectedItem.PageType);
+                }
+                catch (Exception ex)
+                {
+                    // 绑定引擎会吞掉属性 getter 的异常(页面静默空白),这里必须显式记录。
+                    _logger.LogError(ex, "Failed to create page {PageType}", SelectedItem.PageType.Name);
+                    return null;
+                }
                 _pageCache[SelectedItem.PageType] = page;
             }
             // 占位页共享一个类,标题/副标题每次切换都要跟随当前导航项。
@@ -185,4 +198,11 @@ public partial class ShellViewModel : ObservableObject
     }
 
     partial void OnSelectedItemChanged(NavigationItem? value) => OnPropertyChanged(nameof(CurrentPage));
+
+    /// <summary>跨页跳转(如“我的作品 → 重新生成”回到风格化页)。</summary>
+    public void NavigateTo(string titleKey)
+    {
+        var item = Items.FirstOrDefault(i => i.TitleKey == titleKey);
+        if (item is not null) SelectedItem = item;
+    }
 }

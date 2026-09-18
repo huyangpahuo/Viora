@@ -14,6 +14,9 @@
     <conv:SidebarWidthConverter x:Key="SidebarWidth" />
     <conv:TranslateKeyConverter x:Key="TranslateKey" />
     <conv:IconKeyConverter x:Key="IconKey" />
+    <conv:ImageToBrushConverter x:Key="ImageToBrush" />
+    <conv:StringEmptyToVisibilityConverter x:Key="StringEmptyToVisibility" />
+    <conv:EqualsToVisibilityConverter x:Key="EqualsToVisibility" />
     <conv:LanguageDisplayNameConverter x:Key="LangNameOf" />
     <conv:LanguageEqualsCurrentConverter x:Key="LangNameEquals" />
     <conv:EqualityConverter x:Key="Equals" />

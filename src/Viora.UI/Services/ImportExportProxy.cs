@@ -26,6 +26,9 @@ public interface IImportServiceProxy
     ImageSource ToImageSource(IImageBuffer buffer);
 
     string? PickFile();
+
+    /// <summary>多选(批量处理入队);取消返回 null。</summary>
+    string[]? PickFiles();
 }
 
 public interface IExportProxy

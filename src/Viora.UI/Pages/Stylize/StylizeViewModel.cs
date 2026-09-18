@@ -11,6 +11,7 @@ using Viora.Core.Imaging;
 using Viora.Core.Pipeline;
 using Viora.Core.Plugins;
 using Viora.Core.Settings;
+using Viora.Core.Works;
 using Viora.UI.Hosting;
 using Viora.UI.Localization;
 using Viora.UI.Services;
@@ -155,6 +156,10 @@ public sealed partial class WorkItemViewModel : ObservableObject
     [ObservableProperty]
     private bool _isFailed;
 
+    /// <summary>批量处理队列中的状态(单图模式忽略)。</summary>
+    [ObservableProperty]
+    private BatchItemState _batchState = BatchItemState.Pending;
+
     public IImageBuffer? ResultBuffer { get; set; }
 
     public bool HasResult => ResultImage is not null;
@@ -169,9 +174,15 @@ public partial class StylizeViewModel : ObservableObject
     private readonly IImageConversionEngine _engine;
     private readonly ISettingsService _settings;
     private readonly IExportProxy _export;
+    private readonly IWorksStore _works;
     private readonly ILogger<StylizeViewModel> _logger;
 
+    /// <summary>从“我的作品”重新生成时携带的原标题/来源名,落一条新作品后清空。</summary>
+    private string? _pendingTitle;
+    private string? _pendingSourceFileName;
+
     private CancellationTokenSource? _cts;
+    private CancellationTokenSource? _batchCts;
     private int _runId;
 
     public StylizeViewModel(
@@ -180,6 +191,7 @@ public partial class StylizeViewModel : ObservableObject
         IImageConversionEngine engine,
         ISettingsService settings,
         IExportProxy export,
+        IWorksStore works,
         ILogger<StylizeViewModel> logger)
     {
         _catalog = catalog;
@@ -187,6 +199,7 @@ public partial class StylizeViewModel : ObservableObject
         _engine = engine;
         _settings = settings;
         _export = export;
+        _works = works;
         _logger = logger;
 
         Styles = new ObservableCollection<StyleItemViewModel>();
@@ -210,7 +223,18 @@ public partial class StylizeViewModel : ObservableObject
 
     public ObservableCollection<ParameterItemViewModel> Parameters { get; }
 
-    [ObservableProperty]
+    /// <summary>当前风格。拒绝 null 赋值:风格卡片分页翻页时 ListBox 会清空选择,
+    /// 不能因此丢掉正在使用的风格与参数。</summary>
+    public StyleItemViewModel? SelectedStyle
+    {
+        get => _selectedStyle;
+        set
+        {
+            if (value is null || ReferenceEquals(_selectedStyle, value)) return;
+            if (SetProperty(ref _selectedStyle, value)) OnSelectedStyleChanged(value);
+        }
+    }
+
     private StyleItemViewModel? _selectedStyle;
 
     [ObservableProperty]
@@ -224,13 +248,42 @@ public partial class StylizeViewModel : ObservableObject
 
     public bool HasStyles => Styles.Count > 0;
 
+    /// <summary>风格卡片每页数量(3 列 × 4 行)。</summary>
+    public const int StylesPageSize = 12;
+
+    [ObservableProperty]
+    private int _stylePage = 1;
+
     /// <summary>Filtered view over Styles (category chips + search kept simple).</summary>
     public IEnumerable<StyleItemViewModel> FilteredStyles =>
         CategoryFilter == "Style.Category.All" ? Styles : Styles.Where(s => s.CategoryKey == CategoryFilter);
 
-    partial void OnCategoryFilterChanged(string value) => OnPropertyChanged(nameof(FilteredStyles));
+    public int StyleTotalItems => FilteredStyles.Count();
 
-    partial void OnSelectedStyleChanged(StyleItemViewModel? value)
+    public int StyleTotalPages => Math.Max(1, (int)Math.Ceiling(StyleTotalItems / (double)StylesPageSize));
+
+    public bool StylePagerVisible => StyleTotalPages > 1;
+
+    public IEnumerable<StyleItemViewModel> PagedStyles =>
+        FilteredStyles.Skip((Math.Clamp(StylePage, 1, StyleTotalPages) - 1) * StylesPageSize).Take(StylesPageSize);
+
+    private void RefreshStylePaging()
+    {
+        OnPropertyChanged(nameof(StyleTotalItems));
+        OnPropertyChanged(nameof(StyleTotalPages));
+        OnPropertyChanged(nameof(StylePagerVisible));
+        OnPropertyChanged(nameof(PagedStyles));
+    }
+
+    partial void OnStylePageChanged(int value) => OnPropertyChanged(nameof(PagedStyles));
+
+    partial void OnCategoryFilterChanged(string value)
+    {
+        StylePage = 1;
+        RefreshStylePaging();
+    }
+
+    private void OnSelectedStyleChanged(StyleItemViewModel value)
     {
         Parameters.Clear();
         if (value is null) return;
@@ -423,6 +476,254 @@ public partial class StylizeViewModel : ObservableObject
         OnPropertyChanged(nameof(IsImageMode));
         OnPropertyChanged(nameof(IsBatchMode));
         OnPropertyChanged(nameof(IsHistoryMode));
+        if (value == WorkMode.History) RebuildHistoryItems();
+    }
+
+    // ---------- 批量处理 ----------
+
+    public ObservableCollection<WorkItemViewModel> BatchQueue { get; } = new();
+
+    [ObservableProperty]
+    private bool _isBatchRunning;
+
+    [ObservableProperty]
+    private double _batchProgressFraction;
+
+    public bool HasBatchQueue => BatchQueue.Count > 0;
+
+    public string BatchProgressText
+    {
+        get
+        {
+            int done = BatchQueue.Count(q => q.BatchState is BatchItemState.Done or BatchItemState.Failed);
+            return IsBatchRunning
+                ? string.Format(Tr.Get("Stylize.Batch.Running"), done, BatchQueue.Count)
+                : string.Format(Tr.Get("Stylize.Batch.Summary"), done, BatchQueue.Count);
+        }
+    }
+
+    partial void OnIsBatchRunningChanged(bool value)
+    {
+        OnPropertyChanged(nameof(BatchProgressText));
+        StartBatchCommand.NotifyCanExecuteChanged();
+    }
+
+    private bool CanStartBatch() => !IsBatchRunning && BatchQueue.Count > 0 && SelectedStyle is not null;
+
+    /// <summary>批量队列入队(点击多选):RelayCommand 不能带 string 参数给 string[] 命令。</summary>
+    [RelayCommand]
+    private Task AddBatchFromPickerAsync() => AddBatchFilesCoreAsync(_import.PickFiles());
+
+    /// <summary>批量队列入队(拖拽直接传路径)。</summary>
+    public async Task AddBatchFilesAsync(string[]? paths)
+    {
+        try
+        {
+            await AddBatchFilesCoreAsync(paths);
+        }
+        catch (Exception ex)
+        {
+            ShowError("Stylize.Import.Failed", ex);
+        }
+    }
+
+    private async Task AddBatchFilesCoreAsync(string[]? paths)
+    {
+        if (paths is null || paths.Length == 0) return;
+
+        try
+        {
+            int cap = _settings.Current.Performance.UsePreviewQualityDuringInteraction
+                ? _settings.Current.ImageProcessing.PreviewMaxDimension
+                : _settings.Current.ImageProcessing.ExportMaxDimension;
+
+            foreach (var path in paths)
+            {
+                if (BatchQueue.Any(q => string.Equals(q.FileName, path, StringComparison.OrdinalIgnoreCase))) continue;
+                var buffer = await _import.LoadFromFileAsync(path, cap);
+                var item = new WorkItemViewModel(path, buffer, _import.ToImageSource(buffer));
+                BatchQueue.Add(item);
+            }
+            OnPropertyChanged(nameof(HasBatchQueue));
+            OnPropertyChanged(nameof(BatchProgressText));
+            StartBatchCommand.NotifyCanExecuteChanged();
+        }
+        catch (Exception ex)
+        {
+            ShowError("Stylize.Import.Failed", ex);
+        }
+    }
+
+    [RelayCommand]
+    private void RemoveFromBatch(WorkItemViewModel item)
+    {
+        if (IsBatchRunning) return;
+        BatchQueue.Remove(item);
+        OnPropertyChanged(nameof(HasBatchQueue));
+        OnPropertyChanged(nameof(BatchProgressText));
+        StartBatchCommand.NotifyCanExecuteChanged();
+    }
+
+    [RelayCommand]
+    private void CancelBatch() => _batchCts?.Cancel();
+
+    /// <summary>批量处理:用当前风格与参数顺序处理队列中每张图,完成后逐张入库。</summary>
+    [RelayCommand(CanExecute = nameof(CanStartBatch))]
+    private async Task StartBatchAsync()
+    {
+        var style = SelectedStyle;
+        if (style is null || BatchQueue.Count == 0) return;
+
+        int id = ++_runId;
+        _batchCts?.Cancel();
+        _batchCts = new CancellationTokenSource();
+        var ct = _batchCts.Token;
+
+        foreach (var q in BatchQueue) q.BatchState = BatchItemState.Pending;
+
+        IsBatchRunning = true;
+        try
+        {
+            var parameters = new Dictionary<string, object>();
+            foreach (var p in Parameters) parameters[p.Key] = p.ToParameterValue();
+            var pipeline = style.Model.BuildPipeline(parameters);
+
+            for (int i = 0; i < BatchQueue.Count; i++)
+            {
+                if (ct.IsCancellationRequested) break;
+                var item = BatchQueue[i];
+                item.BatchState = BatchItemState.Running;
+                OnPropertyChanged(nameof(BatchProgressText));
+
+                try
+                {
+                    var progress = new Progress<PipelineProgress>(p =>
+                    {
+                        if (id != _runId) return;
+                        BatchProgressFraction = p.OverallFraction;
+                    });
+                    var result = await _engine.ExecuteAsync(pipeline, item.SourceBuffer, parameters, !UseFullQuality, progress, ct);
+                    item.ResultBuffer = result.Result;
+                    item.ResultImage = _import.ToImageSource(result.Result);
+                    item.IsFailed = false;
+                    item.BatchState = BatchItemState.Done;
+                    _ = SaveWorkAsync(item, style, result.Result);
+                }
+                catch (OperationCanceledException)
+                {
+                    item.BatchState = BatchItemState.Pending;
+                    break;
+                }
+#pragma warning disable CA1031 // 单张失败不中断整批。
+                catch (Exception ex)
+                {
+                    _logger.LogError(ex, "Batch item failed: {File}", item.FileName);
+                    item.IsFailed = true;
+                    item.BatchState = BatchItemState.Failed;
+                }
+#pragma warning restore CA1031
+                OnPropertyChanged(nameof(BatchProgressText));
+            }
+        }
+        finally
+        {
+            IsBatchRunning = false;
+            StatusText = ct.IsCancellationRequested ? Tr.Get("Stylize.Batch.Cancelled") : Tr.Get("Stylize.Batch.Finished");
+        }
+    }
+
+    // ---------- 历史记录 ----------
+
+    public ObservableCollection<HistoryItemViewModel> HistoryItems { get; } = new();
+
+    public bool HasHistory => HistoryItems.Count > 0;
+
+    private void RebuildHistoryItems()
+    {
+        HistoryItems.Clear();
+        foreach (var record in _works.Works.OrderByDescending(w => w.CreatedAt).Take(30))
+        {
+            ImageSource? thumb = null;
+            try
+            {
+                var path = _works.GetImageAbsolutePath(record.ResultImageFile);
+                if (File.Exists(path))
+                {
+                    var image = new BitmapImage();
+                    image.BeginInit();
+                    image.CacheOption = BitmapCacheOption.OnLoad;
+                    image.DecodePixelWidth = 220;
+                    image.UriSource = new Uri(path);
+                    image.EndInit();
+                    image.Freeze();
+                    thumb = image;
+                }
+            }
+            catch
+            {
+                // 缩略图失败不影响列表
+            }
+            HistoryItems.Add(new HistoryItemViewModel(record, thumb, _works));
+        }
+        OnPropertyChanged(nameof(HasHistory));
+    }
+
+    /// <summary>历史记录点击 → 回到图片模式查看该作品(原图 + 当时结果)。</summary>
+    [RelayCommand]
+    private async Task OpenHistoryAsync(HistoryItemViewModel? item)
+    {
+        if (item?.Record is null) return;
+        Mode = WorkMode.Image;
+        await OpenWorkAsync(item.Record);
+    }
+
+    /// <summary>把一条作品记录载入查看器:原图为源,结果图直接展示(不重跑)。</summary>
+    public async Task OpenWorkAsync(WorkRecord record)
+    {
+        try
+        {
+            IsBusy = true;
+            StatusText = Tr.Get("Common.Loading");
+
+            int cap = _settings.Current.Performance.UsePreviewQualityDuringInteraction
+                ? _settings.Current.ImageProcessing.PreviewMaxDimension
+                : _settings.Current.ImageProcessing.ExportMaxDimension;
+
+            string? sourcePath = record.OriginalImageFile is not null ? _works.GetImageAbsolutePath(record.OriginalImageFile) : null;
+            string resultPath = _works.GetImageAbsolutePath(record.ResultImageFile);
+            if (sourcePath is null || !File.Exists(sourcePath)) sourcePath = File.Exists(resultPath) ? resultPath : null;
+            if (sourcePath is null)
+            {
+                StatusText = Tr.Get("Works.Regenerate.MissingSource");
+                return;
+            }
+
+            var sourceBuffer = await _import.LoadFromFileAsync(sourcePath, cap);
+            var item = new WorkItemViewModel(sourcePath, sourceBuffer, _import.ToImageSource(sourceBuffer));
+            _pendingTitle = record.Title;
+            _pendingSourceFileName = record.SourceFileName;
+
+            if (File.Exists(resultPath))
+            {
+                var resultBuffer = await _import.LoadFromFileAsync(resultPath, cap);
+                item.ResultBuffer = resultBuffer;
+                item.ResultImage = _import.ToImageSource(resultBuffer);
+            }
+
+            Items.Add(item);
+            SelectedItem = item;
+            Zoom = 1.0;
+            CompareMode = item.HasResult ? CompareMode.Split : CompareMode.Original;
+            StatusText = Tr.Get("Stylize.Idle");
+        }
+        catch (Exception ex)
+        {
+            ShowError("Stylize.Import.Failed", ex);
+        }
+        finally
+        {
+            IsBusy = false;
+        }
     }
 
     // ---------- 导入 ----------
@@ -512,9 +813,15 @@ public partial class StylizeViewModel : ObservableObject
 
     private bool CanRun() => HasImage && SelectedStyle is not null;
 
-    /// <summary>开始风格化(Ctrl + Enter):对当前工作项执行一次完整风格化。</summary>
+    /// <summary>开始风格化(Ctrl + Enter):显式执行,完成后落一条作品记录。</summary>
     [RelayCommand(CanExecute = nameof(CanRun))]
-    private async Task RunAsync()
+    private Task RunAsync() => RunCoreAsync(saveWork: true);
+
+    /// <summary>
+    /// 风格化核心流程。参数/风格变化触发的自动重跑(saveWork: false)只刷新预览,
+    /// 不产生作品记录 —— 否则拖一次滑条就会往作品库里灌一批重复项。
+    /// </summary>
+    private async Task RunCoreAsync(bool saveWork)
     {
         var item = SelectedItem;
         var style = SelectedStyle;
@@ -547,6 +854,12 @@ public partial class StylizeViewModel : ObservableObject
             item.ResultImage = _import.ToImageSource(result.Result);
             StatusText = Tr.Get("Stylize.Idle");
             if (CompareMode == CompareMode.Original) CompareMode = CompareMode.Split;
+
+            if (saveWork)
+            {
+                // 显式风格化完成 → 落一条作品记录(原图 + 风格 + 参数快照)。
+                _ = SaveWorkAsync(item, style, result.Result);
+            }
         }
         catch (OperationCanceledException)
         {
@@ -567,9 +880,75 @@ public partial class StylizeViewModel : ObservableObject
         }
     }
 
-    /// <summary>失败状态的 重新生成。</summary>
+    /// <summary>失败状态的 重新生成(显式操作,成功后入库)。</summary>
     [RelayCommand]
-    private Task RetryAsync() => RunAsync();
+    private Task RetryAsync() => RunCoreAsync(saveWork: true);
+
+    private async Task SaveWorkAsync(WorkItemViewModel item, StyleItemViewModel style, IImageBuffer result)
+    {
+        try
+        {
+            var record = new WorkRecord
+            {
+                Id = Guid.NewGuid().ToString("N"),
+                Title = _pendingTitle ?? item.Title,
+                SourceFileName = _pendingSourceFileName ?? Path.GetFileName(item.FileName),
+                StyleId = style.Model.Id,
+                StyleNameKey = style.Model.DisplayNameKey,
+                StyleName = style.Name,
+                CreatedAt = DateTime.Now,
+                AiQuality = AiQualityMode,
+            };
+            foreach (var p in Parameters)
+                record.Parameters.Add(new WorkParameterSnapshot { Key = p.Key, Label = p.Label, Value = p.ValueDisplay });
+
+            _pendingTitle = null;
+            _pendingSourceFileName = null;
+            await _works.AddAsync(record, result, item.SourceBuffer);
+            _logger.LogInformation("Work record saved: {Title}", record.Title);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to save work record");
+        }
+    }
+
+    /// <summary>
+    /// “我的作品 → 重新生成”:恢复原图、选中风格、套用参数快照后重跑一次。
+    /// </summary>
+    public async Task RestoreWorkAsync(WorkRecord record)
+    {
+        try
+        {
+            string path = record.OriginalImageFile is null ? string.Empty : _works.GetImageAbsolutePath(record.OriginalImageFile);
+            if (string.IsNullOrEmpty(path) || !File.Exists(path))
+            {
+                StatusText = Tr.Get("Works.Regenerate.MissingSource");
+                return;
+            }
+
+            var style = Styles.FirstOrDefault(s => s.Model.Id == record.StyleId) ?? SelectedStyle;
+            if (style is not null)
+            {
+                SelectedStyle = style;
+                foreach (var p in Parameters)
+                {
+                    var snapshot = record.Parameters.FirstOrDefault(s => s.Key == p.Key);
+                    if (snapshot is null) continue;
+                    if (double.TryParse(snapshot.Value, System.Globalization.CultureInfo.InvariantCulture, out var value))
+                        p.SliderValue = Math.Clamp(value, p.Minimum, p.Maximum);
+                }
+            }
+
+            _pendingTitle = record.Title;
+            _pendingSourceFileName = record.SourceFileName;
+            await ImportFilesAsync(new[] { path });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to restore work {Id}", record.Id);
+        }
+    }
 
     [RelayCommand]
     private void Cancel() => _cts?.Cancel();
@@ -577,7 +956,7 @@ public partial class StylizeViewModel : ObservableObject
     private async Task AutoRerunAsync()
     {
         if (!HasImage || SelectedStyle is null) return;
-        await RunAsync();
+        await RunCoreAsync(saveWork: false);
     }
 
     // ---------- 导出 ----------
@@ -634,7 +1013,7 @@ public partial class StylizeViewModel : ObservableObject
         foreach (var preset in _catalog.Presets)
             Styles.Add(new StyleItemViewModel(preset));
         OnPropertyChanged(nameof(HasStyles));
-        OnPropertyChanged(nameof(FilteredStyles));
+        RefreshStylePaging();
 
         // Selection survives a catalog refresh (param changes reset Parameters).
         SelectedStyle = Styles.FirstOrDefault(s => s.Model.Id == selected) ?? Styles.FirstOrDefault();
@@ -647,6 +1026,51 @@ public partial class StylizeViewModel : ObservableObject
         if (_settings.Current.Debug.DeveloperMode)
             MessageBox.Show(ex.ToString(), "Viora", MessageBoxButton.OK, MessageBoxImage.Error);
     }
+}
+
+/// <summary>批量队列中单张的状态。</summary>
+public enum BatchItemState
+{
+    Pending,
+    Running,
+    Done,
+    Failed,
+}
+
+/// <summary>历史记录条目(作品库最近记录的只读缩略)。</summary>
+public sealed class HistoryItemViewModel
+{
+    public HistoryItemViewModel(WorkRecord record, ImageSource? thumbnail, IWorksStore works)
+    {
+        Record = record;
+        Thumbnail = thumbnail;
+        _works = works;
+    }
+
+    private readonly IWorksStore _works;
+
+    public WorkRecord Record { get; }
+
+    public ImageSource? Thumbnail { get; }
+
+    public string Title => string.IsNullOrEmpty(Record.Title) ? Record.SourceFileName : Record.Title;
+
+    public string StyleName
+    {
+        get
+        {
+            if (!string.IsNullOrEmpty(Record.StyleNameKey))
+            {
+                var translated = Tr.Get(Record.StyleNameKey);
+                if (!string.IsNullOrEmpty(translated) && translated != Record.StyleNameKey) return translated;
+            }
+            return Record.StyleName;
+        }
+    }
+
+    public string TimeDisplay => Record.CreatedAt.ToString("MM-dd HH:mm");
+
+    public string ResultAbsolutePath => _works.GetImageAbsolutePath(Record.ResultImageFile);
 }
 
 /// <summary>中央工作区底部 Tab:图片 / 批量处理 / 历史记录。</summary>

@@ -41,6 +41,16 @@ public sealed class AppImportService : IImportServiceProxy
         };
         return dialog.ShowDialog(Application.Current.MainWindow) == true ? dialog.FileName : null;
     }
+
+    public string[]? PickFiles()
+    {
+        var dialog = new Microsoft.Win32.OpenFileDialog
+        {
+            Filter = "Images|*.png;*.jpg;*.jpeg;*.bmp;*.gif;*.tif;*.tiff;*.webp|All files|*.*",
+            Multiselect = true,
+        };
+        return dialog.ShowDialog(Application.Current.MainWindow) == true ? dialog.FileNames : null;
+    }
 }
 
 public sealed class AppExportService : IExportProxy
