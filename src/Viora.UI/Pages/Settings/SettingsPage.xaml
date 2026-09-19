@@ -236,6 +236,34 @@
                                     <ToggleButton Grid.Column="1" Style="{StaticResource SettingsSwitch}" VerticalAlignment="Center"
                                                   IsChecked="{Binding DeveloperMode}" />
                                 </Grid>
+                                <Separator Margin="0,12,0,12" Background="{DynamicResource Color.Divider}" />
+                                <TextBlock Text="{loc:Translate Settings.Debug.LogFolder}" FontSize="13"
+                                           Foreground="{DynamicResource Color.Text.Primary}" />
+                                <TextBlock Text="{loc:Translate Settings.Debug.LogFolder.Desc}" FontSize="11" Margin="0,3,0,0"
+                                           Foreground="{DynamicResource Color.Text.Secondary}" TextWrapping="Wrap" />
+                                <Grid Margin="0,8,0,0">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="*" />
+                                        <ColumnDefinition Width="Auto" />
+                                    </Grid.ColumnDefinitions>
+                                    <Border Background="{DynamicResource Color.SurfaceElevated}" CornerRadius="8" Padding="10,7"
+                                            BorderBrush="{DynamicResource Color.Outline}" BorderThickness="1" Margin="0,0,10,0">
+                                        <TextBlock Text="{Binding LogFolderDisplay}" FontSize="11" TextTrimming="CharacterEllipsis"
+                                                   Foreground="{DynamicResource Color.Text.Primary}" />
+                                    </Border>
+                                    <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center">
+                                        <Button Style="{DynamicResource SecondaryButton}" Height="32" Padding="12,0" Margin="0,0,8,0"
+                                                Command="{Binding ChooseLogFolderCommand}"
+                                                Content="{loc:Translate Settings.Storage.Choose}" />
+                                        <Button Style="{DynamicResource SecondaryButton}" Height="32" Padding="12,0" Margin="0,0,8,0"
+                                                Command="{Binding OpenLogFolderCommand}"
+                                                Content="{loc:Translate Settings.Storage.Open}" />
+                                        <Button Style="{DynamicResource SecondaryButton}" Height="32" Padding="12,0"
+                                                Command="{Binding ResetLogFolderCommand}"
+                                                Content="{loc:Translate Settings.Storage.Reset}"
+                                                Visibility="{Binding LogFolderIsCustom, Converter={StaticResource BoolToVisibility}}" />
+                                    </StackPanel>
+                                </Grid>
                             </StackPanel>
                         </Border>
                     </StackPanel>
@@ -244,10 +272,15 @@
                     <StackPanel Visibility="{Binding IsAppearanceSelected, Converter={StaticResource BoolToVisibility}}">
                         <Border Style="{StaticResource SettingsCard}">
                             <StackPanel>
-                                <TextBlock Text="{loc:Translate Settings.Appearance.Pick}" FontSize="13" FontWeight="SemiBold"
-                                           Foreground="{DynamicResource Color.Text.Primary}" />
+                                <Grid>
+                                    <TextBlock Text="{loc:Translate Settings.Appearance.Pick}" FontSize="13" FontWeight="SemiBold"
+                                               Foreground="{DynamicResource Color.Text.Primary}" />
+                                    <Button Style="{DynamicResource SecondaryButton}" Height="30" Padding="14,0" HorizontalAlignment="Right"
+                                            Command="{Binding StartNewThemeCommand}"
+                                            Content="{loc:Translate Settings.Theme.New}" />
+                                </Grid>
                                 <Separator Margin="0,10,0,14" Background="{DynamicResource Color.Divider}" />
-                                <ItemsControl ItemsSource="{Binding Themes}">
+                                <ItemsControl ItemsSource="{Binding ThemeCards}">
                                     <ItemsControl.ItemsPanel>
                                         <ItemsPanelTemplate>
                                             <WrapPanel />
@@ -256,46 +289,100 @@
                                     <ItemsControl.ItemTemplate>
                                         <DataTemplate>
                                             <Button Margin="0,0,12,12" Cursor="Hand" FocusVisualStyle="{x:Null}"
-                                                    Command="{Binding DataContext.ApplyThemeCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
-                                                    CommandParameter="{Binding Id}">
+                                                    Command="{Binding DataContext.ApplyThemeCardCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
+                                                    CommandParameter="{Binding}">
                                                 <Button.Template>
                                                     <ControlTemplate TargetType="Button">
-                                                        <Border x:Name="Card" Width="128" CornerRadius="12" Padding="8"
-                                                                Background="{DynamicResource Color.SurfaceElevated}"
-                                                                BorderBrush="{DynamicResource Color.Border}" BorderThickness="1.4">
-                                                            <StackPanel>
-                                                                <Border Height="52" CornerRadius="8" Background="{Binding PreviewBackgroundBrush}">
-                                                                    <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center"
-                                                                                Orientation="Horizontal">
-                                                                        <Border Width="16" Height="16" CornerRadius="8" Background="{Binding PreviewAccentBrush}" />
-                                                                        <Border Width="16" Height="16" CornerRadius="4" Background="{Binding PreviewSurfaceBrush}"
-                                                                                BorderBrush="{Binding PreviewTextPrimaryBrush}" BorderThickness="1" Margin="6,0,0,0" />
-                                                                        <Border Width="16" Height="16" CornerRadius="4" Background="{Binding PreviewPrimaryContainerBrush}"
-                                                                                Margin="6,0,0,0" />
-                                                                    </StackPanel>
-                                                                </Border>
-                                                                <TextBlock Text="{Binding LocalName}" FontSize="11.5" Margin="0,7,0,0"
-                                                                           HorizontalAlignment="Center"
-                                                                           Foreground="{DynamicResource Color.Text.Primary}" />
-                                                            </StackPanel>
-                                                        </Border>
-                                                        <ControlTemplate.Triggers>
-                                                            <DataTrigger Binding="{Binding IsSelected}" Value="True">
-                                                                <Setter TargetName="Card" Property="BorderBrush" Value="{DynamicResource Color.Primary}" />
-                                                                <Setter TargetName="Card" Property="Effect" Value="{DynamicResource Shadow.PrimaryGlow}" />
-                                                            </DataTrigger>
-                                                            <Trigger Property="IsMouseOver" Value="True">
-                                                                <Setter TargetName="Card" Property="BorderBrush" Value="{DynamicResource Color.Primary}" />
-                                                            </Trigger>
-                                                        </ControlTemplate.Triggers>
+                                                        <ContentPresenter />
                                                     </ControlTemplate>
                                                 </Button.Template>
+                                                <Border x:Name="Card" Width="128" CornerRadius="12" Padding="8"
+                                                        Background="{DynamicResource Color.SurfaceElevated}"
+                                                        BorderBrush="{DynamicResource Color.Border}" BorderThickness="1.4">
+                                                    <StackPanel>
+                                                        <Border Height="52" CornerRadius="8" Background="{Binding PreviewBackgroundBrush}">
+                                                            <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center"
+                                                                        Orientation="Horizontal">
+                                                                <Border Width="16" Height="16" CornerRadius="8" Background="{Binding PreviewAccentBrush}" />
+                                                                <Border Width="16" Height="16" CornerRadius="4" Background="{Binding PreviewSurfaceBrush}"
+                                                                        BorderBrush="{Binding PreviewTextPrimaryBrush}" BorderThickness="1" Margin="6,0,0,0" />
+                                                                <Border Width="16" Height="16" CornerRadius="4" Background="{Binding PreviewPrimaryContainerBrush}"
+                                                                        Margin="6,0,0,0" />
+                                                            </StackPanel>
+                                                        </Border>
+                                                        <Grid Margin="0,7,0,0">
+                                                            <TextBlock Text="{Binding LocalName}" FontSize="11.5" HorizontalAlignment="Center"
+                                                                       Foreground="{DynamicResource Color.Text.Primary}" />
+                                                            <Button HorizontalAlignment="Right" VerticalAlignment="Top" Style="{DynamicResource IconButton}"
+                                                                    Width="18" Height="18" Margin="0,-2,-2,0"
+                                                                    Command="{Binding DataContext.DeleteThemeCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
+                                                                    CommandParameter="{Binding}"
+                                                                    ToolTip="{loc:Translate Theme.Delete}"
+                                                                    Visibility="{Binding IsUser, Converter={StaticResource BoolToVisibility}}">
+                                                                <controls:VioraIcon Geometry="{StaticResource Icon.Xmark}" Width="8" Height="8"
+                                                                                    Foreground="{Binding Foreground, RelativeSource={RelativeSource AncestorType=Button}}" />
+                                                            </Button>
+                                                        </Grid>
+                                                    </StackPanel>
+                                                </Border>
                                             </Button>
+                                            <DataTemplate.Triggers>
+                                                <DataTrigger Binding="{Binding IsSelected}" Value="True">
+                                                    <Setter TargetName="Card" Property="BorderBrush" Value="{DynamicResource Color.Primary}" />
+                                                    <Setter TargetName="Card" Property="Effect" Value="{DynamicResource Shadow.PrimaryGlow}" />
+                                                </DataTrigger>
+                                            </DataTemplate.Triggers>
                                         </DataTemplate>
                                     </ItemsControl.ItemTemplate>
                                 </ItemsControl>
                                 <TextBlock Text="{loc:Translate Settings.Appearance.Note}" FontSize="10.5" Margin="2,2,0,0"
                                            Foreground="{DynamicResource Color.Text.Secondary}" />
+                            </StackPanel>
+                        </Border>
+
+                        <!-- 自定义主题编辑器 -->
+                        <Border Style="{StaticResource SettingsCard}"
+                                Visibility="{Binding IsThemeEditorOpen, Converter={StaticResource BoolToVisibility}}">
+                            <StackPanel>
+                                <TextBlock Text="{loc:Translate Settings.Theme.EditorTitle}" FontSize="13" FontWeight="SemiBold"
+                                           Foreground="{DynamicResource Color.Text.Primary}" />
+                                <Separator Margin="0,10,0,12" Background="{DynamicResource Color.Divider}" />
+                                <Grid Margin="0,0,0,12">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="Auto" />
+                                        <ColumnDefinition Width="*" />
+                                    </Grid.ColumnDefinitions>
+                                    <TextBlock Text="{loc:Translate Settings.Theme.NameLabel}" FontSize="12" VerticalAlignment="Center"
+                                               Foreground="{DynamicResource Color.Text.Secondary}" />
+                                    <TextBox Grid.Column="1" Style="{DynamicResource VioraTextBox}" Height="32" Margin="14,0,0,0"
+                                             Text="{Binding EditorName, UpdateSourceTrigger=PropertyChanged}" />
+                                </Grid>
+                                <ItemsControl ItemsSource="{Binding EditorColorRows}">
+                                    <ItemsControl.ItemTemplate>
+                                        <DataTemplate>
+                                            <Grid Margin="0,4">
+                                                <Grid.ColumnDefinitions>
+                                                    <ColumnDefinition Width="110" />
+                                                    <ColumnDefinition Width="26" />
+                                                    <ColumnDefinition Width="*" />
+                                                </Grid.ColumnDefinitions>
+                                                <TextBlock Text="{Binding Label}" FontSize="11.5" VerticalAlignment="Center"
+                                                           Foreground="{DynamicResource Color.Text.Secondary}" />
+                                                <Border Grid.Column="1" Width="16" Height="16" CornerRadius="4" VerticalAlignment="Center"
+                                                        Background="{Binding Brush}" BorderBrush="{DynamicResource Color.Outline}" BorderThickness="1" />
+                                                <TextBox Grid.Column="2" Style="{DynamicResource VioraTextBox}" Height="28" Margin="10,0,0,0"
+                                                         Text="{Binding HexValue, UpdateSourceTrigger=LostFocus}" />
+                                            </Grid>
+                                        </DataTemplate>
+                                    </ItemsControl.ItemTemplate>
+                                </ItemsControl>
+                                <StackPanel Orientation="Horizontal" Margin="0,14,0,0" HorizontalAlignment="Right">
+                                    <Button Style="{DynamicResource SecondaryButton}" Height="34" Padding="16,0" Margin="0,0,10,0"
+                                            Command="{Binding CancelThemeEditorCommand}"
+                                            Content="{loc:Translate Settings.Theme.CancelTheme}" />
+                                    <Button Height="34" Padding="18,0" Command="{Binding SaveThemeCommand}"
+                                            Content="{loc:Translate Settings.Theme.Save}" />
+                                </StackPanel>
                             </StackPanel>
                         </Border>
                     </StackPanel>
@@ -357,6 +444,47 @@
                                     <TextBox Grid.Column="1" Style="{DynamicResource VioraTextBox}" Width="110" Height="34"
                                              VerticalAlignment="Center" TextAlignment="Center"
                                              Text="{Binding ExportMaxDimension, UpdateSourceTrigger=LostFocus}" />
+                                </Grid>
+                            </StackPanel>
+                        </Border>
+                        <Border Style="{StaticResource SettingsCard}">
+                            <StackPanel>
+                                <TextBlock Text="{loc:Translate Settings.Group.Export}" FontSize="13" FontWeight="SemiBold"
+                                           Foreground="{DynamicResource Color.Text.Primary}" />
+                                <Separator Margin="0,10,0,12" Background="{DynamicResource Color.Divider}" />
+                                <Grid Margin="0,0,0,14">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="*" />
+                                        <ColumnDefinition Width="Auto" />
+                                    </Grid.ColumnDefinitions>
+                                    <StackPanel>
+                                        <TextBlock Text="{loc:Translate Settings.Perf.ExportFormat}" FontSize="13"
+                                                   Foreground="{DynamicResource Color.Text.Primary}" />
+                                        <TextBlock Text="{loc:Translate Settings.Perf.ExportFormat.Desc}" FontSize="11" Margin="0,3,0,0"
+                                                   Foreground="{DynamicResource Color.Text.Secondary}" TextWrapping="Wrap" />
+                                    </StackPanel>
+                                    <ComboBox Grid.Column="1" Style="{DynamicResource VioraCombo}" Width="130" Height="34"
+                                              VerticalAlignment="Center"
+                                              ItemsSource="{Binding ExportFormats}"
+                                              SelectedItem="{Binding SelectedExportFormat}" />
+                                </Grid>
+                                <Grid>
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="*" />
+                                        <ColumnDefinition Width="Auto" />
+                                    </Grid.ColumnDefinitions>
+                                    <StackPanel>
+                                        <TextBlock Text="{loc:Translate Settings.Perf.JpegQuality}" FontSize="13"
+                                                   Foreground="{DynamicResource Color.Text.Primary}" />
+                                        <TextBlock Text="{loc:Translate Settings.Perf.JpegQuality.Desc}" FontSize="11" Margin="0,3,0,0"
+                                                   Foreground="{DynamicResource Color.Text.Secondary}" TextWrapping="Wrap" />
+                                    </StackPanel>
+                                    <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center">
+                                        <Slider Width="150" Minimum="1" Maximum="100" IsSnapToTickEnabled="True" TickFrequency="1"
+                                                Value="{Binding JpegQuality}" VerticalAlignment="Center" />
+                                        <TextBlock Text="{Binding JpegQuality, StringFormat={}{0}%}" FontSize="12" Margin="10,0,0,0"
+                                                   VerticalAlignment="Center" Foreground="{DynamicResource Color.Text.Primary}" />
+                                    </StackPanel>
                                 </Grid>
                             </StackPanel>
                         </Border>
@@ -479,10 +607,28 @@
                     <TextBlock Text="{loc:Translate Settings.Storage.Works}" FontSize="11"
                                Foreground="{DynamicResource Color.Text.Secondary}" />
                     <Grid Margin="0,5,0,12">
-                        <TextBlock Text="{Binding WorksFolder}" FontSize="10.5" TextTrimming="CharacterEllipsis"
+                        <TextBlock Text="{Binding WorksFolderDisplay}" FontSize="10.5" TextTrimming="CharacterEllipsis"
+                                   Foreground="{DynamicResource Color.Text.Primary}" />
+                        <StackPanel HorizontalAlignment="Right" Orientation="Horizontal">
+                            <Button Style="{DynamicResource IconButton}" Width="26" Height="26"
+                                    Command="{Binding ChooseWorksFolderCommand}" ToolTip="{loc:Translate Settings.Storage.Choose}">
+                                <controls:VioraIcon Geometry="{StaticResource Icon.PenToSquare}" Width="11" Height="11"
+                                                    Foreground="{Binding Foreground, RelativeSource={RelativeSource AncestorType=Button}}" />
+                            </Button>
+                            <Button Style="{DynamicResource IconButton}" Width="26" Height="26"
+                                    Command="{Binding OpenWorksFolderCommand}" ToolTip="{loc:Translate Settings.Storage.Open}">
+                                <controls:VioraIcon Geometry="{StaticResource Icon.FolderOpen}" Width="11" Height="11"
+                                                    Foreground="{Binding Foreground, RelativeSource={RelativeSource AncestorType=Button}}" />
+                            </Button>
+                        </StackPanel>
+                    </Grid>
+                    <TextBlock Text="{loc:Translate Settings.Storage.LogsLabel}" FontSize="11" Margin="0,2,0,0"
+                               Foreground="{DynamicResource Color.Text.Secondary}" />
+                    <Grid Margin="0,5,0,12">
+                        <TextBlock Text="{Binding LogFolderDisplay}" FontSize="10.5" TextTrimming="CharacterEllipsis"
                                    Foreground="{DynamicResource Color.Text.Primary}" />
                         <Button Style="{DynamicResource IconButton}" Width="26" Height="26" HorizontalAlignment="Right"
-                                Command="{Binding OpenWorksFolderCommand}" ToolTip="{loc:Translate Settings.Storage.Open}">
+                                Command="{Binding OpenLogFolderCommand}" ToolTip="{loc:Translate Settings.Storage.Open}">
                             <controls:VioraIcon Geometry="{StaticResource Icon.FolderOpen}" Width="11" Height="11"
                                                 Foreground="{Binding Foreground, RelativeSource={RelativeSource AncestorType=Button}}" />
                         </Button>

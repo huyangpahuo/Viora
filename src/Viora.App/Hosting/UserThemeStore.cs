@@ -22,7 +22,10 @@ public sealed class UserThemeStore : IUserThemeStore
         _logger = logger;
     }
 
-    private string PathFor(string id) => Path.Combine(_folder, id + ".json");
+    private string PathFor(string id) =>
+        // 调用方可能传入 "user:xxx" 完整 id(ThemeManager.Apply 用它识别用户主题);
+        // 冒号是 Windows 文件名非法字符,这里统一剥离前缀存储。
+        Path.Combine(_folder, id.Replace("user:", string.Empty) + ".json");
 
     public IReadOnlyList<UserPalette> LoadAll()
     {

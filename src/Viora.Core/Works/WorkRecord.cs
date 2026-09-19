@@ -67,6 +67,9 @@ public interface IWorksStore
 
     string WorksFolder { get; }
 
+    /// <summary>重定向作品库目录(须在 LoadAsync 之前调用;空串 = 恢复默认)。</summary>
+    void SetWorksFolder(string absolutePath);
+
     Task LoadAsync(CancellationToken cancellationToken = default);
 
     /// <summary>写入结果图(与可选原图)并追加记录。</summary>

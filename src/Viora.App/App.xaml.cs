@@ -1,3 +1,4 @@
+using System.IO;
 using System.Windows;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
@@ -26,9 +27,24 @@ public partial class App : Application
         ConfigureServices(services);
 
         // File logging sink, level from persisted settings once loaded (see below).
+        // 日志目录支持自定义(Debug.LogFolder):settings.json 尚未经 DI 加载,这里轻量预读。
         var paths = new Viora.Infrastructure.Logging.AppPaths();
         paths.EnsureDirectories();
-        var fileLogger = new Viora.Infrastructure.Logging.FileLoggerProvider(Viora.Infrastructure.Logging.LogFileProvider.ComputeLogFile(paths.LogsFolder));
+        string? logFolderOverride = null;
+        try
+        {
+            var settingsFile = Path.Combine(paths.Root, "settings.json");
+            if (File.Exists(settingsFile))
+            {
+                using var doc = System.Text.Json.JsonDocument.Parse(File.ReadAllText(settingsFile));
+                logFolderOverride = doc.RootElement.GetProperty("Debug").GetProperty("LogFolder").GetString();
+            }
+        }
+        catch { /* 设置文件缺失或损坏:走默认日志目录 */ }
+        var logsFolder = Viora.Core.AppLocations.ResolveLogsFolder(logFolderOverride);
+        Directory.CreateDirectory(logsFolder);
+        var fileLogger = new Viora.Infrastructure.Logging.FileLoggerProvider(
+            Viora.Infrastructure.Logging.LogFileProvider.ComputeLogFile(logsFolder));
         services.AddLogging(logging =>
         {
             logging.SetMinimumLevel(Microsoft.Extensions.Logging.LogLevel.Debug);
@@ -39,6 +55,12 @@ public partial class App : Application
 
         var logger = _serviceProvider.GetRequiredService<ILogger<App>>();
         logger.LogInformation("Viora starting (host version {Version})", HostVersion.Current);
+
+        // WPF 绑定错误进入文件日志(含来源追踪),便于定位偶发绑定问题。
+        System.Diagnostics.PresentationTraceSources.DataBindingSource.Listeners.Add(
+            new Hosting.BindingErrorTraceListener(logger));
+        System.Diagnostics.PresentationTraceSources.DataBindingSource.Switch.Level =
+            System.Diagnostics.SourceLevels.Error;
 
         // Global exception containment: log always; surface a friendly dialog in normal
         // mode, full detail only in developer mode (brief §12.2).
@@ -76,6 +98,10 @@ public partial class App : Application
         // Load persisted settings before any UI consumes them.
         var settings = _serviceProvider.GetRequiredService<ISettingsService>();
         await settings.LoadAsync();
+
+        // Apply custom works folder (General.WorksFolder) before anything reads the store.
+        _serviceProvider.GetRequiredService<Viora.Core.Works.IWorksStore>()
+            .SetWorksFolder(Viora.Core.AppLocations.ResolveWorksFolder(settings.Current.General.WorksFolder));
 
         // Localization first so first paint is in the user's language.
         var localization = _serviceProvider.GetRequiredService<ILocalizationService>();

@@ -87,6 +87,28 @@ public sealed partial class InstalledPluginRowViewModel : ObservableObject
 }
 
 /// <summary>语言下拉选项。</summary>
+/// <summary>自定义主题编辑器的颜色行(键 + 本地化标签 + 十六进制值 + 实时色板)。</summary>
+public sealed partial class ThemeColorRowViewModel : ObservableObject
+{
+    public ThemeColorRowViewModel(string key, string label, string hex)
+    {
+        Key = key;
+        Label = label;
+        _hexValue = hex;
+    }
+
+    public string Key { get; }
+
+    public string Label { get; }
+
+    [ObservableProperty]
+    private string _hexValue;
+
+    partial void OnHexValueChanged(string value) => OnPropertyChanged(nameof(Brush));
+
+    public Brush Brush => ThemeCard.Swatch(HexValue);
+}
+
 public sealed record LanguageOption(string Code, string DisplayName);
 
 public partial class SettingsViewModel : ObservableObject
@@ -96,6 +118,7 @@ public partial class SettingsViewModel : ObservableObject
     private readonly IPluginHost _pluginHost;
     private readonly IWorksStore _works;
     private readonly IUiAlert _alert;
+    private readonly IUserThemeStore _themeStore;
     private readonly ILogger<SettingsViewModel> _logger;
     private bool _pluginRowsLoaded;
 
@@ -105,6 +128,7 @@ public partial class SettingsViewModel : ObservableObject
         IPluginHost pluginHost,
         IWorksStore works,
         IUiAlert alert,
+        IUserThemeStore themeStore,
         ILogger<SettingsViewModel> logger)
     {
         _settings = settings;
@@ -112,6 +136,7 @@ public partial class SettingsViewModel : ObservableObject
         _pluginHost = pluginHost;
         _works = works;
         _alert = alert;
+        _themeStore = themeStore;
         _logger = logger;
 
         Sections = new ObservableCollection<SettingsSectionViewModel>
@@ -131,6 +156,7 @@ public partial class SettingsViewModel : ObservableObject
         LogLevels = ["Trace", "Debug", "Information", "Warning", "Error"];
 
         SelectedSection = Sections[0];
+        RebuildThemeCards();
     }
 
     // ---------- 子导航 ----------
@@ -219,15 +245,131 @@ public partial class SettingsViewModel : ObservableObject
 
     // ---------- 外观主题 ----------
 
-    public IReadOnlyList<ThemeScheme> Themes => ThemeManager.Schemes;
+    /// <summary>主题卡(内置方案 + 用户自定义),统一绑定面(ThemeCard)。</summary>
+    public ObservableCollection<ThemeCard> ThemeCards { get; } = new();
+
+    public bool HasUserThemes => ThemeCards.Any(c => c.IsUser);
+
+    private void RebuildThemeCards()
+    {
+        ThemeCards.Clear();
+        foreach (var scheme in ThemeManager.Schemes) ThemeCards.Add(new ThemeCard(scheme));
+        foreach (var palette in _themeStore.LoadAll()) ThemeCards.Add(new ThemeCard(palette));
+        RefreshThemeSelection();
+        OnPropertyChanged(nameof(HasUserThemes));
+    }
+
+    private void RefreshThemeSelection()
+    {
+        foreach (var card in ThemeCards) card.RefreshSelection();
+    }
 
     [RelayCommand]
-    private void ApplyTheme(string? schemeId)
+    private void ApplyThemeCard(ThemeCard? card)
     {
-        if (string.IsNullOrEmpty(schemeId)) return;
-        ThemeManager.Apply(schemeId);
-        _settings.Update(s => s.Appearance.Theme = schemeId);
-        foreach (var scheme in ThemeManager.Schemes) scheme.Refresh();
+        if (card is null) return;
+        ThemeManager.Apply(card.SchemeId);
+        _settings.Update(s => s.Appearance.Theme = card.SchemeId);
+        RefreshThemeSelection();
+    }
+
+    // 自定义主题编辑器:以当前主题五色为起点,改名字与色值后保存为用户主题
+    [ObservableProperty]
+    private bool _isThemeEditorOpen;
+
+    [ObservableProperty]
+    private string _editorName = string.Empty;
+
+    public ObservableCollection<ThemeColorRowViewModel> EditorColorRows { get; } = new();
+
+    private string? RowHex(string key) =>
+        NormalizeHex(EditorColorRows.FirstOrDefault(r => r.Key == key)?.HexValue);
+
+    [RelayCommand]
+    private void StartNewTheme()
+    {
+        var current = ThemeCards.FirstOrDefault(c => c.IsSelected) ?? ThemeCards.FirstOrDefault();
+        var background = current?.PreviewBackground ?? "#FF14141B";
+        var surface = current?.PreviewSurface ?? "#FF1B1B23";
+        var accent = current?.PreviewAccent ?? "#FF82B1FF";
+        var container = current?.PreviewPrimaryContainer ?? "#FF1E41AF";
+        var text = current?.PreviewTextPrimary ?? "#FFE4FBEA";
+        SetEditorRows(background, surface, accent, container, text);
+        EditorName = Tr.Get("Theme.NewName");
+        IsThemeEditorOpen = true;
+    }
+
+    private void SetEditorRows(string background, string surface, string accent, string container, string text)
+    {
+        EditorColorRows.Clear();
+        EditorColorRows.Add(new ThemeColorRowViewModel("Background", Tr.Get("Settings.Theme.ColorBackground"), background));
+        EditorColorRows.Add(new ThemeColorRowViewModel("Surface", Tr.Get("Settings.Theme.ColorSurface"), surface));
+        EditorColorRows.Add(new ThemeColorRowViewModel("Accent", Tr.Get("Settings.Theme.ColorAccent"), accent));
+        EditorColorRows.Add(new ThemeColorRowViewModel("Container", Tr.Get("Settings.Theme.ColorContainer"), container));
+        EditorColorRows.Add(new ThemeColorRowViewModel("Text", Tr.Get("Settings.Theme.ColorText"), text));
+    }
+
+    [RelayCommand]
+    private void CancelThemeEditor() => IsThemeEditorOpen = false;
+
+    private static string? NormalizeHex(string? hex)
+    {
+        try
+        {
+            var color = (Color)ColorConverter.ConvertFromString(hex?.Trim() ?? string.Empty);
+            return $"#{color.A:X2}{color.R:X2}{color.G:X2}{color.B:X2}";
+        }
+        catch
+        {
+            return null;
+        }
+    }
+
+    [RelayCommand]
+    private void SaveTheme()
+    {
+        var background = RowHex("Background");
+        var surface = RowHex("Surface");
+        var accent = RowHex("Accent");
+        var container = RowHex("Container");
+        var text = RowHex("Text");
+        if (background is null || surface is null || accent is null || container is null || text is null)
+        {
+            _alert.Warn(Tr.Get("Settings.Theme.Save"), Tr.Get("Settings.Theme.InvalidColor"));
+            return;
+        }
+
+        var name = string.IsNullOrWhiteSpace(EditorName) ? Tr.Get("Theme.NewName") : EditorName.Trim();
+        var palette = new UserPalette(
+            $"user:{DateTime.Now:yyyyMMddHHmmss}",
+            name,
+            new Dictionary<string, string>
+            {
+                ["Background"] = background,
+                ["Surface"] = surface,
+                ["Primary"] = accent,
+                ["PrimaryContainer"] = container,
+                ["TextPrimary"] = text,
+            });
+        _themeStore.Save(palette);
+        ThemeManager.Apply(palette.Id);
+        _settings.Update(s => s.Appearance.Theme = palette.Id);
+        RebuildThemeCards();
+        IsThemeEditorOpen = false;
+    }
+
+    [RelayCommand]
+    private void DeleteTheme(ThemeCard? card)
+    {
+        if (card is not { IsUser: true }) return;
+        if (!_alert.Confirm(Tr.Get("Theme.Delete"), string.Format(Tr.Get("Settings.Theme.DeleteConfirm"), card.Name))) return;
+        _themeStore.Delete(card.SchemeId);
+        if (ThemeManager.Current == card.SchemeId)
+        {
+            ThemeManager.Apply(ThemeManager.Dark);
+            _settings.Update(s => s.Appearance.Theme = ThemeManager.Dark);
+        }
+        RebuildThemeCards();
     }
 
     // ---------- 性能 ----------
@@ -258,6 +400,84 @@ public partial class SettingsViewModel : ObservableObject
             _settings.Update(s => s.ImageProcessing.ExportMaxDimension = clamped);
             OnPropertyChanged(nameof(ExportMaxDimension));
         }
+    }
+
+    /// <summary>导出格式(png/jpeg/bmp),风格化页导出对话框与编码器使用。</summary>
+    public string[] ExportFormats { get; } = ["png", "jpeg", "bmp"];
+
+    public string SelectedExportFormat
+    {
+        get => _settings.Current.Export.DefaultFormat;
+        set
+        {
+            if (string.IsNullOrEmpty(value) || value == _settings.Current.Export.DefaultFormat) return;
+            _settings.Update(s => s.Export.DefaultFormat = value);
+        }
+    }
+
+    public int JpegQuality
+    {
+        get => _settings.Current.Export.JpegQuality;
+        set
+        {
+            var clamped = Math.Clamp(value, 1, 100);
+            _settings.Update(s => s.Export.JpegQuality = clamped);
+            OnPropertyChanged(nameof(JpegQuality));
+        }
+    }
+
+    // ---------- 路径(日志 / 作品库,重启生效) ----------
+
+    public string LogFolderDisplay => AppLocations.ResolveLogsFolder(_settings.Current.Debug.LogFolder);
+
+    public bool LogFolderIsCustom => !string.IsNullOrWhiteSpace(_settings.Current.Debug.LogFolder);
+
+    [RelayCommand]
+    private void OpenLogFolder() => OpenInExplorer(LogFolderDisplay);
+
+    [RelayCommand]
+    private void ChooseLogFolder()
+    {
+        var dialog = new Microsoft.Win32.OpenFolderDialog { Title = Tr.Get("Settings.Storage.Choose") };
+        if (dialog.ShowDialog() != true) return;
+        _settings.Update(s => s.Debug.LogFolder = dialog.FolderName);
+        OnPropertyChanged(nameof(LogFolderDisplay));
+        OnPropertyChanged(nameof(LogFolderIsCustom));
+        _alert.Info(Tr.Get("Settings.RestartNote"));
+    }
+
+    [RelayCommand]
+    private void ResetLogFolder()
+    {
+        _settings.Update(s => s.Debug.LogFolder = string.Empty);
+        OnPropertyChanged(nameof(LogFolderDisplay));
+        OnPropertyChanged(nameof(LogFolderIsCustom));
+    }
+
+    public string WorksFolderDisplay => AppLocations.ResolveWorksFolder(_settings.Current.General.WorksFolder);
+
+    public bool WorksFolderIsCustom => !string.IsNullOrWhiteSpace(_settings.Current.General.WorksFolder);
+
+    [RelayCommand]
+    private void OpenWorksFolder() => OpenInExplorer(WorksFolderDisplay);
+
+    [RelayCommand]
+    private void ChooseWorksFolder()
+    {
+        var dialog = new Microsoft.Win32.OpenFolderDialog { Title = Tr.Get("Settings.Storage.Choose") };
+        if (dialog.ShowDialog() != true) return;
+        _settings.Update(s => s.General.WorksFolder = dialog.FolderName);
+        OnPropertyChanged(nameof(WorksFolderDisplay));
+        OnPropertyChanged(nameof(WorksFolderIsCustom));
+        _alert.Info(Tr.Get("Settings.RestartNote"));
+    }
+
+    [RelayCommand]
+    private void ResetWorksFolder()
+    {
+        _settings.Update(s => s.General.WorksFolder = string.Empty);
+        OnPropertyChanged(nameof(WorksFolderDisplay));
+        OnPropertyChanged(nameof(WorksFolderIsCustom));
     }
 
     // ---------- 插件管理 ----------
@@ -357,12 +577,7 @@ public partial class SettingsViewModel : ObservableObject
 
     // ---------- 右侧:存储与空间 ----------
 
-    public string WorksFolder => _works.WorksFolder;
-
     public string PluginsFolder => AppLocations.PluginsFolder;
-
-    [RelayCommand]
-    private void OpenWorksFolder() => OpenInExplorer(_works.WorksFolder);
 
     [RelayCommand]
     private void OpenPluginsFolder() => OpenInExplorer(AppLocations.PluginsFolder);

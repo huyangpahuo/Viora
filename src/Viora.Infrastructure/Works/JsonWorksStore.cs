@@ -21,13 +21,21 @@ public sealed class JsonWorksStore : IWorksStore
     private readonly List<WorkRecord> _works = new();
     private readonly ILogger<JsonWorksStore> _logger;
 
+    private string _worksFolder;
+
     public JsonWorksStore(IAppPaths paths, ILogger<JsonWorksStore> logger)
     {
-        WorksFolder = Path.Combine(paths.Root, "works");
+        _worksFolder = Path.Combine(paths.Root, "works");
         _logger = logger;
     }
 
-    public string WorksFolder { get; }
+    public string WorksFolder => _worksFolder;
+
+    /// <summary>重定向作品库目录;须在 LoadAsync 之前调用,空串 = 恢复默认。</summary>
+    public void SetWorksFolder(string absolutePath)
+    {
+        if (!string.IsNullOrWhiteSpace(absolutePath)) _worksFolder = absolutePath;
+    }
 
     public string IndexFile => Path.Combine(WorksFolder, "works.json");
 

@@ -6,6 +6,9 @@ public sealed class GeneralSettings
 {
     public bool StartMaximized { get; set; } = true;
 
+    /// <summary>作品库自定义目录;空 = 默认(用户数据目录\works,便携模式为 exe 旁)。重启生效。</summary>
+    public string WorksFolder { get; set; } = string.Empty;
+
     public bool ConfirmBeforeCloseDuringProcessing { get; set; } = true;
 }
 
@@ -74,6 +77,9 @@ public sealed class PrivacySettings
 public sealed class DebugSettings
 {
     public bool DeveloperMode { get; set; } = false;
+
+    /// <summary>日志目录自定义;空 = 默认。重启生效。</summary>
+    public string LogFolder { get; set; } = string.Empty;
 
     public string LogLevel { get; set; } = "Information";
 }
