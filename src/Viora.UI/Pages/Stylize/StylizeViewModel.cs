@@ -348,6 +348,22 @@ public partial class StylizeViewModel : ObservableObject
         SelectedItem = Items.Count == 0 ? null : Items[Math.Min(index, Items.Count - 1)];
     }
 
+    /// <summary>批量队列缩略图单击:在上方主预览区查看该图;同一文件在图片工作区只保留一份。</summary>
+    [RelayCommand]
+    private void ShowBatchItemInPreview(WorkItemViewModel item)
+    {
+        if (item is null) return;
+        var existing = Items.FirstOrDefault(i =>
+            string.Equals(i.FileName, item.FileName, StringComparison.OrdinalIgnoreCase));
+        if (existing is not null)
+        {
+            SelectedItem = existing;
+            return;
+        }
+        Items.Add(item);
+        SelectedItem = item;
+    }
+
     // ---------- 视图状态 ----------
 
     public bool HasImage => SelectedItem is not null;

@@ -175,6 +175,22 @@
     </Style>
 
     <!-- ============ Chip 胶囊单选列表项(风格分类 / 作品筛选共用) ============ -->
+    <!-- 极简容器:自带模板替换默认样式,消除默认样式里指向 ItemsControl 祖先的对齐绑定
+         (容器未挂树时该绑定会报"找不到源")。选中视觉由各列表的 DataTemplate 触发器负责。 -->
+    <Style x:Key="PlainListBoxItem" TargetType="ListBoxItem">
+        <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+        <Setter Property="VerticalContentAlignment" Value="Center" />
+        <Setter Property="Background" Value="Transparent" />
+        <Setter Property="Padding" Value="0" />
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="ListBoxItem">
+                    <ContentPresenter />
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
     <Style x:Key="ChipPillItem" TargetType="ListBoxItem">
         <Setter Property="Foreground" Value="{DynamicResource Color.Text.Secondary}" />
         <Setter Property="FontSize" Value="12" />

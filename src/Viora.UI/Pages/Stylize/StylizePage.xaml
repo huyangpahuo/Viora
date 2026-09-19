@@ -501,8 +501,22 @@
                                     </ItemsControl.ItemsPanel>
                                     <ItemsControl.ItemTemplate>
                                         <DataTemplate>
-                                            <Border CornerRadius="10" Padding="7" Margin="0,0,8,0" Width="180"
-                                                    Background="{DynamicResource Brush.Glass}" BorderBrush="{DynamicResource Color.Border}" BorderThickness="1">
+                                            <Button HorizontalContentAlignment="Stretch" Cursor="Hand" FocusVisualStyle="{x:Null}"
+                                                    Command="{Binding DataContext.ShowBatchItemInPreviewCommand, RelativeSource={RelativeSource AncestorType=ItemsControl}}"
+                                                    CommandParameter="{Binding}">
+                                                <Button.Template>
+                                                    <ControlTemplate TargetType="Button">
+                                                        <Border x:Name="Card" CornerRadius="10" Padding="7" Margin="0,0,8,0" Width="180"
+                                                                Background="{DynamicResource Brush.Glass}" BorderBrush="{DynamicResource Color.Border}" BorderThickness="1">
+                                                            <ContentPresenter />
+                                                        </Border>
+                                                        <ControlTemplate.Triggers>
+                                                            <Trigger Property="IsMouseOver" Value="True">
+                                                                <Setter TargetName="Card" Property="BorderBrush" Value="{DynamicResource Color.Primary}" />
+                                                            </Trigger>
+                                                        </ControlTemplate.Triggers>
+                                                    </ControlTemplate>
+                                                </Button.Template>
                                                 <StackPanel Orientation="Horizontal">
                                                     <Border Width="52" Height="40" CornerRadius="7"
                                                             Background="{Binding SourceImage, Converter={StaticResource ImageToBrush}}" />
@@ -569,7 +583,7 @@
                                                                             Foreground="{Binding Foreground, RelativeSource={RelativeSource AncestorType=Button}}" />
                                                     </Button>
                                                 </StackPanel>
-                                            </Border>
+                                            </Button>
                                         </DataTemplate>
                                     </ItemsControl.ItemTemplate>
                                 </ItemsControl>
@@ -703,7 +717,8 @@
                          ItemsSource="{Binding CategoryFilters}" SelectedItem="{Binding CategoryFilter}"
                          ItemContainerStyle="{StaticResource ChipPillItem}"
                          ScrollViewer.VerticalScrollBarVisibility="Disabled"
-                         ScrollViewer.HorizontalScrollBarVisibility="Visible">
+                         ScrollViewer.HorizontalScrollBarVisibility="Hidden"
+                         PreviewMouseWheel="OnChipsWheel">
                     <ListBox.ItemsPanel>
                         <ItemsPanelTemplate>
                             <StackPanel Orientation="Horizontal" />

@@ -39,6 +39,13 @@ public sealed partial class WorkCardViewModel : ObservableObject
 
     public string FavoriteTooltip => Tr.Get(IsFavorite ? "Works.Card.Unfavorite" : "Works.Card.Favorite");
 
+    /// <summary>收藏状态变化后由宿主 VM 调用:星标点亮/熄灭与悬停提示的变更通知。</summary>
+    public void NotifyFavoriteChanged()
+    {
+        OnPropertyChanged(nameof(IsFavorite));
+        OnPropertyChanged(nameof(FavoriteTooltip));
+    }
+
     /// <summary>详情面板“作品信息”键值行。</summary>
     public IReadOnlyList<InfoRow> InfoRows { get; }
 
@@ -323,7 +330,9 @@ public partial class MyWorksViewModel : ObservableObject
     public void ToggleFavorite(WorkCardViewModel card)
     {
         card.Record.IsFavorite = !card.Record.IsFavorite;
+        card.NotifyFavoriteChanged(); // IsFavorite 是计算属性,需显式通知星标才会点亮/熄灭
         _ = UpdateAsync(card.Record);
+        if (TabFilter == "Works.Tab.Favorite") RebuildCards(); // 收藏 Tab 实时增减
     }
 
     public void ExportWork(WorkCardViewModel card)
