@@ -29,9 +29,11 @@ public sealed class MarketPlugin
 
     public required string Version { get; init; }
 
-    public required string SizeText { get; init; }
+    /// <summary>包大小(选中详情时由 OfficialPluginService 异步回填)。</summary>
+    public required string SizeText { get; set; }
 
-    public required string UpdatedText { get; init; }
+    /// <summary>包更新时间(选中详情时异步回填;镜像文件取 LastWriteTime,远程取 Last-Modified 头)。</summary>
+    public required string UpdatedText { get; set; }
 
     public required string Description { get; init; }
 

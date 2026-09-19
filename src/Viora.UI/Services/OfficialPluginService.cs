@@ -175,6 +175,35 @@ public sealed class OfficialPluginService
         return null;
     }
 
+    /// <summary>
+    /// 插件包的展示元数据(大小 / 更新时间):本地镜像文件优先(离线可用),
+    /// 否则向 GitHub raw 发起流式 GET,读取 Content-Length 与 Last-Modified 响应头。
+    /// 失败返回 (null, null),UI 显示占位符。
+    /// </summary>
+    public async Task<(long? SizeBytes, DateTime? UpdatedUtc)> GetPackageInfoAsync(string packageFile)
+    {
+        foreach (var mirror in MirrorRoots())
+        {
+            var local = new FileInfo(Path.Combine(mirror, packageFile.Replace('/', Path.DirectorySeparatorChar)));
+            if (local.Exists)
+                return (local.Length, local.LastWriteTimeUtc);
+        }
+
+        try
+        {
+            string url = $"https://raw.githubusercontent.com/{RepoOwner}/{RepoName}/{RepoBranch}/{packageFile}";
+            using var response = await Http.GetAsync(url, HttpCompletionOption.ResponseHeadersRead);
+            if (!response.IsSuccessStatusCode) return (null, null);
+            long? size = response.Content.Headers.ContentLength;
+            DateTime? updated = response.Content.Headers.LastModified?.UtcDateTime;
+            return (size, updated);
+        }
+        catch
+        {
+            return (null, null);
+        }
+    }
+
     /// <summary>镜像根目录候选:exe 向上六层内的 Viora-plugins(开发态)与 %LOCALAPPDATA% 镜像。</summary>
     public static IEnumerable<string> MirrorRoots()
     {

@@ -177,7 +177,8 @@
                              ItemsSource="{Binding TabFilters}" SelectedItem="{Binding TabFilter}"
                              ItemContainerStyle="{StaticResource ChipPillItem}"
                              ScrollViewer.VerticalScrollBarVisibility="Disabled"
-                             ScrollViewer.HorizontalScrollBarVisibility="Visible">
+                             ScrollViewer.HorizontalScrollBarVisibility="Hidden"
+                             PreviewMouseWheel="OnChipsWheel">
                         <ListBox.ItemsPanel>
                             <ItemsPanelTemplate>
                                 <StackPanel Orientation="Horizontal" />
@@ -389,7 +390,8 @@
                         </ToggleButton.Template>
                     </ToggleButton>
                     <TextBlock Text="{Binding AllHeaderText}" HorizontalAlignment="Right" VerticalAlignment="Center"
-                               FontSize="11" Foreground="{DynamicResource Color.Text.Disabled}" />
+                               FontSize="11" Foreground="{DynamicResource Color.Text.Disabled}"
+                               Visibility="{Binding ShowAllPlugins, Converter={StaticResource BoolToVisibility}}" />
                 </Grid>
 
                 <!-- 详情 -->
@@ -498,7 +500,7 @@
                                         <MultiDataTrigger>
                                             <MultiDataTrigger.Conditions>
                                                 <Condition Binding="{Binding SelectedCard.IsInstalled}" Value="False" />
-                                                <Condition Binding="{Binding IsEnabled}" Value="False" />
+                                                <Condition Binding="{Binding IsEnabled, RelativeSource={RelativeSource TemplatedParent}}" Value="False" />
                                             </MultiDataTrigger.Conditions>
                                             <Setter TargetName="Brand" Property="Opacity" Value="0.45" />
                                             <Setter TargetName="Brand" Property="Effect" Value="{x:Null}" />
@@ -531,12 +533,12 @@
                             <ColumnDefinition Width="*" />
                         </Grid.ColumnDefinitions>
                         <StackPanel Grid.Column="0">
-                            <Border Height="96" CornerRadius="10" Background="{Binding SelectedCard.Model.BeforeBrush}" />
+                            <Border Height="96" CornerRadius="10" Background="{Binding SelectedCard.PreviewBeforeBrush}" />
                             <TextBlock Text="{loc:Translate Market.Detail.Before}" FontSize="10.5" Margin="2,5,0,0"
                                        Foreground="{DynamicResource Color.Text.Secondary}" />
                         </StackPanel>
                         <StackPanel Grid.Column="2">
-                            <Border Height="96" CornerRadius="10" Background="{Binding SelectedCard.Model.AfterBrush}" />
+                            <Border Height="96" CornerRadius="10" Background="{Binding SelectedCard.PreviewAfterBrush}" />
                             <TextBlock Text="{loc:Translate Stylize.Badge.Stylized}" FontSize="10.5" Margin="2,5,0,0"
                                        Foreground="{DynamicResource Color.Text.Secondary}" />
                         </StackPanel>
@@ -644,6 +646,22 @@
                          ItemsSource="{Binding AllCards}" ScrollViewer.VerticalScrollBarVisibility="Auto"
                          VirtualizingPanel.IsVirtualizing="True"
                          Visibility="{Binding ShowAllPlugins, Converter={StaticResource BoolToVisibility}}">
+                    <ListBox.ItemContainerStyle>
+                        <!-- 显式对齐,避免默认样式里的 FindAncestor 绑定在容器未挂树时报错 -->
+                        <Style TargetType="ListBoxItem">
+                            <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+                            <Setter Property="VerticalContentAlignment" Value="Center" />
+                            <Setter Property="Background" Value="Transparent" />
+                            <Setter Property="Padding" Value="0" />
+                            <Setter Property="Template">
+                                <Setter.Value>
+                                    <ControlTemplate TargetType="ListBoxItem">
+                                        <ContentPresenter />
+                                    </ControlTemplate>
+                                </Setter.Value>
+                            </Setter>
+                        </Style>
+                    </ListBox.ItemContainerStyle>
                     <ListBox.ItemTemplate>
                         <DataTemplate>
                             <Button HorizontalContentAlignment="Stretch" Padding="0"

@@ -1,8 +1,10 @@
 using System.Collections.ObjectModel;
+using System.IO;
 using System.Windows.Media;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using Microsoft.Extensions.Logging;
+using Viora.Core.Pipeline;
 using Viora.Core.Plugins;
 using Viora.UI.Hosting;
 using Viora.UI.Localization;
@@ -18,6 +20,8 @@ public sealed partial class MarketCardViewModel : ObservableObject
         Owner = owner;
         Model = plugin;
         _isInstalled = isInstalled;
+        _previewBeforeBrush = plugin.BeforeBrush;
+        _previewAfterBrush = plugin.AfterBrush;
     }
 
     public PluginMarketViewModel Owner { get; }
@@ -66,6 +70,35 @@ public sealed partial class MarketCardViewModel : ObservableObject
 
     public bool HasPreviewImage => Model.PreviewImage is not null;
 
+    /// <summary>详情面板效果预览:默认 = 封面切分;已安装插件选中后替换为 原图 | 真实渲染效果。</summary>
+    [ObservableProperty]
+    private Brush _previewBeforeBrush;
+
+    [ObservableProperty]
+    private Brush _previewAfterBrush;
+
+    /// <summary>真实预览回填:原图侧换完整样张,风格化后侧换渲染结果。</summary>
+    public void ApplyRenderedPreview(ImageSource rendered, Brush fullSampleBrush)
+    {
+        PreviewBeforeBrush = fullSampleBrush;
+        var brush = new ImageBrush(rendered) { Stretch = Stretch.UniformToFill };
+        brush.Freeze();
+        PreviewAfterBrush = brush;
+    }
+
+    /// <summary>包大小/更新时间回填(选中详情时由主 VM 异步调用)。</summary>
+    public void ApplyPackageInfo(long? sizeBytes, DateTime? updatedUtc)
+    {
+        if (sizeBytes is { } size && size > 0)
+        {
+            double kb = size / 1024.0;
+            Model.SizeText = kb >= 1024 ? $"{kb / 1024:0.#} MB" : $"{kb:0} KB";
+        }
+        if (updatedUtc is { } time)
+            Model.UpdatedText = time.ToLocalTime().ToString("yyyy-MM-dd");
+        OnPropertyChanged(nameof(MetaLine));
+    }
+
     [ObservableProperty]
     private bool _isInstalled;
 
@@ -112,6 +145,8 @@ public partial class PluginMarketViewModel : ObservableObject
     private readonly IPresetCatalog _catalog;
     private readonly IPluginHost _pluginHost;
     private readonly OfficialPluginService _official;
+    private readonly IImportServiceProxy _import;
+    private readonly IImageConversionEngine _engine;
 
     /// <summary>内置样张(官方预设展示图;创作者插件未来上传自己的截图,加载失败时回退默认渐变)。</summary>
     private static readonly ImageSource SampleImage = LoadSampleImage();
@@ -159,24 +194,109 @@ public partial class PluginMarketViewModel : ObservableObject
         return brush;
     }
 
+    /// <summary>原图侧:完整样张(已安装插件的预览用它,风格化后侧渲染真实效果)。</summary>
+    private static readonly Brush SampleFullBrush = MakeFullBrush(SampleImage);
+
+    private static Brush MakeFullBrush(ImageSource? source)
+    {
+        if (source is null) return MarketPlugin.MakeBrush("preview.full");
+        var brush = new ImageBrush(source) { Stretch = Stretch.UniformToFill };
+        brush.Freeze();
+        return brush;
+    }
+
+    /// <summary>样张落盘临时文件:真实预览渲染需要文件路径加载 IImageBuffer。</summary>
+    private static readonly string? SampleFile = ExtractSampleToTemp();
+
+    private static string? ExtractSampleToTemp()
+    {
+        try
+        {
+            var info = System.Windows.Application.GetResourceStream(
+                new Uri("pack://application:,,,/Viora.UI;component/sample.jpg"));
+            if (info is null) return null;
+            string path = Path.Combine(Path.GetTempPath(), "viora-sample-preview.jpg");
+            using var stream = info.Stream;
+            using var file = File.Create(path);
+            stream.CopyTo(file);
+            return path;
+        }
+        catch
+        {
+            return null;
+        }
+    }
+
+    private readonly Dictionary<string, ImageSource> _previewCache = new();
+    private readonly HashSet<string> _previewFailed = new(StringComparer.Ordinal);
+
+    /// <summary>
+    /// 已安装(已启用)插件:用样张渲染真实风格效果作为「风格化后」预览,原图侧用完整样张;
+    /// 未安装或渲染失败时保留封面切分占位。结果按 presetId 缓存。
+    /// </summary>
+    private async Task LoadRenderedPreviewAsync(MarketCardViewModel card)
+    {
+        string? presetId = card.Model.PresetId;
+        if (presetId is null || SampleFile is null) return;
+
+        if (_previewCache.TryGetValue(presetId, out var cached))
+        {
+            card.ApplyRenderedPreview(cached, SampleFullBrush);
+            return;
+        }
+        if (_previewFailed.Contains(presetId)) return;
+
+        var preset = _catalog.Presets.FirstOrDefault(p => p.Id == presetId);
+        if (preset is null) return; // 未安装:保留封面切分
+
+        try
+        {
+            var buffer = await _import.LoadFromFileAsync(SampleFile, maxDimension: 480);
+            var rendered = await Task.Run(async () =>
+            {
+                var parameters = new Dictionary<string, object>();
+                foreach (var parameter in preset.Parameters)
+                    parameters[parameter.Key] = parameter.DefaultValue;
+                var pipeline = preset.BuildPipeline(parameters);
+                var result = await _engine.ExecuteAsync(
+                    pipeline, buffer, parameters, previewQuality: true, progress: null, cancellationToken: default);
+                return _import.ToImageSource(result.Result);
+            });
+            if (rendered is null)
+            {
+                _previewFailed.Add(presetId);
+                return;
+            }
+            if (rendered is System.Windows.Media.Imaging.BitmapSource bitmap && !bitmap.IsFrozen)
+                bitmap.Freeze();
+            _previewCache[presetId] = rendered;
+            card.ApplyRenderedPreview(rendered, SampleFullBrush);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Preview render failed for {PresetId}", presetId);
+            _previewFailed.Add(presetId); // 渲染失败:保留封面切分,不再重试
+        }
+    }
+
     private bool _installing;
 
     public PluginMarketViewModel(IUiAlert alert, ILogger<PluginMarketViewModel> logger,
-        IPresetCatalog catalog, IPluginHost pluginHost, OfficialPluginService official)
+        IPresetCatalog catalog, IPluginHost pluginHost, OfficialPluginService official,
+        IImportServiceProxy import, IImageConversionEngine engine)
     {
         _alert = alert;
         _logger = logger;
         _catalog = catalog;
         _pluginHost = pluginHost;
         _official = official;
+        _import = import;
+        _engine = engine;
 
         TabFilters = new[]
         {
-            "Style.Category.All", "Style.Category.Hot",
-        }.Concat(StyleCategories.AllKeys).Concat(new[]
-        {
-            "Market.Tab.Mine",
-        }).ToArray();
+            "Style.Category.All", "Market.Tab.Mine", "Style.Category.Hot",
+        }.Concat(StyleCategories.AllKeys).ToArray();
 
         _official.Changed += (_, _) => System.Windows.Application.Current?.Dispatcher.BeginInvoke(RefreshCardsAsync);
         LocalizationSource.Current.PropertyChanged += (_, _) =>
@@ -215,11 +335,33 @@ public partial class PluginMarketViewModel : ObservableObject
         set
         {
             if (value is null) return;
-            if (SetProperty(ref _selectedCard, value)) OnPropertyChanged(nameof(HasSelection));
+            if (SetProperty(ref _selectedCard, value))
+            {
+                OnPropertyChanged(nameof(HasSelection));
+                _ = LoadPackageMetaAsync(value);
+                _ = LoadRenderedPreviewAsync(value);
+            }
         }
     }
 
     private MarketCardViewModel? _selectedCard;
+
+    private readonly HashSet<string> _metaLoaded = new(StringComparer.Ordinal);
+
+    /// <summary>异步取回插件包大小/更新时间(每个包只取一次;失败允许下次选中重试)。</summary>
+    private async Task LoadPackageMetaAsync(MarketCardViewModel card)
+    {
+        string file = card.Model.PackageFile;
+        if (file.Length == 0 || !_metaLoaded.Add(file)) return;
+
+        var (size, updated) = await _official.GetPackageInfoAsync(file);
+        if (size is null && updated is null)
+        {
+            _metaLoaded.Remove(file); // 网络不可达:下次选中重试
+            return;
+        }
+        card.ApplyPackageInfo(size, updated);
+    }
 
     public bool HasSelection => SelectedCard is not null;
 
@@ -334,7 +476,7 @@ public partial class PluginMarketViewModel : ObservableObject
                 Rating = rating,
                 InstallsText = installs,
                 Version = item.Version,
-                SizeText = Tr.Get("Market.System.BuiltIn"),
+                SizeText = "…",
                 UpdatedText = "—",
                 Description = english ? item.DescEn : item.DescZh,
                 PreviewImage = SampleImage,
@@ -362,7 +504,7 @@ public partial class PluginMarketViewModel : ObservableObject
         return ApplySearch(query);
     }
 
-    /// <summary>搜索覆盖 名称 / 作者 / 标签(输入作者名可找到其全部插件)。</summary>
+    /// <summary>搜索覆盖 名称 / 作者 / 标签 / 描述(输入作者名可找到其全部插件)。</summary>
     private IEnumerable<MarketPlugin> ApplySearch(IEnumerable<MarketPlugin> query)
     {
         if (!string.IsNullOrWhiteSpace(SearchText))
@@ -371,7 +513,8 @@ public partial class PluginMarketViewModel : ObservableObject
             query = query.Where(p =>
                 p.Name.Contains(needle, StringComparison.OrdinalIgnoreCase)
                 || p.Author.Contains(needle, StringComparison.OrdinalIgnoreCase)
-                || p.Tags.Any(t => t.Contains(needle, StringComparison.OrdinalIgnoreCase)));
+                || p.Tags.Any(t => t.Contains(needle, StringComparison.OrdinalIgnoreCase))
+                || p.Description.Contains(needle, StringComparison.OrdinalIgnoreCase));
         }
         return query;
     }

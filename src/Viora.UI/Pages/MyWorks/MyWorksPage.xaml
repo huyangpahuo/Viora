@@ -401,8 +401,9 @@
                                     ToolTip="{Binding SelectedCard.FavoriteTooltip}">
                                 <controls:VioraIcon Geometry="{StaticResource Icon.Star}" Width="15" Height="15"
                                                     Foreground="{DynamicResource Color.Text.Disabled}">
+                                    <!-- 必须 BasedOn 隐式样式,否则 VioraIcon 的模板被覆盖,图标不渲染 -->
                                     <controls:VioraIcon.Style>
-                                        <Style TargetType="controls:VioraIcon">
+                                        <Style TargetType="controls:VioraIcon" BasedOn="{StaticResource {x:Type controls:VioraIcon}}">
                                             <Setter Property="Foreground" Value="{DynamicResource Color.Text.Disabled}" />
                                             <Style.Triggers>
                                                 <DataTrigger Binding="{Binding SelectedCard.IsFavorite}" Value="True">

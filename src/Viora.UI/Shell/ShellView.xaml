@@ -188,7 +188,8 @@
                                                 Foreground="{Binding Foreground, RelativeSource={RelativeSource AncestorType=Button}}" />
                         </StackPanel>
                         <Button.ContextMenu>
-                            <ContextMenu Style="{StaticResource DarkContextMenu}" PlacementTarget="{Binding ElementName=LanguageButton}"
+                            <!-- ContextMenu 不在可视树内,无法用 ElementName;打开时会自动以按钮为 PlacementTarget -->
+                            <ContextMenu Style="{StaticResource DarkContextMenu}"
                                          ItemsSource="{Binding Languages}">
                                 <ContextMenu.ItemContainerStyle>
                                     <Style TargetType="MenuItem" BasedOn="{StaticResource DarkMenuItem}">

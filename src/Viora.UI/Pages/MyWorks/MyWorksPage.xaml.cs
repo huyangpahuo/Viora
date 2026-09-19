@@ -23,7 +23,14 @@ public partial class MyWorksPage : UserControl
     /// <summary>卡片/详情的“更多”:弹出深色菜单(重新生成 / 副本 / 打开文件夹 / 收藏 / 删除)。</summary>
     private void OnMoreClick(object sender, RoutedEventArgs e)
     {
-        if (sender is not FrameworkElement { DataContext: WorkCardViewModel card }) return;
+        // 列表卡片 DataContext = WorkCardViewModel;详情面板 DataContext = 页面 VM,取 SelectedCard。
+        var card = (sender as FrameworkElement)?.DataContext switch
+        {
+            WorkCardViewModel c => c,
+            MyWorksViewModel vm => vm.SelectedCard,
+            _ => null,
+        };
+        if (card is null) return;
 
         var menu = new ContextMenu { Style = (Style)FindResource("DarkContextMenu") };
 
