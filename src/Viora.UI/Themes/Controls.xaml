@@ -191,6 +191,14 @@
         </Setter>
     </Style>
 
+    <!-- 隐式 ListBoxItem:基于默认主题样式 + 显式对齐,使任何角落生成的 ListBoxItem
+         都不再携带默认样式里指向 ItemsControl 祖先的对齐绑定(该绑定在容器未挂树时
+         报"找不到源",且数量随列表重建增长)。keyed 容器样式不受影响。 -->
+    <Style TargetType="ListBoxItem" BasedOn="{StaticResource {x:Type ListBoxItem}}">
+        <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+        <Setter Property="VerticalContentAlignment" Value="Center" />
+    </Style>
+
     <Style x:Key="ChipPillItem" TargetType="ListBoxItem">
         <Setter Property="Foreground" Value="{DynamicResource Color.Text.Secondary}" />
         <Setter Property="FontSize" Value="12" />
@@ -561,6 +569,40 @@
                             </Track.Thumb>
                         </Track>
                     </Grid>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
+    <!-- ============ 设置开关(iOS 式滑动开关) ============ -->
+    <Style x:Key="SettingsSwitch" TargetType="ToggleButton">
+        <Setter Property="Width" Value="46" />
+        <Setter Property="Height" Value="24" />
+        <Setter Property="Cursor" Value="Hand" />
+        <Setter Property="FocusVisualStyle" Value="{x:Null}" />
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="ToggleButton">
+                    <Border x:Name="Track" Background="{DynamicResource Color.SurfaceHigh}" CornerRadius="12"
+                            BorderBrush="{DynamicResource Color.Outline}" BorderThickness="1">
+                        <Border x:Name="Thumb" Width="18" Height="18" CornerRadius="9" Background="#FFA9ADBD"
+                                HorizontalAlignment="Left" Margin="3,0,0,0" />
+                    </Border>
+                    <ControlTemplate.Triggers>
+                        <Trigger Property="IsMouseOver" Value="True">
+                            <Setter TargetName="Thumb" Property="Width" Value="20" />
+                        </Trigger>
+                        <Trigger Property="IsChecked" Value="True">
+                            <Setter TargetName="Track" Property="Background" Value="{DynamicResource Color.Primary}" />
+                            <Setter TargetName="Track" Property="BorderBrush" Value="{DynamicResource Color.Primary}" />
+                            <Setter TargetName="Thumb" Property="Background" Value="White" />
+                            <Setter TargetName="Thumb" Property="HorizontalAlignment" Value="Right" />
+                            <Setter TargetName="Thumb" Property="Margin" Value="0,0,3,0" />
+                        </Trigger>
+                        <Trigger Property="IsEnabled" Value="False">
+                            <Setter Property="Opacity" Value="0.45" />
+                        </Trigger>
+                    </ControlTemplate.Triggers>
                 </ControlTemplate>
             </Setter.Value>
         </Setter>
