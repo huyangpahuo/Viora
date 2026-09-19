@@ -52,6 +52,27 @@ public sealed partial class WorkCardViewModel : ObservableObject
     /// <summary>详情面板“使用的参数”快照行。</summary>
     public IReadOnlyList<WorkParameterSnapshot> ParamRows => Record.Parameters;
 
+    /// <summary>参数快照显示行:旧记录的 Label 是保存时语言写死的,按 DisplayNameKey 重本地化。</summary>
+    public IReadOnlyList<WorkParameterSnapshot> DisplayParamRows =>
+        Record.Parameters
+            .Select(p => new WorkParameterSnapshot
+            {
+                Key = p.Key,
+                Label = LocalizeParamLabel(p),
+                Value = p.Value,
+            })
+            .ToList();
+
+    private static string LocalizeParamLabel(WorkParameterSnapshot p)
+    {
+        if (string.IsNullOrEmpty(p.DisplayNameKey)) return p.Label;
+        var translated = Tr.Get(p.DisplayNameKey);
+        // Tr.Get 对缺失键返回占位符("…" 或 "[key]"):两种情况都回退存储标签
+        if (string.IsNullOrEmpty(translated) || translated == "…" || translated == $"[{p.DisplayNameKey}]")
+            return p.Label;
+        return translated;
+    }
+
     public sealed record InfoRow(string Label, string Value);
 
     public static string ResolveStyleName(WorkRecord record)

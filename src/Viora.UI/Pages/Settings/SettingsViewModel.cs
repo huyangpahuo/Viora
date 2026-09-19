@@ -109,6 +109,9 @@ public sealed partial class ThemeColorRowViewModel : ObservableObject
     public Brush Brush => ThemeCard.Swatch(HexValue);
 }
 
+/// <summary>导出格式下拉选项。</summary>
+public sealed record FormatOption(string Code, string DisplayNameKey);
+
 public sealed record LanguageOption(string Code, string DisplayName);
 
 public partial class SettingsViewModel : ObservableObject
@@ -166,7 +169,7 @@ public partial class SettingsViewModel : ObservableObject
     [ObservableProperty]
     private SettingsSectionViewModel _selectedSection;
 
-    partial void OnSelectedSectionChanged(SettingsSectionViewModel? value)
+    partial void OnSelectedSectionChanged(SettingsSectionViewModel value)
     {
         OnPropertyChanged(nameof(IsGeneralSelected));
         OnPropertyChanged(nameof(IsAppearanceSelected));
@@ -402,8 +405,16 @@ public partial class SettingsViewModel : ObservableObject
         }
     }
 
-    /// <summary>导出格式(png/jpeg/bmp),风格化页导出对话框与编码器使用。</summary>
-    public string[] ExportFormats { get; } = ["png", "jpeg", "bmp"];
+    /// <summary>导出格式选项(本地化显示名),风格化页导出对话框与编码器使用。</summary>
+    public IReadOnlyList<FormatOption> ExportFormats { get; } =
+    [
+        new("png", "Export.Format.Png"),
+        new("jpeg", "Export.Format.Jpeg"),
+        new("bmp", "Export.Format.Bmp"),
+        new("tiff", "Export.Format.Tiff"),
+        new("gif", "Export.Format.Gif"),
+        new("webp", "Export.Format.Webp"),
+    ];
 
     public string SelectedExportFormat
     {

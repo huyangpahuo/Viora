@@ -7,7 +7,11 @@ public sealed class WorkParameterSnapshot
 {
     public string Key { get; set; } = string.Empty;
 
+    /// <summary>保存时的本地化标签(旧记录);新记录请同时写 DisplayNameKey 供显示时重本地化。</summary>
     public string Label { get; set; } = string.Empty;
+
+    /// <summary>标签的本地化键(如 Param.Generic.Density);可空(旧记录)。</summary>
+    public string? DisplayNameKey { get; set; }
 
     public string Value { get; set; } = string.Empty;
 }

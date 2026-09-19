@@ -33,6 +33,12 @@ public sealed class ThemeCard : INotifyPropertyChanged
         SchemeId = builtin.Id;
         IsUser = false;
         Name = string.Empty;
+        // 内置方案:预览色取自方案本身(否则所有卡片都落到默认色,看起来全部一样)
+        PreviewBackground = builtin.PreviewBackground;
+        PreviewSurface = builtin.PreviewSurface;
+        PreviewAccent = builtin.PreviewAccent;
+        PreviewPrimaryContainer = builtin.PreviewPrimaryContainer;
+        PreviewTextPrimary = builtin.PreviewTextPrimary;
         _builtin.PropertyChanged += (_, e) =>
         {
             if (e.PropertyName == nameof(ThemeScheme.IsSelected)) OnPropertyChanged(nameof(IsSelected));

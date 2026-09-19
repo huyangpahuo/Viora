@@ -465,10 +465,17 @@
                                         <TextBlock Text="{loc:Translate Settings.Perf.ExportFormat.Desc}" FontSize="11" Margin="0,3,0,0"
                                                    Foreground="{DynamicResource Color.Text.Secondary}" TextWrapping="Wrap" />
                                     </StackPanel>
-                                    <ComboBox Grid.Column="1" Style="{DynamicResource VioraCombo}" Width="130" Height="34"
+                                    <ComboBox Grid.Column="1" Style="{DynamicResource VioraCombo}" Width="150" Height="34"
                                               VerticalAlignment="Center"
                                               ItemsSource="{Binding ExportFormats}"
-                                              SelectedItem="{Binding SelectedExportFormat}" />
+                                              SelectedValue="{Binding SelectedExportFormat}"
+                                              SelectedValuePath="Code">
+                                        <ComboBox.ItemTemplate>
+                                            <DataTemplate>
+                                                <TextBlock Text="{Binding DisplayNameKey, Converter={StaticResource TranslateKey}}" FontSize="12" />
+                                            </DataTemplate>
+                                        </ComboBox.ItemTemplate>
+                                    </ComboBox>
                                 </Grid>
                                 <Grid>
                                     <Grid.ColumnDefinitions>

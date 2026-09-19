@@ -474,5 +474,9 @@
   "Settings.Theme.ColorText": "Primary text",
   "Export.Format.Png": "PNG image",
   "Export.Format.Jpeg": "JPEG image",
-  "Export.Format.Bmp": "BMP image"
+  "Export.Format.Bmp": "BMP image",
+  "Export.Format.Tiff": "TIFF image",
+  "Export.Format.Gif": "GIF image",
+  "Export.Format.Webp": "WebP image",
+  "Export.Format.Webp.Desc": "Requires the system WebP codec extension; export fails without it"
 }

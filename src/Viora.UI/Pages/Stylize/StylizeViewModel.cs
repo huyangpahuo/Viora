@@ -909,7 +909,7 @@ public partial class StylizeViewModel : ObservableObject
                 AiQuality = AiQualityMode,
             };
             foreach (var p in Parameters)
-                record.Parameters.Add(new WorkParameterSnapshot { Key = p.Key, Label = p.Label, Value = p.ValueDisplay });
+                record.Parameters.Add(new WorkParameterSnapshot { Key = p.Key, Label = p.Label, DisplayNameKey = p.Model.DisplayNameKey, Value = p.ValueDisplay });
 
             _pendingTitle = null;
             _pendingSourceFileName = null;

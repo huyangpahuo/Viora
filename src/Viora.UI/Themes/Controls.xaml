@@ -191,12 +191,29 @@
         </Setter>
     </Style>
 
-    <!-- 隐式 ListBoxItem:基于默认主题样式 + 显式对齐,使任何角落生成的 ListBoxItem
-         都不再携带默认样式里指向 ItemsControl 祖先的对齐绑定(该绑定在容器未挂树时
-         报"找不到源",且数量随列表重建增长)。keyed 容器样式不受影响。 -->
-    <Style TargetType="ListBoxItem" BasedOn="{StaticResource {x:Type ListBoxItem}}">
+    <!-- 隐式 ListBoxItem:完全自包含(不 BasedOn 主题默认样式)。默认样式里指向
+         ItemsControl 祖先的对齐绑定在容器未挂树时报"找不到源"且随列表重建增长;
+         自包含样式使任何未经显式 ItemContainerStyle 的容器都不携带那些绑定。 -->
+    <Style TargetType="ListBoxItem">
         <Setter Property="HorizontalContentAlignment" Value="Stretch" />
         <Setter Property="VerticalContentAlignment" Value="Center" />
+        <Setter Property="Background" Value="Transparent" />
+        <Setter Property="Padding" Value="0" />
+        <Setter Property="BorderThickness" Value="0" />
+        <Setter Property="FocusVisualStyle" Value="{x:Null}" />
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="ListBoxItem">
+                    <Border Background="{TemplateBinding Background}"
+                            Padding="{TemplateBinding Padding}"
+                            SnapsToDevicePixels="True">
+                        <ContentPresenter HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}"
+                                          VerticalAlignment="{TemplateBinding VerticalContentAlignment}"
+                                          SnapsToDevicePixels="{TemplateBinding SnapsToDevicePixels}" />
+                    </Border>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
     </Style>
 
     <Style x:Key="ChipPillItem" TargetType="ListBoxItem">
@@ -716,7 +733,8 @@
         <Setter Property="Foreground" Value="{DynamicResource Color.Text.Primary}" />
         <Setter Property="CaretBrush" Value="{DynamicResource Color.Primary}" />
         <Setter Property="Padding" Value="10,7" />
-        <Setter Property="FontFamily" Value="{StaticResource Font.Family}" />
+        <Setter Property="VerticalContentAlignment" Value="Center" />
+        <Setter Property="FontFamily" Value="{DynamicResource Font.Family}" />
         <Setter Property="FontSize" Value="14" />
         <Setter Property="Template">
             <Setter.Value>
@@ -727,7 +745,8 @@
                         BorderBrush="{DynamicResource Color.Outline}"
                         BorderThickness="1"
                         CornerRadius="{DynamicResource Radius.Medium}">
-                        <ScrollViewer x:Name="PART_ContentHost" Margin="{TemplateBinding Padding}" />
+                        <ScrollViewer x:Name="PART_ContentHost" Margin="{TemplateBinding Padding}"
+                                  VerticalAlignment="Center" />
                     </Border>
                     <ControlTemplate.Triggers>
                         <Trigger Property="IsMouseOver" Value="True">

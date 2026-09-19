@@ -474,5 +474,9 @@
   "Settings.Theme.ColorText": "主文本",
   "Export.Format.Png": "PNG 图像",
   "Export.Format.Jpeg": "JPEG 图像",
-  "Export.Format.Bmp": "BMP 图像"
+  "Export.Format.Bmp": "BMP 图像",
+  "Export.Format.Tiff": "TIFF 图像",
+  "Export.Format.Gif": "GIF 图像",
+  "Export.Format.Webp": "WebP 图像",
+  "Export.Format.Webp.Desc": "需系统安装 WebP 编解码扩展,未安装时导出会失败"
 }

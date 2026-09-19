@@ -465,7 +465,7 @@
                     <!-- 使用的参数(快照) -->
                     <TextBlock Text="{loc:Translate Works.Params.Title}" FontSize="13" FontWeight="SemiBold" Margin="2,12,0,10"
                                Foreground="{DynamicResource Color.Text.Primary}" />
-                    <ItemsControl ItemsSource="{Binding SelectedCard.ParamRows}">
+                    <ItemsControl ItemsSource="{Binding SelectedCard.DisplayParamRows}">
                         <ItemsControl.ItemTemplate>
                             <DataTemplate>
                                 <Grid Margin="2,0,2,8">

@@ -63,9 +63,20 @@ public sealed class AppExportService : IExportProxy
             {
                 "jpeg" => "JPEG|*.jpg",
                 "bmp" => "Bitmap|*.bmp",
+                "tiff" => "TIFF|*.tif;*.tiff",
+                "gif" => "GIF|*.gif",
+                "webp" => "WebP|*.webp",
                 _ => "PNG|*.png",
             },
-            DefaultExt = defaultFormatId switch { "jpeg" => ".jpg", "bmp" => ".bmp", _ => ".png" },
+            DefaultExt = defaultFormatId switch
+            {
+                "jpeg" => ".jpg",
+                "bmp" => ".bmp",
+                "tiff" => ".tiff",
+                "gif" => ".gif",
+                "webp" => ".webp",
+                _ => ".png",
+            },
         };
         return dialog.ShowDialog(Application.Current.MainWindow) == true ? dialog.FileName : null;
     }
@@ -76,6 +87,9 @@ public sealed class AppExportService : IExportProxy
         {
             ".jpg" or ".jpeg" => new JpegExporter(),
             ".bmp" => new BmpExporter(),
+            ".tif" or ".tiff" => new TiffExporter(),
+            ".gif" => new GifExporter(),
+            ".webp" => new WebpExporter(),
             _ => new PngExporter(),
         };
         await using var stream = File.Create(path);
