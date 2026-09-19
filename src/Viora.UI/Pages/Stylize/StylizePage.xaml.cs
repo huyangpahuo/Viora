@@ -99,7 +99,7 @@ public partial class StylizePage : UserControl
     {
         if (sender is ScrollViewer sv)
         {
-            sv.ScrollToHorizontalOffset(sv.HorizontalOffset - e.Delta * 0.6);
+            sv.ScrollToHorizontalOffset(sv.HorizontalOffset - e.Delta * 0.3);
             e.Handled = true;
         }
     }

@@ -70,20 +70,25 @@ public sealed partial class MarketCardViewModel : ObservableObject
 
     public bool HasPreviewImage => Model.PreviewImage is not null;
 
-    /// <summary>详情面板效果预览:默认 = 封面切分;已安装插件选中后替换为 原图 | 真实渲染效果。</summary>
+    /// <summary>详情面板效果预览:默认 = 封面切分占位;已安装插件选中后替换为 原图 | 真实渲染效果。</summary>
     [ObservableProperty]
     private Brush _previewBeforeBrush;
 
     [ObservableProperty]
     private Brush _previewAfterBrush;
 
-    /// <summary>真实预览回填:原图侧换完整样张,风格化后侧换渲染结果。</summary>
+    /// <summary>true = 尚未生成真实渲染(未安装/渲染失败),详情面板显示占位提示。</summary>
+    [ObservableProperty]
+    private bool _isPreviewPlaceholder = true;
+
+    /// <summary>真实预览回填:原图侧换完整样张,风格化后侧换渲染结果,占位提示随之消失。</summary>
     public void ApplyRenderedPreview(ImageSource rendered, Brush fullSampleBrush)
     {
         PreviewBeforeBrush = fullSampleBrush;
         var brush = new ImageBrush(rendered) { Stretch = Stretch.UniformToFill };
         brush.Freeze();
         PreviewAfterBrush = brush;
+        IsPreviewPlaceholder = false;
     }
 
     /// <summary>包大小/更新时间回填(选中详情时由主 VM 异步调用)。</summary>
@@ -546,6 +551,9 @@ public partial class PluginMarketViewModel : ObservableObject
         {
             _selectedCard = next;
             OnPropertyChanged(nameof(SelectedCard));
+            // 安装/卸载后目录重建,此处为绕过 setter 的重新选中:补触发元数据与真实预览加载
+            _ = LoadPackageMetaAsync(next);
+            _ = LoadRenderedPreviewAsync(next);
         }
 
         OnPropertyChanged(nameof(HasCards));

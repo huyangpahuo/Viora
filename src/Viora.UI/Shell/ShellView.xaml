@@ -179,6 +179,7 @@
                     </Button>
 
                     <Button x:Name="LanguageButton" Style="{StaticResource TopBarPillButton}" Margin="4,0,0,0"
+                            Click="OnLanguageClick"
                             ToolTip="{loc:Translate TopBar.Language}">
                         <StackPanel Orientation="Horizontal">
                             <controls:VioraIcon Geometry="{StaticResource Icon.Globe}" Width="15" Height="15"

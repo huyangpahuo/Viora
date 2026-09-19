@@ -355,6 +355,7 @@
   "Market.Author.Tooltip": "在 GitHub 上查看 {0} 的仓库",
   "Market.All.Plugins": "作者全部插件",
   "Market.All.Count": "{0} 个插件",
+  "Market.Preview.Hint": "安装后生成真实效果预览",
   "Market.Tab.SystemPresets": "系统预设",
   "Market.System.BuiltIn": "系统内置",
   "Style.Cat.Anime": "动漫",

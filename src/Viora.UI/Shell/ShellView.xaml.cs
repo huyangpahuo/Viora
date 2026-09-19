@@ -1,5 +1,6 @@
 using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Controls.Primitives;
 using System.Windows.Media.Animation;
 
 namespace Viora.UI.Shell;
@@ -23,6 +24,17 @@ public partial class ShellView : UserControl
     }
 
     private ShellViewModel? ViewModel => DataContext as ShellViewModel;
+
+    /// <summary>语言按钮左键点击:ContextMenu 默认只响应右键,这里主动打开为下拉菜单。</summary>
+    private void OnLanguageClick(object sender, RoutedEventArgs e)
+    {
+        if (sender is Button { ContextMenu: { } menu } button)
+        {
+            menu.PlacementTarget = button;
+            menu.Placement = PlacementMode.Bottom;
+            menu.IsOpen = true;
+        }
+    }
 
     private void HookWindow()
     {

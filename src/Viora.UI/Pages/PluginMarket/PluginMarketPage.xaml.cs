@@ -23,7 +23,7 @@ public partial class PluginMarketPage : UserControl
             var sv = FindDescendantScrollViewer(lb);
             if (sv is not null)
             {
-                sv.ScrollToHorizontalOffset(sv.HorizontalOffset - e.Delta * 0.6);
+                sv.ScrollToHorizontalOffset(sv.HorizontalOffset - e.Delta * 0.3);
                 e.Handled = true;
             }
         }

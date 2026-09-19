@@ -239,8 +239,19 @@
                                                 <Button Style="{DynamicResource IconButton}" Width="28" Height="28"
                                                         HorizontalAlignment="Left" Command="{Binding ToggleFavoriteCommand}"
                                                         ToolTip="{Binding FavoriteTooltip}">
-                                                    <controls:VioraIcon x:Name="StarIcon" Geometry="{StaticResource Icon.Star}" Width="14" Height="14"
-                                                                        Foreground="{DynamicResource Color.Text.Disabled}" />
+                                                    <controls:VioraIcon x:Name="StarIcon" Geometry="{StaticResource Icon.Star}" Width="14" Height="14">
+                                                        <!-- Foreground 必须由样式持有:元素本地值优先级高于触发器,写了本地值星标永远不变金 -->
+                                                        <controls:VioraIcon.Style>
+                                                            <Style TargetType="controls:VioraIcon" BasedOn="{StaticResource {x:Type controls:VioraIcon}}">
+                                                                <Setter Property="Foreground" Value="{DynamicResource Color.Text.Disabled}" />
+                                                                <Style.Triggers>
+                                                                    <DataTrigger Binding="{Binding IsFavorite}" Value="True">
+                                                                        <Setter Property="Foreground" Value="{DynamicResource Color.Warning}" />
+                                                                    </DataTrigger>
+                                                                </Style.Triggers>
+                                                            </Style>
+                                                        </controls:VioraIcon.Style>
+                                                    </controls:VioraIcon>
                                                 </Button>
                                                 <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
                                                     <Button Style="{DynamicResource IconButton}" Width="28" Height="28"
@@ -311,8 +322,18 @@
                                             <StackPanel Grid.Column="3" Orientation="Horizontal" VerticalAlignment="Center">
                                                 <Button Style="{DynamicResource IconButton}" Width="30" Height="30"
                                                         Command="{Binding ToggleFavoriteCommand}" ToolTip="{Binding FavoriteTooltip}">
-                                                    <controls:VioraIcon x:Name="RowStar" Geometry="{StaticResource Icon.Star}" Width="14" Height="14"
-                                                                        Foreground="{DynamicResource Color.Text.Disabled}" />
+                                                    <controls:VioraIcon x:Name="RowStar" Geometry="{StaticResource Icon.Star}" Width="14" Height="14">
+                                                        <controls:VioraIcon.Style>
+                                                            <Style TargetType="controls:VioraIcon" BasedOn="{StaticResource {x:Type controls:VioraIcon}}">
+                                                                <Setter Property="Foreground" Value="{DynamicResource Color.Text.Disabled}" />
+                                                                <Style.Triggers>
+                                                                    <DataTrigger Binding="{Binding IsFavorite}" Value="True">
+                                                                        <Setter Property="Foreground" Value="{DynamicResource Color.Warning}" />
+                                                                    </DataTrigger>
+                                                                </Style.Triggers>
+                                                            </Style>
+                                                        </controls:VioraIcon.Style>
+                                                    </controls:VioraIcon>
                                                 </Button>
                                                 <Button Style="{DynamicResource IconButton}" Width="30" Height="30"
                                                         Command="{Binding ExportCommand}" ToolTip="{loc:Translate Works.Card.Export}">
@@ -399,9 +420,8 @@
                             <Button Style="{DynamicResource IconButton}" Width="30" Height="30"
                                     Command="{Binding SelectedCard.ToggleFavoriteCommand}"
                                     ToolTip="{Binding SelectedCard.FavoriteTooltip}">
-                                <controls:VioraIcon Geometry="{StaticResource Icon.Star}" Width="15" Height="15"
-                                                    Foreground="{DynamicResource Color.Text.Disabled}">
-                                    <!-- 必须 BasedOn 隐式样式,否则 VioraIcon 的模板被覆盖,图标不渲染 -->
+                                <controls:VioraIcon Geometry="{StaticResource Icon.Star}" Width="15" Height="15">
+                                    <!-- Foreground 由样式持有(本地值会压过触发器);必须 BasedOn 隐式样式,否则模板被覆盖图标不渲染 -->
                                     <controls:VioraIcon.Style>
                                         <Style TargetType="controls:VioraIcon" BasedOn="{StaticResource {x:Type controls:VioraIcon}}">
                                             <Setter Property="Foreground" Value="{DynamicResource Color.Text.Disabled}" />

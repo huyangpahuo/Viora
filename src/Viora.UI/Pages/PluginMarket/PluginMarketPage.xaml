@@ -134,11 +134,11 @@
                     <RowDefinition Height="*" />
                 </Grid.RowDefinitions>
 
-                <!-- Hero 横幅 -->
+                <!-- Hero 横幅(内层背景必须同圆角:ClipToBounds 不按圆角裁剪,方角会盖掉外层圆角) -->
                 <Border Grid.Row="0" CornerRadius="13" ClipToBounds="True" Margin="0,0,0,14">
                     <Grid>
-                        <Border Background="{DynamicResource Color.SurfaceElevated}" />
-                        <Border Background="{DynamicResource Brush.BrandSoft}" Opacity="0.5" />
+                        <Border Background="{DynamicResource Color.SurfaceElevated}" CornerRadius="13" />
+                        <Border Background="{DynamicResource Brush.BrandSoft}" Opacity="0.5" CornerRadius="13" />
                         <controls:VioraIcon Geometry="{StaticResource Icon.PuzzlePiece}" Width="150" Height="150" Opacity="0.10"
                                             HorizontalAlignment="Right" VerticalAlignment="Center" Margin="0,0,70,-18" Foreground="White" />
                         <controls:VioraIcon Geometry="{StaticResource Icon.WandMagicSparkles}" Width="90" Height="90" Opacity="0.10"
@@ -538,7 +538,15 @@
                                        Foreground="{DynamicResource Color.Text.Secondary}" />
                         </StackPanel>
                         <StackPanel Grid.Column="2">
-                            <Border Height="96" CornerRadius="10" Background="{Binding SelectedCard.PreviewAfterBrush}" />
+                            <Border Height="96" CornerRadius="10" Background="{Binding SelectedCard.PreviewAfterBrush}">
+                                <!-- 未安装/未渲染时给出明确占位提示,不再像"一张图劈两半" -->
+                                <Border Background="{DynamicResource Color.Scrim}" CornerRadius="10"
+                                        Visibility="{Binding SelectedCard.IsPreviewPlaceholder, Converter={StaticResource BoolToVisibility}}">
+                                    <TextBlock Text="{loc:Translate Market.Preview.Hint}" FontSize="10" TextAlignment="Center"
+                                               TextWrapping="Wrap" Margin="10,0" Foreground="#E6FFFFFF"
+                                               HorizontalAlignment="Center" VerticalAlignment="Center" />
+                                </Border>
+                            </Border>
                             <TextBlock Text="{loc:Translate Stylize.Badge.Stylized}" FontSize="10.5" Margin="2,5,0,0"
                                        Foreground="{DynamicResource Color.Text.Secondary}" />
                         </StackPanel>

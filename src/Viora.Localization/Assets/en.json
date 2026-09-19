@@ -355,6 +355,7 @@
   "Market.Author.Tooltip": "View {0}'s repository on GitHub",
   "Market.All.Plugins": "All by Author",
   "Market.All.Count": "{0} plugins",
+  "Market.Preview.Hint": "Install to preview the real effect",
   "Market.Tab.SystemPresets": "System presets",
   "Market.System.BuiltIn": "Built-in",
   "Style.Cat.Anime": "Anime",

@@ -15,7 +15,6 @@ using Viora.Core.Works;
 using Viora.UI.Hosting;
 using Viora.UI.Localization;
 using Viora.UI.Services;
-using Viora.UI.Services;
 
 namespace Viora.UI.Pages.Stylize;
 
