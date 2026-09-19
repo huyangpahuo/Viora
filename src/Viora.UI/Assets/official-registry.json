@@ -1,0 +1,887 @@
+{
+  "version": 1,
+  "updated": "2026-09-19",
+  "count": 55,
+  "presets": [
+    {
+      "pluginId": "builtin.viora.anime-vector",
+      "presetId": "builtin.anime-vector",
+      "name": {
+        "zh": "Anime Vector",
+        "en": "Anime Vector"
+      },
+      "author": "Viora Team",
+      "category": "Style.Cat.Anime",
+      "version": "1.0.0",
+      "package": "packages/builtin.viora.anime-vector.zip",
+      "description": {
+        "zh": "Anime Vector",
+        "en": "Anime Vector"
+      }
+    },
+    {
+      "pluginId": "builtin.viora.ascii-art",
+      "presetId": "builtin.ascii-art",
+      "name": {
+        "zh": "ASCII字符画",
+        "en": "ASCII Art"
+      },
+      "author": "Viora Team",
+      "category": "Style.Cat.Experimental",
+      "version": "1.0.0",
+      "package": "packages/builtin.viora.ascii-art.zip",
+      "description": {
+        "zh": "ASCII字符画",
+        "en": "ASCII Art"
+      }
+    },
+    {
+      "pluginId": "builtin.viora.blueprint",
+      "presetId": "builtin.blueprint",
+      "name": {
+        "zh": "蓝图",
+        "en": "Blueprint"
+      },
+      "author": "Viora Team",
+      "category": "Style.Cat.PaperCraft",
+      "version": "1.0.0",
+      "package": "packages/builtin.viora.blueprint.zip",
+      "description": {
+        "zh": "蓝图",
+        "en": "Blueprint"
+      }
+    },
+    {
+      "pluginId": "builtin.viora.chalkboard",
+      "presetId": "builtin.chalkboard",
+      "name": {
+        "zh": "黑板粉笔",
+        "en": "Chalkboard"
+      },
+      "author": "Viora Team",
+      "category": "Style.Cat.PaperCraft",
+      "version": "1.0.0",
+      "package": "packages/builtin.viora.chalkboard.zip",
+      "description": {
+        "zh": "黑板粉笔",
+        "en": "Chalkboard"
+      }
+    },
+    {
+      "pluginId": "builtin.viora.chrome",
+      "presetId": "builtin.chrome",
+      "name": {
+        "zh": "镀铬",
+        "en": "Chrome"
+      },
+      "author": "Viora Team",
+      "category": "Style.Cat.Metallic",
+      "version": "1.0.0",
+      "package": "packages/builtin.viora.chrome.zip",
+      "description": {
+        "zh": "镀铬",
+        "en": "Chrome"
+      }
+    },
+    {
+      "pluginId": "builtin.viora.clay",
+      "presetId": "builtin.clay",
+      "name": {
+        "zh": "黏土雕塑",
+        "en": "Clay Sculpture"
+      },
+      "author": "Viora Team",
+      "category": "Style.Cat.ThreeD",
+      "version": "1.0.0",
+      "package": "packages/builtin.viora.clay.zip",
+      "description": {
+        "zh": "黏土雕塑",
+        "en": "Clay Sculpture"
+      }
+    },
+    {
+      "pluginId": "builtin.viora.collage",
+      "presetId": "builtin.collage",
+      "name": {
+        "zh": "拼贴艺术",
+        "en": "Collage"
+      },
+      "author": "Viora Team",
+      "category": "Style.Cat.Collage",
+      "version": "1.0.0",
+      "package": "packages/builtin.viora.collage.zip",
+      "description": {
+        "zh": "拼贴艺术",
+        "en": "Collage"
+      }
+    },
+    {
+      "pluginId": "builtin.viora.comic",
+      "presetId": "builtin.comic",
+      "name": {
+        "zh": "漫画",
+        "en": "Comic Book"
+      },
+      "author": "Viora Team",
+      "category": "Style.Cat.Anime",
+      "version": "1.0.0",
+      "package": "packages/builtin.viora.comic.zip",
+      "description": {
+        "zh": "漫画",
+        "en": "Comic Book"
+      }
+    },
+    {
+      "pluginId": "builtin.viora.cross-hatching",
+      "presetId": "builtin.cross-hatching",
+      "name": {
+        "zh": "交叉排线",
+        "en": "Cross-Hatching"
+      },
+      "author": "Viora Team",
+      "category": "Style.Cat.Sketch",
+      "version": "1.0.0",
+      "package": "packages/builtin.viora.cross-hatching.zip",
+      "description": {
+        "zh": "交叉排线",
+        "en": "Cross-Hatching"
+      }
+    },
+    {
+      "pluginId": "builtin.viora.crt",
+      "presetId": "builtin.crt",
+      "name": {
+        "zh": "CRT复古",
+        "en": "CRT Retro"
+      },
+      "author": "Viora Team",
+      "category": "Style.Cat.RetroFilm",
+      "version": "1.0.0",
+      "package": "packages/builtin.viora.crt.zip",
+      "description": {
+        "zh": "CRT复古",
+        "en": "CRT Retro"
+      }
+    },
+    {
+      "pluginId": "builtin.viora.dithered",
+      "presetId": "builtin.dithered",
+      "name": {
+        "zh": "抖动图",
+        "en": "Dithered"
+      },
+      "author": "Viora Team",
+      "category": "Style.Cat.Pixel",
+      "version": "1.0.0",
+      "package": "packages/builtin.viora.dithered.zip",
+      "description": {
+        "zh": "抖动图",
+        "en": "Dithered"
+      }
+    },
+    {
+      "pluginId": "builtin.viora.double-exposure",
+      "presetId": "builtin.double-exposure",
+      "name": {
+        "zh": "双重曝光",
+        "en": "Double Exposure"
+      },
+      "author": "Viora Team",
+      "category": "Style.Cat.Photography",
+      "version": "1.0.0",
+      "package": "packages/builtin.viora.double-exposure.zip",
+      "description": {
+        "zh": "双重曝光",
+        "en": "Double Exposure"
+      }
+    },
+    {
+      "pluginId": "builtin.viora.embroidery",
+      "presetId": "builtin.embroidery",
+      "name": {
+        "zh": "刺绣",
+        "en": "Embroidery"
+      },
+      "author": "Viora Team",
+      "category": "Style.Cat.Handcraft",
+      "version": "1.0.0",
+      "package": "packages/builtin.viora.embroidery.zip",
+      "description": {
+        "zh": "刺绣",
+        "en": "Embroidery"
+      }
+    },
+    {
+      "pluginId": "builtin.viora.etching",
+      "presetId": "builtin.etching",
+      "name": {
+        "zh": "蚀刻版画",
+        "en": "Etching"
+      },
+      "author": "Viora Team",
+      "category": "Style.Cat.Printmaking",
+      "version": "1.0.0",
+      "package": "packages/builtin.viora.etching.zip",
+      "description": {
+        "zh": "蚀刻版画",
+        "en": "Etching"
+      }
+    },
+    {
+      "pluginId": "builtin.viora.film-negative",
+      "presetId": "builtin.film-negative",
+      "name": {
+        "zh": "胶片负片",
+        "en": "Film Negative"
+      },
+      "author": "Viora Team",
+      "category": "Style.Cat.RetroFilm",
+      "version": "1.0.0",
+      "package": "packages/builtin.viora.film-negative.zip",
+      "description": {
+        "zh": "胶片负片",
+        "en": "Film Negative"
+      }
+    },
+    {
+      "pluginId": "builtin.viora.fresco",
+      "presetId": "builtin.fresco",
+      "name": {
+        "zh": "湿壁画",
+        "en": "Fresco"
+      },
+      "author": "Viora Team",
+      "category": "Style.Cat.OilPainting",
+      "version": "1.0.0",
+      "package": "packages/builtin.viora.fresco.zip",
+      "description": {
+        "zh": "湿壁画",
+        "en": "Fresco"
+      }
+    },
+    {
+      "pluginId": "builtin.viora.glitch",
+      "presetId": "builtin.glitch",
+      "name": {
+        "zh": "故障艺术",
+        "en": "Glitch Art"
+      },
+      "author": "Viora Team",
+      "category": "Style.Cat.Cyberpunk",
+      "version": "1.0.0",
+      "package": "packages/builtin.viora.glitch.zip",
+      "description": {
+        "zh": "故障艺术",
+        "en": "Glitch Art"
+      }
+    },
+    {
+      "pluginId": "builtin.viora.globe-relief",
+      "presetId": "builtin.globe-relief",
+      "name": {
+        "zh": "浮雕",
+        "en": "Relief"
+      },
+      "author": "Viora Team",
+      "category": "Style.Cat.ThreeD",
+      "version": "1.0.0",
+      "package": "packages/builtin.viora.globe-relief.zip",
+      "description": {
+        "zh": "浮雕",
+        "en": "Relief"
+      }
+    },
+    {
+      "pluginId": "builtin.viora.glowing-wireframe",
+      "presetId": "builtin.glowing-wireframe",
+      "name": {
+        "zh": "发光线框",
+        "en": "Glowing Wireframe"
+      },
+      "author": "Viora Team",
+      "category": "Style.Cat.Neon",
+      "version": "1.0.0",
+      "package": "packages/builtin.viora.glowing-wireframe.zip",
+      "description": {
+        "zh": "发光线框",
+        "en": "Glowing Wireframe"
+      }
+    },
+    {
+      "pluginId": "builtin.viora.halftone",
+      "presetId": "builtin.halftone",
+      "name": {
+        "zh": "半色调",
+        "en": "Halftone"
+      },
+      "author": "Viora Team",
+      "category": "Style.Cat.RetroFilm",
+      "version": "1.0.0",
+      "package": "packages/builtin.viora.halftone.zip",
+      "description": {
+        "zh": "半色调",
+        "en": "Halftone"
+      }
+    },
+    {
+      "pluginId": "builtin.viora.holographic",
+      "presetId": "builtin.holographic",
+      "name": {
+        "zh": "全息",
+        "en": "Holographic"
+      },
+      "author": "Viora Team",
+      "category": "Style.Cat.Neon",
+      "version": "1.0.0",
+      "package": "packages/builtin.viora.holographic.zip",
+      "description": {
+        "zh": "全息",
+        "en": "Holographic"
+      }
+    },
+    {
+      "pluginId": "builtin.viora.infrared",
+      "presetId": "builtin.infrared",
+      "name": {
+        "zh": "红外摄影",
+        "en": "Infrared"
+      },
+      "author": "Viora Team",
+      "category": "Style.Cat.Photography",
+      "version": "1.0.0",
+      "package": "packages/builtin.viora.infrared.zip",
+      "description": {
+        "zh": "红外摄影",
+        "en": "Infrared"
+      }
+    },
+    {
+      "pluginId": "builtin.viora.isometric-diorama",
+      "presetId": "builtin.isometric-diorama",
+      "name": {
+        "zh": "等距微缩场景",
+        "en": "Isometric Diorama"
+      },
+      "author": "Viora Team",
+      "category": "Style.Cat.ThreeD",
+      "version": "1.0.0",
+      "package": "packages/builtin.viora.isometric-diorama.zip",
+      "description": {
+        "zh": "等距微缩场景",
+        "en": "Isometric Diorama"
+      }
+    },
+    {
+      "pluginId": "builtin.viora.kaleidoscope",
+      "presetId": "builtin.kaleidoscope",
+      "name": {
+        "zh": "万花筒",
+        "en": "Kaleidoscope"
+      },
+      "author": "Viora Team",
+      "category": "Style.Cat.GlassMosaic",
+      "version": "1.0.0",
+      "package": "packages/builtin.viora.kaleidoscope.zip",
+      "description": {
+        "zh": "万花筒",
+        "en": "Kaleidoscope"
+      }
+    },
+    {
+      "pluginId": "builtin.viora.knitted",
+      "presetId": "builtin.knitted",
+      "name": {
+        "zh": "针织",
+        "en": "Knitted"
+      },
+      "author": "Viora Team",
+      "category": "Style.Cat.Handcraft",
+      "version": "1.0.0",
+      "package": "packages/builtin.viora.knitted.zip",
+      "description": {
+        "zh": "针织",
+        "en": "Knitted"
+      }
+    },
+    {
+      "pluginId": "builtin.viora.light-painting",
+      "presetId": "builtin.light-painting",
+      "name": {
+        "zh": "光绘",
+        "en": "Light Painting"
+      },
+      "author": "Viora Team",
+      "category": "Style.Cat.LightParticles",
+      "version": "1.0.0",
+      "package": "packages/builtin.viora.light-painting.zip",
+      "description": {
+        "zh": "光绘",
+        "en": "Light Painting"
+      }
+    },
+    {
+      "pluginId": "builtin.viora.liquid-marble",
+      "presetId": "builtin.liquid-marble",
+      "name": {
+        "zh": "液体大理石",
+        "en": "Liquid Marble"
+      },
+      "author": "Viora Team",
+      "category": "Style.Cat.Metallic",
+      "version": "1.0.0",
+      "package": "packages/builtin.viora.liquid-marble.zip",
+      "description": {
+        "zh": "液体大理石",
+        "en": "Liquid Marble"
+      }
+    },
+    {
+      "pluginId": "builtin.viora.liquid-metal",
+      "presetId": "builtin.liquid-metal",
+      "name": {
+        "zh": "液态金属",
+        "en": "Liquid Metal"
+      },
+      "author": "Viora Team",
+      "category": "Style.Cat.Metallic",
+      "version": "1.0.0",
+      "package": "packages/builtin.viora.liquid-metal.zip",
+      "description": {
+        "zh": "液态金属",
+        "en": "Liquid Metal"
+      }
+    },
+    {
+      "pluginId": "builtin.viora.low-poly",
+      "presetId": "builtin.low-poly",
+      "name": {
+        "zh": "低多边形",
+        "en": "Low Poly"
+      },
+      "author": "Viora Team",
+      "category": "Style.Cat.ThreeD",
+      "version": "1.0.0",
+      "package": "packages/builtin.viora.low-poly.zip",
+      "description": {
+        "zh": "低多边形",
+        "en": "Low Poly"
+      }
+    },
+    {
+      "pluginId": "builtin.viora.metal-engraving",
+      "presetId": "builtin.metal-engraving",
+      "name": {
+        "zh": "金属雕刻",
+        "en": "Metal Engraving"
+      },
+      "author": "Viora Team",
+      "category": "Style.Cat.Printmaking",
+      "version": "1.0.0",
+      "package": "packages/builtin.viora.metal-engraving.zip",
+      "description": {
+        "zh": "金属雕刻",
+        "en": "Metal Engraving"
+      }
+    },
+    {
+      "pluginId": "builtin.viora.mosaic",
+      "presetId": "builtin.mosaic",
+      "name": {
+        "zh": "马赛克",
+        "en": "Mosaic"
+      },
+      "author": "Viora Team",
+      "category": "Style.Cat.GlassMosaic",
+      "version": "1.0.0",
+      "package": "packages/builtin.viora.mosaic.zip",
+      "description": {
+        "zh": "马赛克",
+        "en": "Mosaic"
+      }
+    },
+    {
+      "pluginId": "builtin.viora.mosaic-glass",
+      "presetId": "builtin.mosaic-glass",
+      "name": {
+        "zh": "玻璃镶嵌",
+        "en": "Mosaic Glass"
+      },
+      "author": "Viora Team",
+      "category": "Style.Cat.GlassMosaic",
+      "version": "1.0.0",
+      "package": "packages/builtin.viora.mosaic-glass.zip",
+      "description": {
+        "zh": "玻璃镶嵌",
+        "en": "Mosaic Glass"
+      }
+    },
+    {
+      "pluginId": "builtin.viora.neon-cyberpunk",
+      "presetId": "builtin.neon-cyberpunk",
+      "name": {
+        "zh": "霓虹赛博",
+        "en": "Neon Cyberpunk"
+      },
+      "author": "Viora Team",
+      "category": "Style.Cat.Cyberpunk",
+      "version": "1.0.0",
+      "package": "packages/builtin.viora.neon-cyberpunk.zip",
+      "description": {
+        "zh": "霓虹赛博",
+        "en": "Neon Cyberpunk"
+      }
+    },
+    {
+      "pluginId": "builtin.viora.neon-sign",
+      "presetId": "builtin.neon-sign",
+      "name": {
+        "zh": "霓虹灯牌",
+        "en": "Neon Sign"
+      },
+      "author": "Viora Team",
+      "category": "Style.Cat.Neon",
+      "version": "1.0.0",
+      "package": "packages/builtin.viora.neon-sign.zip",
+      "description": {
+        "zh": "霓虹灯牌",
+        "en": "Neon Sign"
+      }
+    },
+    {
+      "pluginId": "builtin.viora.newspaper",
+      "presetId": "builtin.newspaper",
+      "name": {
+        "zh": "报纸印刷",
+        "en": "Newspaper"
+      },
+      "author": "Viora Team",
+      "category": "Style.Cat.Printmaking",
+      "version": "1.0.0",
+      "package": "packages/builtin.viora.newspaper.zip",
+      "description": {
+        "zh": "报纸印刷",
+        "en": "Newspaper"
+      }
+    },
+    {
+      "pluginId": "builtin.viora.oil-painting",
+      "presetId": "builtin.oil-painting",
+      "name": {
+        "zh": "梵高油画",
+        "en": "Van Gogh Oil"
+      },
+      "author": "Viora Team",
+      "category": "Style.Cat.OilPainting",
+      "version": "1.0.0",
+      "package": "packages/builtin.viora.oil-painting.zip",
+      "description": {
+        "zh": "梵高油画",
+        "en": "Van Gogh Oil"
+      }
+    },
+    {
+      "pluginId": "builtin.viora.origami",
+      "presetId": "builtin.origami",
+      "name": {
+        "zh": "折纸",
+        "en": "Origami"
+      },
+      "author": "Viora Team",
+      "category": "Style.Cat.PaperCraft",
+      "version": "1.0.0",
+      "package": "packages/builtin.viora.origami.zip",
+      "description": {
+        "zh": "折纸",
+        "en": "Origami"
+      }
+    },
+    {
+      "pluginId": "builtin.viora.paper-cut",
+      "presetId": "builtin.paper-cut",
+      "name": {
+        "zh": "剪纸",
+        "en": "Paper Cut"
+      },
+      "author": "Viora Team",
+      "category": "Style.Cat.PaperCraft",
+      "version": "1.0.0",
+      "package": "packages/builtin.viora.paper-cut.zip",
+      "description": {
+        "zh": "剪纸",
+        "en": "Paper Cut"
+      }
+    },
+    {
+      "pluginId": "builtin.viora.pixel-art",
+      "presetId": "builtin.pixel-art",
+      "name": {
+        "zh": "像素艺术",
+        "en": "Pixel Art"
+      },
+      "author": "Viora Team",
+      "category": "Style.Cat.Pixel",
+      "version": "1.0.0",
+      "package": "packages/builtin.viora.pixel-art.zip",
+      "description": {
+        "zh": "像素艺术",
+        "en": "Pixel Art"
+      }
+    },
+    {
+      "pluginId": "builtin.viora.polaroid",
+      "presetId": "builtin.polaroid",
+      "name": {
+        "zh": "拍立得",
+        "en": "Polaroid"
+      },
+      "author": "Viora Team",
+      "category": "Style.Cat.RetroFilm",
+      "version": "1.0.0",
+      "package": "packages/builtin.viora.polaroid.zip",
+      "description": {
+        "zh": "拍立得",
+        "en": "Polaroid"
+      }
+    },
+    {
+      "pluginId": "builtin.viora.porcelain",
+      "presetId": "builtin.porcelain",
+      "name": {
+        "zh": "瓷器",
+        "en": "Porcelain"
+      },
+      "author": "Viora Team",
+      "category": "Style.Cat.Handcraft",
+      "version": "1.0.0",
+      "package": "packages/builtin.viora.porcelain.zip",
+      "description": {
+        "zh": "瓷器",
+        "en": "Porcelain"
+      }
+    },
+    {
+      "pluginId": "builtin.viora.risograph",
+      "presetId": "builtin.risograph",
+      "name": {
+        "zh": "孔版印刷",
+        "en": "Risograph"
+      },
+      "author": "Viora Team",
+      "category": "Style.Cat.Printmaking",
+      "version": "1.0.0",
+      "package": "packages/builtin.viora.risograph.zip",
+      "description": {
+        "zh": "孔版印刷",
+        "en": "Risograph"
+      }
+    },
+    {
+      "pluginId": "builtin.viora.sand-art",
+      "presetId": "builtin.sand-art",
+      "name": {
+        "zh": "沙画",
+        "en": "Sand Art"
+      },
+      "author": "Viora Team",
+      "category": "Style.Cat.LightParticles",
+      "version": "1.0.0",
+      "package": "packages/builtin.viora.sand-art.zip",
+      "description": {
+        "zh": "沙画",
+        "en": "Sand Art"
+      }
+    },
+    {
+      "pluginId": "builtin.viora.sketch",
+      "presetId": "builtin.sketch",
+      "name": {
+        "zh": "简笔画",
+        "en": "Pencil Sketch"
+      },
+      "author": "Viora Team",
+      "category": "Style.Cat.Sketch",
+      "version": "1.0.0",
+      "package": "packages/builtin.viora.sketch.zip",
+      "description": {
+        "zh": "简笔画",
+        "en": "Pencil Sketch"
+      }
+    },
+    {
+      "pluginId": "builtin.viora.smoke-art",
+      "presetId": "builtin.smoke-art",
+      "name": {
+        "zh": "烟雾",
+        "en": "Smoke Art"
+      },
+      "author": "Viora Team",
+      "category": "Style.Cat.LightParticles",
+      "version": "1.0.0",
+      "package": "packages/builtin.viora.smoke-art.zip",
+      "description": {
+        "zh": "烟雾",
+        "en": "Smoke Art"
+      }
+    },
+    {
+      "pluginId": "builtin.viora.stained-glass",
+      "presetId": "builtin.stained-glass",
+      "name": {
+        "zh": "彩色玻璃",
+        "en": "Stained Glass"
+      },
+      "author": "Viora Team",
+      "category": "Style.Cat.GlassMosaic",
+      "version": "1.0.0",
+      "package": "packages/builtin.viora.stained-glass.zip",
+      "description": {
+        "zh": "彩色玻璃",
+        "en": "Stained Glass"
+      }
+    },
+    {
+      "pluginId": "builtin.viora.stippling",
+      "presetId": "builtin.stippling",
+      "name": {
+        "zh": "点描",
+        "en": "Stippling"
+      },
+      "author": "Viora Team",
+      "category": "Style.Cat.Sketch",
+      "version": "1.0.0",
+      "package": "packages/builtin.viora.stippling.zip",
+      "description": {
+        "zh": "点描",
+        "en": "Stippling"
+      }
+    },
+    {
+      "pluginId": "builtin.viora.string-art",
+      "presetId": "builtin.string-art",
+      "name": {
+        "zh": "绳线艺术",
+        "en": "String Art"
+      },
+      "author": "Viora Team",
+      "category": "Style.Cat.Handcraft",
+      "version": "1.0.0",
+      "package": "packages/builtin.viora.string-art.zip",
+      "description": {
+        "zh": "绳线艺术",
+        "en": "String Art"
+      }
+    },
+    {
+      "pluginId": "builtin.viora.tape-art",
+      "presetId": "builtin.tape-art",
+      "name": {
+        "zh": "胶带艺术",
+        "en": "Tape Art"
+      },
+      "author": "Viora Team",
+      "category": "Style.Cat.PaperCraft",
+      "version": "1.0.0",
+      "package": "packages/builtin.viora.tape-art.zip",
+      "description": {
+        "zh": "胶带艺术",
+        "en": "Tape Art"
+      }
+    },
+    {
+      "pluginId": "builtin.viora.thermal",
+      "presetId": "builtin.thermal",
+      "name": {
+        "zh": "热成像",
+        "en": "Thermal Camera"
+      },
+      "author": "Viora Team",
+      "category": "Style.Cat.Photography",
+      "version": "1.0.0",
+      "package": "packages/builtin.viora.thermal.zip",
+      "description": {
+        "zh": "热成像",
+        "en": "Thermal Camera"
+      }
+    },
+    {
+      "pluginId": "builtin.viora.torn-paper",
+      "presetId": "builtin.torn-paper",
+      "name": {
+        "zh": "撕纸",
+        "en": "Torn Paper"
+      },
+      "author": "Viora Team",
+      "category": "Style.Cat.PaperCraft",
+      "version": "1.0.0",
+      "package": "packages/builtin.viora.torn-paper.zip",
+      "description": {
+        "zh": "撕纸",
+        "en": "Torn Paper"
+      }
+    },
+    {
+      "pluginId": "builtin.viora.watercolor",
+      "presetId": "builtin.watercolor",
+      "name": {
+        "zh": "水彩画",
+        "en": "Watercolor"
+      },
+      "author": "Viora Team",
+      "category": "Style.Cat.Watercolor",
+      "version": "1.0.0",
+      "package": "packages/builtin.viora.watercolor.zip",
+      "description": {
+        "zh": "水彩画",
+        "en": "Watercolor"
+      }
+    },
+    {
+      "pluginId": "builtin.viora.wax-crayon",
+      "presetId": "builtin.wax-crayon",
+      "name": {
+        "zh": "蜡笔",
+        "en": "Wax Crayon"
+      },
+      "author": "Viora Team",
+      "category": "Style.Cat.Handcraft",
+      "version": "1.0.0",
+      "package": "packages/builtin.viora.wax-crayon.zip",
+      "description": {
+        "zh": "蜡笔",
+        "en": "Wax Crayon"
+      }
+    },
+    {
+      "pluginId": "builtin.viora.woodcut",
+      "presetId": "builtin.woodcut",
+      "name": {
+        "zh": "木刻版画",
+        "en": "Woodcut"
+      },
+      "author": "Viora Team",
+      "category": "Style.Cat.Printmaking",
+      "version": "1.0.0",
+      "package": "packages/builtin.viora.woodcut.zip",
+      "description": {
+        "zh": "木刻版画",
+        "en": "Woodcut"
+      }
+    },
+    {
+      "pluginId": "builtin.viora.xray",
+      "presetId": "builtin.xray",
+      "name": {
+        "zh": "X光",
+        "en": "X-Ray"
+      },
+      "author": "Viora Team",
+      "category": "Style.Cat.Photography",
+      "version": "1.0.0",
+      "package": "packages/builtin.viora.xray.zip",
+      "description": {
+        "zh": "X光",
+        "en": "X-Ray"
+      }
+    }
+  ]
+}

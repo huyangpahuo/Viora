@@ -73,7 +73,7 @@ public partial class ShellViewModel : ObservableObject
         {
             new(Sections.Core, "Nav.Stylize", "Nav.Stylize.Sub", "WandMagicSparkles", typeof(Pages.Stylize.StylizePage), 0),
             new(Sections.Core, "Nav.MyWorks", "Nav.MyWorks.Sub", "Images", typeof(Pages.MyWorks.MyWorksPage), 1),
-            new(Sections.Core, "Nav.PluginMarket", "Nav.PluginMarket.Sub", "PuzzlePiece", typeof(Pages.Placeholder.PlaceholderPage), 2),
+            new(Sections.Core, "Nav.PluginMarket", "Nav.PluginMarket.Sub", "PuzzlePiece", typeof(Pages.PluginMarket.PluginMarketPage), 2),
             new(Sections.Core, "Nav.Settings", "Nav.Settings.Sub", "Gear", typeof(Pages.Placeholder.PlaceholderPage), 3),
             new(Sections.Aux, "Nav.About", null, "CircleInfo", typeof(Pages.Placeholder.PlaceholderPage), 4),
             new(Sections.Aux, "Nav.Help", null, "CircleQuestion", typeof(Pages.Placeholder.PlaceholderPage), 5),

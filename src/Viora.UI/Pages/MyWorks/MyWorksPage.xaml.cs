@@ -53,6 +53,32 @@ public partial class MyWorksPage : UserControl
     }
 
     /// <summary>作品卡片列表滚轮:外层 ScrollViewer 统一滚动。</summary>
+    private void OnChipsWheel(object sender, MouseWheelEventArgs e)
+    {
+        if (sender is ListBox lb)
+        {
+            var sv = FindDescendantScrollViewer(lb);
+            if (sv is not null)
+            {
+                sv.ScrollToHorizontalOffset(sv.HorizontalOffset - e.Delta * 0.6);
+                e.Handled = true;
+            }
+        }
+    }
+
+    private static System.Windows.Controls.ScrollViewer? FindDescendantScrollViewer(System.Windows.DependencyObject root)
+    {
+        int count = System.Windows.Media.VisualTreeHelper.GetChildrenCount(root);
+        for (int i = 0; i < count; i++)
+        {
+            var child = System.Windows.Media.VisualTreeHelper.GetChild(root, i);
+            if (child is System.Windows.Controls.ScrollViewer sv) return sv;
+            var found = FindDescendantScrollViewer(child);
+            if (found is not null) return found;
+        }
+        return null;
+    }
+
     private void OnListWheel(object sender, MouseWheelEventArgs e)
     {
         if (sender is ScrollViewer sv)

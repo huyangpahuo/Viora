@@ -1,5 +1,6 @@
 using System.IO;
 using System.Security;
+using Viora.Core;
 
 namespace Viora.Infrastructure.Logging;
 
@@ -20,8 +21,10 @@ public interface IAppPaths
 }
 
 /// <summary>
-/// %LOCALAPPDATA%\Viora is the root. When a portable.marker file sits next to the
-/// executable, the executable folder is used instead (portable installs).
+/// %LOCALAPPDATA%\Viora is the root for settings, logs and cache. When a
+/// portable.marker file sits next to the executable, the executable folder is used
+/// instead (portable installs). The plugin install area always sits next to the
+/// executable so users can inspect and delete plugins in Explorer (see AppLocations).
 /// </summary>
 public sealed class AppPaths : IAppPaths
 {
@@ -37,7 +40,7 @@ public sealed class AppPaths : IAppPaths
         SettingsFile = Path.Combine(Root, "settings.json");
         LogsFolder = Path.Combine(Root, "logs");
         CacheFolder = Path.Combine(Root, "cache");
-        PluginsFolder = Path.Combine(Root, "plugins");
+        PluginsFolder = AppLocations.PluginsFolder;
     }
 
     public string Root { get; }

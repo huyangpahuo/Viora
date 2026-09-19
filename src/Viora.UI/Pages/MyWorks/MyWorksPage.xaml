@@ -172,8 +172,9 @@
                 <ListBox Grid.Row="1" Margin="0,0,0,4" BorderThickness="0" Background="Transparent" Padding="0"
                          ItemsSource="{Binding TabFilters}" SelectedItem="{Binding TabFilter}"
                          ItemContainerStyle="{StaticResource ChipPillItem}"
+                         PreviewMouseWheel="OnChipsWheel"
                          ScrollViewer.VerticalScrollBarVisibility="Disabled"
-                         ScrollViewer.HorizontalScrollBarVisibility="Disabled">
+                         ScrollViewer.HorizontalScrollBarVisibility="Hidden">
                     <ListBox.ItemsPanel>
                         <ItemsPanelTemplate>
                             <StackPanel Orientation="Horizontal" />

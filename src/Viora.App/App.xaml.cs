@@ -121,12 +121,16 @@ public partial class App : Application
                 return exporter.ExportAsync(buffer, stream, options, ct);
             };
 
-        // Register built-in features through the same seam plugins use.
-        var featureRegistry = _serviceProvider.GetRequiredService<IFeatureRegistry>();
-        await featureRegistry.RegisterBuiltInsAsync();
-
-        // Discover installed plugins (metadata only) and enable those not disabled.
         var pluginHost = _serviceProvider.GetRequiredService<IPluginHost>();
+
+        // 宿主级导出器(原先由 AnimeVector 内置特性注册;风格全部插件化后归宿主)。
+        var pluginContext = ((Viora.Infrastructure.Plugins.AssemblyPluginHost)pluginHost).Context;
+        pluginContext.RegisterExporter(new Viora.Features.Convert.AnimeVector.InfrastructureExportBridge.PngExporterProxy());
+        pluginContext.RegisterExporter(new Viora.Features.Convert.AnimeVector.InfrastructureExportBridge.JpegExporterProxy());
+        pluginContext.RegisterExporter(new Viora.Features.Convert.AnimeVector.InfrastructureExportBridge.BmpExporterProxy());
+
+        // 客户端不预装任何插件:安装区从空开始,全部由用户在插件市场按需安装(真下载)。
+        // Discover installed plugins (metadata only) and enable those not disabled.
         await pluginHost.DiscoverAsync();
         if (settings.Current.Plugins.EnablePluginLoading)
         {

@@ -43,6 +43,8 @@ public partial class StylizePage : UserControl
     /// <summary>缩略图条内部 ScrollViewer(横向滚动宿主),惰性解析。</summary>
     private ScrollViewer? _thumbsScroll;
 
+    private ScrollViewer? _chipsScroll;
+
     private void WireViewModel()
     {
         if (_wiredViewModel == ViewModel) return;
@@ -74,6 +76,16 @@ public partial class StylizePage : UserControl
     }
 
     /// <summary>缩略图条滚轮 → 横向滚动(每次插入新图也会跟随,见 WireViewModel)。</summary>
+    private void OnChipsWheel(object sender, MouseWheelEventArgs e)
+    {
+        if (sender is ListBox lb)
+        {
+            _chipsScroll ??= FindDescendantScrollViewer(lb);
+            _chipsScroll.ScrollToHorizontalOffset(_chipsScroll.HorizontalOffset - e.Delta * 0.6);
+            e.Handled = true;
+        }
+    }
+
     private void OnThumbsWheel(object sender, MouseWheelEventArgs e)
     {
         if (_thumbsScroll is null) _thumbsScroll = FindDescendantScrollViewer(ThumbsList);

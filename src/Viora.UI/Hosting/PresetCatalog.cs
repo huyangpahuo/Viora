@@ -19,6 +19,9 @@ public interface IPresetCatalog
     void Add(IStylePreset preset);
 
     void Add(IImageExporter exporter);
+
+    /// <summary>按预设 id 移除(插件卸载时由市场调用),返回是否确有移除。</summary>
+    bool RemoveById(string presetId);
 }
 
 public sealed class PresetCatalog : IPresetCatalog
@@ -49,5 +52,17 @@ public sealed class PresetCatalog : IPresetCatalog
     {
         lock (_gate) _exporters.Add(exporter);
         Changed?.Invoke(this, EventArgs.Empty);
+    }
+
+    public bool RemoveById(string presetId)
+    {
+        lock (_gate)
+        {
+            var existing = _presets.FirstOrDefault(p => p.Id == presetId);
+            if (existing is null) return false;
+            _presets.Remove(existing);
+        }
+        Changed?.Invoke(this, EventArgs.Empty);
+        return true;
     }
 }

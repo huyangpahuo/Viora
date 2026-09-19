@@ -15,6 +15,7 @@ using Viora.Core.Works;
 using Viora.UI.Hosting;
 using Viora.UI.Localization;
 using Viora.UI.Services;
+using Viora.UI.Services;
 
 namespace Viora.UI.Pages.Stylize;
 
@@ -72,7 +73,8 @@ public sealed partial class StyleItemViewModel : ObservableObject
     public StyleItemViewModel(IStylePreset preset)
     {
         Model = preset;
-        (CategoryKey, TileBrush) = Resolve(preset.Id);
+        CategoryKey = StyleCategories.ResolveCategoryKey(preset.Id);
+        TileBrush = MakeTileBrush(preset.Id);
     }
 
     public IStylePreset Model { get; }
@@ -95,23 +97,11 @@ public sealed partial class StyleItemViewModel : ObservableObject
 
     public bool IsHot => HotIds.Contains(Model.Id);
 
-    private static (string category, Brush tile) Resolve(string id)
+    public static Brush MakeTileBrush(string id)
     {
-        string category = id switch
-        {
-            var s when HotIds.Contains(s) => "Style.Category.Hot",
-            var s when Contains(s, "anime", "comic", "manga", "cartoon") => "Style.Category.Anime",
-            var s when Contains(s, "oil", "watercolor", "sketch", "fresco", "etching", "engraving",
-                "hatching", "stippling", "woodcut", "glass", "marble", "smoke", "sand", "string",
-                "tape", "paper", "embroidery", "crayon", "chalkboard", "blueprint", "risograph",
-                "halftone", "dithered", "collage") => "Style.Category.Art",
-            var s when Contains(s, "exposure", "film", "infrared", "polaroid", "thermal", "xray", "crt") => "Style.Category.Realistic",
-            _ => "Style.Category.Other",
-        };
-
         // Deterministic violet→blue→cyan family gradient per style id.
         uint hash = 2166136261;
-        foreach (char c in id) { hash ^= c; hash *= 16777619; }
+        foreach (char ch in id) { hash ^= ch; hash *= 16777619; }
         double t = (hash % 1000) / 1000.0;
         var left = Color.FromRgb(0x8F, (byte)(0x7B + t * 0x10), (byte)(0xFF - t * 0x30));
         var right = Color.FromRgb((byte)(0x5B + t * 0x10), (byte)(0x8C + t * 0x20), 0xE8);
@@ -126,10 +116,8 @@ public sealed partial class StyleItemViewModel : ObservableObject
             },
         };
         brush.Freeze();
-        return (category, brush);
+        return brush;
     }
-
-    private static bool Contains(string s, params string[] keys) => keys.Any(s.Contains);
 }
 
 /// <summary>One imported image (工作项): source + latest result, drives one thumbnail.</summary>
@@ -202,6 +190,10 @@ public partial class StylizeViewModel : ObservableObject
         _works = works;
         _logger = logger;
 
+        // 市场安装/卸载官方插件后 catalog 变化,这里同步刷新可用风格。
+        catalog.Changed += (_, _) =>
+            System.Windows.Application.Current?.Dispatcher.BeginInvoke(LoadStyles);
+
         Styles = new ObservableCollection<StyleItemViewModel>();
         Parameters = new ObservableCollection<ParameterItemViewModel>();
         Items = new ObservableCollection<WorkItemViewModel>();
@@ -241,10 +233,7 @@ public partial class StylizeViewModel : ObservableObject
     private string _categoryFilter = "Style.Category.All";
 
     public string[] CategoryFilters { get; } =
-    {
-        "Style.Category.All", "Style.Category.Hot", "Style.Category.Anime",
-        "Style.Category.Art", "Style.Category.Realistic", "Style.Category.Other",
-    };
+        new[] { "Style.Category.All", "Style.Category.Hot" }.Concat(StyleCategories.AllKeys).ToArray();
 
     public bool HasStyles => Styles.Count > 0;
 
@@ -256,7 +245,12 @@ public partial class StylizeViewModel : ObservableObject
 
     /// <summary>Filtered view over Styles (category chips + search kept simple).</summary>
     public IEnumerable<StyleItemViewModel> FilteredStyles =>
-        CategoryFilter == "Style.Category.All" ? Styles : Styles.Where(s => s.CategoryKey == CategoryFilter);
+        CategoryFilter switch
+        {
+            "Style.Category.All" => Styles,
+            "Style.Category.Hot" => Styles.Where(s => s.IsHot),
+            _ => Styles.Where(s => s.CategoryKey == CategoryFilter),
+        };
 
     public int StyleTotalItems => FilteredStyles.Count();
 
@@ -1008,6 +1002,7 @@ public partial class StylizeViewModel : ObservableObject
 
     private void LoadStyles()
     {
+        // 可用风格 = catalog 当前内容(内置 10 个 + 已安装的官方/社区插件)。
         var selected = SelectedStyle?.Model.Id;
         Styles.Clear();
         foreach (var preset in _catalog.Presets)
@@ -1015,8 +1010,19 @@ public partial class StylizeViewModel : ObservableObject
         OnPropertyChanged(nameof(HasStyles));
         RefreshStylePaging();
 
-        // Selection survives a catalog refresh (param changes reset Parameters).
-        SelectedStyle = Styles.FirstOrDefault(s => s.Model.Id == selected) ?? Styles.FirstOrDefault();
+        var next = Styles.FirstOrDefault(s => s.Model.Id == selected) ?? Styles.FirstOrDefault();
+        if (next is null)
+        {
+            // 全部被卸载:清空选择(等待用户从市场重新添加)。
+            _selectedStyle = null;
+            Parameters.Clear();
+            OnPropertyChanged(nameof(SelectedStyle));
+            RunCommand.NotifyCanExecuteChanged();
+        }
+        else
+        {
+            SelectedStyle = next;
+        }
     }
 
     private void ShowError(string key, Exception ex)

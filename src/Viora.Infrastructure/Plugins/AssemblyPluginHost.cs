@@ -57,8 +57,10 @@ public sealed partial class AssemblyPluginHost : IPluginHost
     public Task<IReadOnlyList<PluginDescriptor>> DiscoverAsync(CancellationToken cancellationToken = default)
     {
         _paths.EnsureDirectories();
+        SweepQuarantinedFolders();
         foreach (var dir in Directory.EnumerateDirectories(_paths.PluginsFolder))
         {
+            if (Path.GetFileName(dir).Contains(QuarantineSuffix, StringComparison.Ordinal)) continue;
             var manifestPath = Path.Combine(dir, "plugin.json");
             if (!File.Exists(manifestPath)) continue;
 
@@ -244,17 +246,13 @@ public sealed partial class AssemblyPluginHost : IPluginHost
             try { plugin.Instance?.ShutdownAsync(cancellationToken).Wait(cancellationToken); }
             catch { /* containment: uninstall must proceed */ }
             TryUnload(plugin);
+            // 可收集 ALC 的卸载在 GC 后才真正完成;主动催收一次,让目录大概率能当场删除。
+            GC.Collect();
+            GC.WaitForPendingFinalizers();
+            GC.Collect();
         }
 
-        try
-        {
-            if (Directory.Exists(plugin.Folder)) Directory.Delete(plugin.Folder, recursive: true);
-            LogUninstalled(_logger, pluginId);
-        }
-        catch (IOException ex)
-        {
-            LogUninstallIoError(_logger, pluginId, ex);
-        }
+        DeletePluginFolder(pluginId, plugin.Folder);
 
         plugin.State = PluginLoadState.Disabled;
         PluginStateChanged?.Invoke(this, ToDescriptor(plugin));
@@ -303,6 +301,62 @@ public sealed partial class AssemblyPluginHost : IPluginHost
         }
     }
 
+    /// <summary>隔离目录后缀:卸载时仍被占用的插件目录改名暂存,下次启动清扫。</summary>
+    private const string QuarantineSuffix = ".uninstalling-";
+
+    /// <summary>
+    /// 删除插件目录。插件刚卸载时其 DLL 可能仍被加载器映射(可收集 ALC 的卸载要等
+    /// GC 完成),Windows 不允许删除被映射的 DLL;此时把整个目录改名为隔离目录交给
+    /// 下次启动清扫,卸载流程本身不失败。
+    /// </summary>
+    private void DeletePluginFolder(string pluginId, string folder)
+    {
+        if (!Directory.Exists(folder)) return;
+
+        try
+        {
+            Directory.Delete(folder, recursive: true);
+            LogUninstalled(_logger, pluginId);
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+        {
+            try
+            {
+                var quarantine = folder + QuarantineSuffix + DateTime.UtcNow.ToString("yyyyMMddHHmmss");
+                Directory.Move(folder, quarantine);
+                LogUninstallDeferred(_logger, pluginId, Path.GetFileName(quarantine));
+            }
+            catch (Exception moveEx)
+            {
+                LogUninstallIoError(_logger, pluginId, moveEx);
+            }
+        }
+    }
+
+    /// <summary>清掉上次卸载时仍被占用而隔离的插件目录(此时未加载,可直接删除)。</summary>
+    private void SweepQuarantinedFolders()
+    {
+        try
+        {
+            foreach (var dir in Directory.EnumerateDirectories(_paths.PluginsFolder, "*" + QuarantineSuffix + "*"))
+            {
+                try
+                {
+                    Directory.Delete(dir, recursive: true);
+                    LogQuarantineSwept(_logger, Path.GetFileName(dir));
+                }
+                catch (Exception ex)
+                {
+                    LogQuarantineSweepFailed(_logger, Path.GetFileName(dir), ex);
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            LogQuarantineSweepFailed(_logger, _paths.PluginsFolder, ex);
+        }
+    }
+
     private static PluginMetadata ToMetadata(PluginManifest m) => new(
         m.Id,
         m.DisplayName,
@@ -346,6 +400,16 @@ public sealed partial class AssemblyPluginHost : IPluginHost
     [LoggerMessage(EventId = 8, Level = LogLevel.Information, Message = "Plugin {PluginId} uninstalled")]
     private static partial void LogUninstalled(ILogger logger, string pluginId);
 
-    [LoggerMessage(EventId = 9, Level = LogLevel.Warning, Message = "Plugin {PluginId} folder could not be deleted (locked); it will vanish on next start")]
+    [LoggerMessage(EventId = 9, Level = LogLevel.Warning, Message = "Plugin {PluginId} folder could not be deleted or quarantined (locked); removal will be retried on next start")]
     private static partial void LogUninstallIoError(ILogger logger, string pluginId, Exception ex);
+
+    [LoggerMessage(EventId = 10, Level = LogLevel.Information,
+        Message = "Plugin {PluginId} files still locked; folder quarantined as {QuarantinedFolder}, removed on next start")]
+    private static partial void LogUninstallDeferred(ILogger logger, string pluginId, string quarantinedFolder);
+
+    [LoggerMessage(EventId = 11, Level = LogLevel.Information, Message = "Removed quarantined plugin folder {Folder}")]
+    private static partial void LogQuarantineSwept(ILogger logger, string folder);
+
+    [LoggerMessage(EventId = 12, Level = LogLevel.Warning, Message = "Could not remove quarantined plugin folder {Folder}; will retry on next start")]
+    private static partial void LogQuarantineSweepFailed(ILogger logger, string folder, Exception ex);
 }

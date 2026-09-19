@@ -2,7 +2,6 @@ using Viora.Core.Imaging;
 using Viora.Core.Pipeline;
 using Viora.Features.Convert.Common;
 using Viora.PluginSdk;
-using Viora.UI.Hosting;
 
 namespace Viora.Features.Convert.Styles;
 

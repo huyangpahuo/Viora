@@ -13,4 +13,56 @@
     <ProjectReference Include="..\Viora.UI\Viora.UI.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <Compile Remove="Convert.Styles\CraftStyles.Chalkboard.cs" />
+    <Compile Remove="Convert.Styles\CraftStyles.ChalkboardStage.cs" />
+    <Compile Remove="Convert.Styles\CraftStyles.Collage.cs" />
+    <Compile Remove="Convert.Styles\CraftStyles.CollageStage.cs" />
+    <Compile Remove="Convert.Styles\CraftStyles.Embroidery.cs" />
+    <Compile Remove="Convert.Styles\CraftStyles.EmbroideryStage.cs" />
+    <Compile Remove="Convert.Styles\CraftStyles.Knitted.cs" />
+    <Compile Remove="Convert.Styles\CraftStyles.KnittedStage.cs" />
+    <Compile Remove="Convert.Styles\CraftStyles.Origami.cs" />
+    <Compile Remove="Convert.Styles\CraftStyles.OrigamiStage.cs" />
+    <Compile Remove="Convert.Styles\CraftStyles.Porcelain.cs" />
+    <Compile Remove="Convert.Styles\CraftStyles.PorcelainStage.cs" />
+    <Compile Remove="Convert.Styles\CraftStyles.StainedGlass.cs" />
+    <Compile Remove="Convert.Styles\CraftStyles.StainedGlassStage.cs" />
+    <Compile Remove="Convert.Styles\CraftStyles.WaxCrayon.cs" />
+    <Compile Remove="Convert.Styles\CraftStyles.WaxCrayonStage.cs" />
+    <Compile Remove="Convert.Styles\LightAndCraftStyles.cs" />
+    <Compile Remove="Convert.Styles\MiscStyles.AsciiArt.cs" />
+    <Compile Remove="Convert.Styles\MiscStyles.AsciiArtStage.cs" />
+    <Compile Remove="Convert.Styles\MiscStyles.IsometricDiorama.cs" />
+    <Compile Remove="Convert.Styles\MiscStyles.IsometricDioramaStage.cs" />
+    <Compile Remove="Convert.Styles\MorePrintStyles.cs" />
+    <Compile Remove="Convert.Styles\PhotoStyles.cs" />
+    <Compile Remove="Convert.Styles\PrintStyles.Blueprint.cs" />
+    <Compile Remove="Convert.Styles\PrintStyles.BlueprintStage.cs" />
+    <Compile Remove="Convert.Styles\PrintStyles.Halftone.cs" />
+    <Compile Remove="Convert.Styles\PrintStyles.HalftoneStage.cs" />
+    <Compile Remove="Convert.Styles\PrintStyles.Newspaper.cs" />
+    <Compile Remove="Convert.Styles\PrintStyles.NewspaperStage.cs" />
+    <Compile Remove="Convert.Styles\PrintStyles.Risograph.cs" />
+    <Compile Remove="Convert.Styles\PrintStyles.RisographStage.cs" />
+    <Compile Remove="Convert.Styles\PrintStyles.Woodcut.cs" />
+    <Compile Remove="Convert.Styles\PrintStyles.WoodcutStage.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Remove="Convert.Styles\MosaicStyle.cs" />
+    <Compile Remove="Convert.Styles\OilPaintingStyle.cs" />
+    <Compile Remove="Convert.Styles\SketchStyle.cs" />
+    <Compile Remove="Convert.Styles\WatercolorStyle.cs" />
+    <Compile Remove="Convert.Styles\PrintStyles.Comic.cs" />
+    <Compile Remove="Convert.Styles\PrintStyles.ComicStage.cs" />
+    <Compile Remove="Convert.Styles\PrintStyles.PixelArt.cs" />
+    <Compile Remove="Convert.Styles\PrintStyles.PixelArtStage.cs" />
+    <Compile Remove="Convert.Styles\PrintStyles.LowPoly.cs" />
+    <Compile Remove="Convert.Styles\PrintStyles.LowPolyStage.cs" />
+    <Compile Remove="Convert.Styles\PrintStyles.PaperCut.cs" />
+    <Compile Remove="Convert.Styles\PrintStyles.PaperCutStage.cs" />
+    <Compile Remove="Convert.Styles\CraftStyles.Clay.cs" />
+    <Compile Remove="Convert.Styles\CraftStyles.ClayStage.cs" />
+    <Compile Remove="Convert.AnimeVector\AnimeVectorPreset.cs" />
+  </ItemGroup>
 </Project>

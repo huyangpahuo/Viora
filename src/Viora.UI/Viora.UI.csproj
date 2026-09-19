@@ -17,6 +17,8 @@
     <Resource Include="..\..\assets\logo.png" Link="logo.png" />
     <!-- 上传区“示例图片”卡片的内置样张 -->
     <Resource Include="..\..\assets\sample.jpg" Link="sample.jpg" />
+    <!-- 官方插件仓库 registry 快照(网络不佳时市场回退用) -->
+    <Resource Include="Assets\official-registry.json" />
   </ItemGroup>
 
   <ItemGroup>

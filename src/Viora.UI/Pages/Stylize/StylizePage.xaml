@@ -636,16 +636,18 @@
                                                 CommandParameter="{Binding}" Cursor="Hand" FocusVisualStyle="{x:Null}">
                                             <Button.Template>
                                                 <ControlTemplate TargetType="Button">
-                                                    <Grid Width="104">
-                                                        <Border x:Name="Thumb" Height="66" CornerRadius="9" BorderBrush="{DynamicResource Color.Border}"
-                                                                BorderThickness="1" Background="{Binding Thumbnail, Converter={StaticResource ImageToBrush}}" />
-                                                        <Border VerticalAlignment="Bottom" Background="{DynamicResource Color.Scrim}" CornerRadius="0,0,9,9" Padding="7,2">
-                                                            <TextBlock Text="{Binding StyleName}" FontSize="9.5" Foreground="{DynamicResource Color.Text.Primary}"
-                                                                       TextTrimming="CharacterEllipsis" />
-                                                        </Border>
-                                                        <TextBlock Text="{Binding TimeDisplay}" FontSize="9" Margin="0,70,0,0" HorizontalAlignment="Left"
+                                                    <StackPanel Width="104">
+                                                        <Grid Height="66">
+                                                            <Border x:Name="Thumb" CornerRadius="9" BorderBrush="{DynamicResource Color.Border}"
+                                                                    BorderThickness="1" Background="{Binding Thumbnail, Converter={StaticResource ImageToBrush}}" />
+                                                            <Border VerticalAlignment="Bottom" Background="{DynamicResource Color.Scrim}" CornerRadius="0,0,9,9" Padding="7,2">
+                                                                <TextBlock Text="{Binding StyleName}" FontSize="9.5" Foreground="{DynamicResource Color.Text.Primary}"
+                                                                           TextTrimming="CharacterEllipsis" />
+                                                            </Border>
+                                                        </Grid>
+                                                        <TextBlock Text="{Binding TimeDisplay}" FontSize="9" Margin="2,4,0,0" HorizontalAlignment="Left"
                                                                    Foreground="{DynamicResource Color.Text.Secondary}" />
-                                                    </Grid>
+                                                    </StackPanel>
                                                     <ControlTemplate.Triggers>
                                                         <Trigger Property="IsMouseOver" Value="True">
                                                             <Setter TargetName="Thumb" Property="BorderBrush" Value="{DynamicResource Color.Primary}" />
@@ -701,7 +703,7 @@
                          ItemsSource="{Binding CategoryFilters}" SelectedItem="{Binding CategoryFilter}"
                          ItemContainerStyle="{StaticResource ChipPillItem}"
                          ScrollViewer.VerticalScrollBarVisibility="Disabled"
-                         ScrollViewer.HorizontalScrollBarVisibility="Disabled">
+                         ScrollViewer.HorizontalScrollBarVisibility="Visible">
                     <ListBox.ItemsPanel>
                         <ItemsPanelTemplate>
                             <StackPanel Orientation="Horizontal" />
