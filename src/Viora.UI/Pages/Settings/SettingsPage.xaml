@@ -293,45 +293,47 @@
                                                     CommandParameter="{Binding}">
                                                 <Button.Template>
                                                     <ControlTemplate TargetType="Button">
-                                                        <ContentPresenter />
-                                                    </ControlTemplate>
-                                                </Button.Template>
-                                                <Border x:Name="Card" Width="128" CornerRadius="12" Padding="8"
-                                                        Background="{DynamicResource Color.SurfaceElevated}"
-                                                        BorderBrush="{DynamicResource Color.Border}" BorderThickness="1.4">
-                                                    <StackPanel>
-                                                        <Border Height="52" CornerRadius="8" Background="{Binding PreviewBackgroundBrush}">
-                                                            <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center"
-                                                                        Orientation="Horizontal">
-                                                                <Border Width="16" Height="16" CornerRadius="8" Background="{Binding PreviewAccentBrush}" />
-                                                                <Border Width="16" Height="16" CornerRadius="4" Background="{Binding PreviewSurfaceBrush}"
-                                                                        BorderBrush="{Binding PreviewTextPrimaryBrush}" BorderThickness="1" Margin="6,0,0,0" />
-                                                                <Border Width="16" Height="16" CornerRadius="4" Background="{Binding PreviewPrimaryContainerBrush}"
-                                                                        Margin="6,0,0,0" />
+                                                        <Border x:Name="Card" Width="128" CornerRadius="12" Padding="8"
+                                                                Background="{DynamicResource Color.SurfaceElevated}"
+                                                                BorderBrush="{DynamicResource Color.Border}" BorderThickness="1.4">
+                                                            <StackPanel>
+                                                                <Border Height="52" CornerRadius="8" Background="{Binding PreviewBackgroundBrush}">
+                                                                    <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center"
+                                                                                Orientation="Horizontal">
+                                                                        <Border Width="16" Height="16" CornerRadius="8" Background="{Binding PreviewAccentBrush}" />
+                                                                        <Border Width="16" Height="16" CornerRadius="4" Background="{Binding PreviewSurfaceBrush}"
+                                                                                BorderBrush="{Binding PreviewTextPrimaryBrush}" BorderThickness="1" Margin="6,0,0,0" />
+                                                                        <Border Width="16" Height="16" CornerRadius="4" Background="{Binding PreviewPrimaryContainerBrush}"
+                                                                                Margin="6,0,0,0" />
+                                                                    </StackPanel>
+                                                                </Border>
+                                                                <Grid Margin="0,7,0,0">
+                                                                    <TextBlock Text="{Binding LocalName}" FontSize="11.5" HorizontalAlignment="Center"
+                                                                               Foreground="{DynamicResource Color.Text.Primary}" />
+                                                                    <Button HorizontalAlignment="Right" VerticalAlignment="Top" Style="{DynamicResource IconButton}"
+                                                                            Width="18" Height="18" Margin="0,-2,-2,0"
+                                                                            Command="{Binding DataContext.DeleteThemeCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
+                                                                            CommandParameter="{Binding}"
+                                                                            ToolTip="{loc:Translate Theme.Delete}"
+                                                                            Visibility="{Binding IsUser, Converter={StaticResource BoolToVisibility}}">
+                                                                        <controls:VioraIcon Geometry="{StaticResource Icon.Xmark}" Width="8" Height="8"
+                                                                                            Foreground="{Binding Foreground, RelativeSource={RelativeSource AncestorType=Button}}" />
+                                                                    </Button>
+                                                                </Grid>
                                                             </StackPanel>
                                                         </Border>
-                                                        <Grid Margin="0,7,0,0">
-                                                            <TextBlock Text="{Binding LocalName}" FontSize="11.5" HorizontalAlignment="Center"
-                                                                       Foreground="{DynamicResource Color.Text.Primary}" />
-                                                            <Button HorizontalAlignment="Right" VerticalAlignment="Top" Style="{DynamicResource IconButton}"
-                                                                    Width="18" Height="18" Margin="0,-2,-2,0"
-                                                                    Command="{Binding DataContext.DeleteThemeCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
-                                                                    CommandParameter="{Binding}"
-                                                                    ToolTip="{loc:Translate Theme.Delete}"
-                                                                    Visibility="{Binding IsUser, Converter={StaticResource BoolToVisibility}}">
-                                                                <controls:VioraIcon Geometry="{StaticResource Icon.Xmark}" Width="8" Height="8"
-                                                                                    Foreground="{Binding Foreground, RelativeSource={RelativeSource AncestorType=Button}}" />
-                                                            </Button>
-                                                        </Grid>
-                                                    </StackPanel>
-                                                </Border>
+                                                        <ControlTemplate.Triggers>
+                                                            <DataTrigger Binding="{Binding IsSelected}" Value="True">
+                                                                <Setter TargetName="Card" Property="BorderBrush" Value="{DynamicResource Color.Primary}" />
+                                                                <Setter TargetName="Card" Property="Effect" Value="{DynamicResource Shadow.PrimaryGlow}" />
+                                                            </DataTrigger>
+                                                            <Trigger Property="IsMouseOver" Value="True">
+                                                                <Setter TargetName="Card" Property="BorderBrush" Value="{DynamicResource Color.Primary}" />
+                                                            </Trigger>
+                                                        </ControlTemplate.Triggers>
+                                                    </ControlTemplate>
+                                                </Button.Template>
                                             </Button>
-                                            <DataTemplate.Triggers>
-                                                <DataTrigger Binding="{Binding IsSelected}" Value="True">
-                                                    <Setter TargetName="Card" Property="BorderBrush" Value="{DynamicResource Color.Primary}" />
-                                                    <Setter TargetName="Card" Property="Effect" Value="{DynamicResource Shadow.PrimaryGlow}" />
-                                                </DataTrigger>
-                                            </DataTemplate.Triggers>
                                         </DataTemplate>
                                     </ItemsControl.ItemTemplate>
                                 </ItemsControl>
