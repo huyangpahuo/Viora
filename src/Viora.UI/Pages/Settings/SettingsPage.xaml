@@ -169,6 +169,22 @@
                                         </ComboBox.ItemTemplate>
                                     </ComboBox>
                                 </Grid>
+                                <Separator Margin="0,12,0,12" Background="{DynamicResource Color.Divider}" />
+                                <Grid>
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="*" />
+                                        <ColumnDefinition Width="Auto" />
+                                    </Grid.ColumnDefinitions>
+                                    <StackPanel>
+                                        <TextBlock Text="{loc:Translate Settings.General.ImportMax}" FontSize="13"
+                                                   Foreground="{DynamicResource Color.Text.Primary}" />
+                                        <TextBlock Text="{loc:Translate Settings.General.ImportMax.Desc}" FontSize="11" Margin="0,3,0,0"
+                                                   Foreground="{DynamicResource Color.Text.Secondary}" TextWrapping="Wrap" />
+                                    </StackPanel>
+                                    <TextBox Grid.Column="1" Style="{DynamicResource VioraTextBox}" Width="110" Height="34"
+                                             VerticalAlignment="Center" TextAlignment="Center"
+                                             Text="{Binding ImportMaxSizeMb, UpdateSourceTrigger=LostFocus}" />
+                                </Grid>
                             </StackPanel>
                         </Border>
 
@@ -370,8 +386,10 @@
                                                 </Grid.ColumnDefinitions>
                                                 <TextBlock Text="{Binding Label}" FontSize="11.5" VerticalAlignment="Center"
                                                            Foreground="{DynamicResource Color.Text.Secondary}" />
-                                                <Border Grid.Column="1" Width="16" Height="16" CornerRadius="4" VerticalAlignment="Center"
-                                                        Background="{Binding Brush}" BorderBrush="{DynamicResource Color.Outline}" BorderThickness="1" />
+                                                <Button Grid.Column="1" Width="18" Height="18" VerticalAlignment="Center"
+                                                        Background="{Binding Brush}" BorderBrush="{DynamicResource Color.Outline}" BorderThickness="1"
+                                                        Cursor="Hand" FocusVisualStyle="{x:Null}" Click="OnPickColor"
+                                                        ToolTip="{loc:Translate Settings.Theme.PickColor}" />
                                                 <TextBox Grid.Column="2" Style="{DynamicResource VioraTextBox}" Height="28" Margin="10,0,0,0"
                                                          Text="{Binding HexValue, UpdateSourceTrigger=LostFocus}" />
                                             </Grid>
@@ -383,6 +401,7 @@
                                             Command="{Binding CancelThemeEditorCommand}"
                                             Content="{loc:Translate Settings.Theme.CancelTheme}" />
                                     <Button Height="34" Padding="18,0" Command="{Binding SaveThemeCommand}"
+                                            Style="{DynamicResource VioraButton}"
                                             Content="{loc:Translate Settings.Theme.Save}" />
                                 </StackPanel>
                             </StackPanel>

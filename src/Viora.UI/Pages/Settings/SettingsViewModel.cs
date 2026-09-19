@@ -160,6 +160,14 @@ public partial class SettingsViewModel : ObservableObject
 
         SelectedSection = Sections[0];
         RebuildThemeCards();
+
+        // 语言切换后刷新子导航标题/副标题与计算文案(XAML 绑定的是普通属性,不会自动更新)
+        LocalizationSource.Current.PropertyChanged += (_, _) =>
+        {
+            foreach (var section in Sections) section.Refresh();
+            OnPropertyChanged(nameof(RedactStateText));
+            OnPropertyChanged(nameof(EnablePluginNote));
+        };
     }
 
     // ---------- 子导航 ----------
@@ -196,6 +204,18 @@ public partial class SettingsViewModel : ObservableObject
     {
         get => _settings.Current.General.StartMaximized;
         set => _settings.Update(s => s.General.StartMaximized = value);
+    }
+
+    /// <summary>单张导入大小上限(MB);0 = 不限制。风格化页导入时校验。</summary>
+    public int ImportMaxSizeMb
+    {
+        get => _settings.Current.General.ImportMaxSizeMb;
+        set
+        {
+            var clamped = Math.Clamp(value, 0, 2048);
+            _settings.Update(s => s.General.ImportMaxSizeMb = clamped);
+            OnPropertyChanged(nameof(ImportMaxSizeMb));
+        }
     }
 
     public IReadOnlyList<LanguageOption> LanguageItems { get; }

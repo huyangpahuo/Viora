@@ -263,7 +263,7 @@
   "Stylize.Start": "开始风格化",
   "Stylize.Import.Failed": "无法打开这张图片",
   "Stylize.Import.Unsupported": "不支持此文件格式",
-  "Stylize.Import.TooLarge": "图片过大,无法处理(超过 {0} 百万像素)",
+  "Stylize.Import.TooLarge": "「{0}」超过 {1}MB 上限,可在设置中调整",
   "Stylize.Import.Corrupt": "此图片文件似乎已损坏",
   "Stylize.Export.SavedTo": "已保存到 {0}",
   "Stylize.Export.Failed": "导出失败",
@@ -478,5 +478,10 @@
   "Export.Format.Tiff": "TIFF 图像",
   "Export.Format.Gif": "GIF 图像",
   "Export.Format.Webp": "WebP 图像",
-  "Export.Format.Webp.Desc": "需系统安装 WebP 编解码扩展,未安装时导出会失败"
+  "Export.Format.Webp.Desc": "需系统安装 WebP 编解码扩展,未安装时导出会失败",
+  "Settings.General.ImportMax": "导入大小上限 (MB)",
+  "Settings.General.ImportMax.Desc": "单张图片导入的大小上限,0 表示不限制",
+  "Stylize.Import.SizeHint": "支持 JPG / PNG / WEBP 等格式,最大 {0}MB",
+  "Stylize.Import.SizeHint.None": "支持 JPG / PNG / WEBP 等格式,大小不限",
+  "Settings.Theme.PickColor": "点击选择颜色"
 }

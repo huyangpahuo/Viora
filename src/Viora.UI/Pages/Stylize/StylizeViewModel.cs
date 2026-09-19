@@ -744,11 +744,36 @@ public partial class StylizeViewModel : ObservableObject
         if (!string.IsNullOrEmpty(path)) await ImportFilesAsync(new[] { path });
     }
 
+    /// <summary>导入提示文案(随设置中的大小上限联动)。</summary>
+    public string ImportSizeHint
+    {
+        get
+        {
+            int mb = _settings.Current.General.ImportMaxSizeMb;
+            return mb <= 0
+                ? Tr.Get("Stylize.Import.SizeHint.None")
+                : string.Format(Tr.Get("Stylize.Import.SizeHint"), mb);
+        }
+    }
+
     /// <summary>拖拽入口:一次可加入多张,全部加入后跳到第一张新图。</summary>
     [RelayCommand]
     private async Task ImportFilesAsync(string[]? paths)
     {
         if (paths is null || paths.Length == 0) return;
+
+        // 单张大小上限(设置可调;0 = 不限)
+        long maxBytes = (long)_settings.Current.General.ImportMaxSizeMb * 1024 * 1024;
+        if (maxBytes > 0)
+        {
+            foreach (var path in paths)
+            {
+                if (new FileInfo(path).Length <= maxBytes) continue;
+                StatusText = string.Format(Tr.Get("Stylize.Import.TooLarge"),
+                    Path.GetFileName(path), _settings.Current.General.ImportMaxSizeMb);
+                return;
+            }
+        }
         try
         {
             IsBusy = true;

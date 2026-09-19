@@ -732,7 +732,7 @@
         <Setter Property="Background" Value="{DynamicResource Color.SurfaceElevated}" />
         <Setter Property="Foreground" Value="{DynamicResource Color.Text.Primary}" />
         <Setter Property="CaretBrush" Value="{DynamicResource Color.Primary}" />
-        <Setter Property="Padding" Value="10,7" />
+        <Setter Property="Padding" Value="10,6" />
         <Setter Property="VerticalContentAlignment" Value="Center" />
         <Setter Property="FontFamily" Value="{DynamicResource Font.Family}" />
         <Setter Property="FontSize" Value="14" />
@@ -744,9 +744,11 @@
                         Background="{TemplateBinding Background}"
                         BorderBrush="{DynamicResource Color.Outline}"
                         BorderThickness="1"
-                        CornerRadius="{DynamicResource Radius.Medium}">
-                        <ScrollViewer x:Name="PART_ContentHost" Margin="{TemplateBinding Padding}"
-                                  VerticalAlignment="Center" />
+                        CornerRadius="{DynamicResource Radius.Medium}"
+                        Padding="{TemplateBinding Padding}">
+                        <!-- 内边距必须在 Border 上:PART_ContentHost 上的 Margin 会挤压文本视口,
+                             固定高度下文字被裁成一条(实测复现),表现为输入框空白/无法输入 -->
+                        <ScrollViewer x:Name="PART_ContentHost" VerticalAlignment="Center" />
                     </Border>
                     <ControlTemplate.Triggers>
                         <Trigger Property="IsMouseOver" Value="True">

@@ -263,7 +263,7 @@
   "Stylize.Start": "Start Styling",
   "Stylize.Import.Failed": "Could not open this image",
   "Stylize.Import.Unsupported": "This file format is not supported",
-  "Stylize.Import.TooLarge": "Image too large to process (over {0} megapixels)",
+  "Stylize.Import.TooLarge": "\"{0}\" exceeds the {1}MB cap — adjust it in Settings",
   "Stylize.Import.Corrupt": "This image file appears to be corrupted",
   "Stylize.Export.SavedTo": "Saved to {0}",
   "Stylize.Export.Failed": "Export failed",
@@ -478,5 +478,10 @@
   "Export.Format.Tiff": "TIFF image",
   "Export.Format.Gif": "GIF image",
   "Export.Format.Webp": "WebP image",
-  "Export.Format.Webp.Desc": "Requires the system WebP codec extension; export fails without it"
+  "Export.Format.Webp.Desc": "Requires the system WebP codec extension; export fails without it",
+  "Settings.General.ImportMax": "Import size cap (MB)",
+  "Settings.General.ImportMax.Desc": "Max size per imported image; 0 means no limit",
+  "Stylize.Import.SizeHint": "JPG / PNG / WEBP and more, up to {0}MB",
+  "Stylize.Import.SizeHint.None": "JPG / PNG / WEBP and more, no size limit",
+  "Settings.Theme.PickColor": "Click to pick a color"
 }

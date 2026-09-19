@@ -9,6 +9,9 @@ public sealed class GeneralSettings
     /// <summary>作品库自定义目录;空 = 默认(用户数据目录\works,便携模式为 exe 旁)。重启生效。</summary>
     public string WorksFolder { get; set; } = string.Empty;
 
+    /// <summary>单张导入图片大小上限(MB);0 = 不限制。</summary>
+    public int ImportMaxSizeMb { get; set; } = 10;
+
     public bool ConfirmBeforeCloseDuringProcessing { get; set; } = true;
 }
 

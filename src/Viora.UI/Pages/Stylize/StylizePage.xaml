@@ -274,7 +274,7 @@
                                         </Border>
                                         <TextBlock Text="{loc:Translate Stylize.Empty.Title}" FontSize="15" FontWeight="SemiBold"
                                                    Foreground="{DynamicResource Color.Text.Primary}" HorizontalAlignment="Center" Margin="0,18,0,0" />
-                                        <TextBlock Text="{loc:Translate Stylize.Empty.Subtitle}" FontSize="12"
+                                        <TextBlock Text="{Binding ImportSizeHint}" FontSize="12"
                                                    Foreground="{DynamicResource Color.Text.Secondary}" HorizontalAlignment="Center" Margin="0,7,0,0" />
                                     </StackPanel>
                                 </Border>
@@ -407,7 +407,7 @@
                                             </Border>
                                             <TextBlock Text="{loc:Translate Stylize.Drop.Title}" FontSize="13" FontWeight="SemiBold"
                                                        Foreground="{DynamicResource Color.Text.Primary}" HorizontalAlignment="Center" Margin="0,10,0,0" />
-                                            <TextBlock Text="{loc:Translate Stylize.Drop.Subtitle}" FontSize="11"
+                                            <TextBlock Text="{Binding ImportSizeHint}" FontSize="11"
                                                        Foreground="{DynamicResource Color.Text.Secondary}" HorizontalAlignment="Center" Margin="0,5,0,0" />
                                         </StackPanel>
                                     </Grid>

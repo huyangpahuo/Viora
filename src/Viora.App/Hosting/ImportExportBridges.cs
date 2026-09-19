@@ -59,15 +59,8 @@ public sealed class AppExportService : IExportProxy
     {
         var dialog = new Microsoft.Win32.SaveFileDialog
         {
-            Filter = defaultFormatId switch
-            {
-                "jpeg" => "JPEG|*.jpg",
-                "bmp" => "Bitmap|*.bmp",
-                "tiff" => "TIFF|*.tif;*.tiff",
-                "gif" => "GIF|*.gif",
-                "webp" => "WebP|*.webp",
-                _ => "PNG|*.png",
-            },
+            // 列出全部支持格式供随时切换;默认选中设置的格式
+            Filter = "PNG|*.png|JPEG|*.jpg;*.jpeg|Bitmap|*.bmp|TIFF|*.tif;*.tiff|GIF|*.gif|WebP|*.webp",
             DefaultExt = defaultFormatId switch
             {
                 "jpeg" => ".jpg",
@@ -76,6 +69,15 @@ public sealed class AppExportService : IExportProxy
                 "gif" => ".gif",
                 "webp" => ".webp",
                 _ => ".png",
+            },
+            FilterIndex = defaultFormatId switch
+            {
+                "jpeg" => 2,
+                "bmp" => 3,
+                "tiff" => 4,
+                "gif" => 5,
+                "webp" => 6,
+                _ => 1,
             },
         };
         return dialog.ShowDialog(Application.Current.MainWindow) == true ? dialog.FileName : null;
