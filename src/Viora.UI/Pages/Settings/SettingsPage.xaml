@@ -181,7 +181,7 @@
                                         <TextBlock Text="{loc:Translate Settings.General.ImportMax.Desc}" FontSize="11" Margin="0,3,0,0"
                                                    Foreground="{DynamicResource Color.Text.Secondary}" TextWrapping="Wrap" />
                                     </StackPanel>
-                                    <TextBox Grid.Column="1" Style="{DynamicResource VioraTextBox}" Width="110" Height="34"
+                                    <TextBox Grid.Column="1" Style="{DynamicResource VioraTextBox}" Width="110" MinHeight="34"
                                              VerticalAlignment="Center" TextAlignment="Center"
                                              Text="{Binding ImportMaxSizeMb, UpdateSourceTrigger=LostFocus}" />
                                 </Grid>
@@ -372,7 +372,7 @@
                                     </Grid.ColumnDefinitions>
                                     <TextBlock Text="{loc:Translate Settings.Theme.NameLabel}" FontSize="12" VerticalAlignment="Center"
                                                Foreground="{DynamicResource Color.Text.Secondary}" />
-                                    <TextBox Grid.Column="1" Style="{DynamicResource VioraTextBox}" Height="32" Margin="14,0,0,0"
+                                    <TextBox Grid.Column="1" Style="{DynamicResource VioraTextBox}" MinHeight="32" Margin="14,0,0,0"
                                              Text="{Binding EditorName, UpdateSourceTrigger=PropertyChanged}" />
                                 </Grid>
                                 <ItemsControl ItemsSource="{Binding EditorColorRows}">
@@ -390,7 +390,7 @@
                                                         Background="{Binding Brush}" BorderBrush="{DynamicResource Color.Outline}" BorderThickness="1"
                                                         Cursor="Hand" FocusVisualStyle="{x:Null}" Click="OnPickColor"
                                                         ToolTip="{loc:Translate Settings.Theme.PickColor}" />
-                                                <TextBox Grid.Column="2" Style="{DynamicResource VioraTextBox}" Height="28" Margin="10,0,0,0"
+                                                <TextBox Grid.Column="2" Style="{DynamicResource VioraTextBox}" MinHeight="30" Margin="10,0,0,0"
                                                          Text="{Binding HexValue, UpdateSourceTrigger=LostFocus}" />
                                             </Grid>
                                         </DataTemplate>
@@ -447,7 +447,7 @@
                                         <TextBlock Text="{loc:Translate Settings.Perf.PreviewMax.Desc}" FontSize="11" Margin="0,3,0,0"
                                                    Foreground="{DynamicResource Color.Text.Secondary}" TextWrapping="Wrap" />
                                     </StackPanel>
-                                    <TextBox Grid.Column="1" Style="{DynamicResource VioraTextBox}" Width="110" Height="34"
+                                    <TextBox Grid.Column="1" Style="{DynamicResource VioraTextBox}" Width="110" MinHeight="34"
                                              VerticalAlignment="Center" TextAlignment="Center"
                                              Text="{Binding PreviewMaxDimension, UpdateSourceTrigger=LostFocus}" />
                                 </Grid>
@@ -462,7 +462,7 @@
                                         <TextBlock Text="{loc:Translate Settings.Perf.ExportMax.Desc}" FontSize="11" Margin="0,3,0,0"
                                                    Foreground="{DynamicResource Color.Text.Secondary}" TextWrapping="Wrap" />
                                     </StackPanel>
-                                    <TextBox Grid.Column="1" Style="{DynamicResource VioraTextBox}" Width="110" Height="34"
+                                    <TextBox Grid.Column="1" Style="{DynamicResource VioraTextBox}" Width="110" MinHeight="34"
                                              VerticalAlignment="Center" TextAlignment="Center"
                                              Text="{Binding ExportMaxDimension, UpdateSourceTrigger=LostFocus}" />
                                 </Grid>

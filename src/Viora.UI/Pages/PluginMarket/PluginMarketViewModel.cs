@@ -307,8 +307,10 @@ public partial class PluginMarketViewModel : ObservableObject
         LocalizationSource.Current.PropertyChanged += (_, _) =>
         {
             RebuildCatalogItems();
-            foreach (var card in Cards)
-                card.RefreshMeta();
+            // 卡片名称/标签/详情是普通属性:整体重建才会按新语言显示
+            _ = RefreshCardsAsync();
+            // 标签页是字符串键经 TranslateKey 转换显示:通知重建才会重译
+            OnPropertyChanged(nameof(TabFilters));
         };
 
         RebuildCatalogItems();

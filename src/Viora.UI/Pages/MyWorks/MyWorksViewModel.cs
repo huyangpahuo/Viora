@@ -9,6 +9,7 @@ using CommunityToolkit.Mvvm.Input;
 using Microsoft.Extensions.Logging;
 using Viora.Core.Settings;
 using Viora.Core.Works;
+using Viora.UI.Hosting;
 using Viora.UI.Localization;
 using Viora.UI.Pages.Stylize;
 using Viora.UI.Services;
@@ -63,12 +64,15 @@ public sealed partial class WorkCardViewModel : ObservableObject
             })
             .ToList();
 
-    private static string LocalizeParamLabel(WorkParameterSnapshot p)
+    private string LocalizeParamLabel(WorkParameterSnapshot p)
     {
-        if (string.IsNullOrEmpty(p.DisplayNameKey)) return p.Label;
-        var translated = Tr.Get(p.DisplayNameKey);
+        // 旧记录没有 DisplayNameKey:按 StyleId+Key 从当前目录反查参数定义补齐
+        var displayKey = p.DisplayNameKey ?? Owner.ResolveParamDisplayKey(Record.StyleId, p.Key);
+        if (string.IsNullOrEmpty(displayKey)) return p.Label;
+
+        var translated = Tr.Get(displayKey);
         // Tr.Get 对缺失键返回占位符("…" 或 "[key]"):两种情况都回退存储标签
-        if (string.IsNullOrEmpty(translated) || translated == "…" || translated == $"[{p.DisplayNameKey}]")
+        if (string.IsNullOrEmpty(translated) || translated == "…" || translated == $"[{displayKey}]")
             return p.Label;
         return translated;
     }
@@ -141,6 +145,7 @@ public partial class MyWorksViewModel : ObservableObject
     private readonly ISettingsService _settings;
     private readonly ShellViewModel _shell;
     private readonly StylizeViewModel _stylize;
+    private readonly IPresetCatalog _catalog;
     private readonly ILogger<MyWorksViewModel> _logger;
     private readonly Dictionary<string, ImageSource?> _thumbnailCache = new();
 
@@ -151,6 +156,7 @@ public partial class MyWorksViewModel : ObservableObject
         ISettingsService settings,
         ShellViewModel shell,
         StylizeViewModel stylize,
+        IPresetCatalog catalog,
         ILogger<MyWorksViewModel> logger)
     {
         _works = works;
@@ -159,6 +165,7 @@ public partial class MyWorksViewModel : ObservableObject
         _settings = settings;
         _shell = shell;
         _stylize = stylize;
+        _catalog = catalog;
         _logger = logger;
 
         TabFilters = new[]
@@ -171,7 +178,14 @@ public partial class MyWorksViewModel : ObservableObject
         };
 
         _works.Changed += (_, _) => Application.Current?.Dispatcher.BeginInvoke(RebuildCards);
-        LocalizationSource.Current.PropertyChanged += (_, _) => RebuildCards();
+        LocalizationSource.Current.PropertyChanged += (_, _) =>
+        {
+            RebuildCards();
+            // 标签/排序是字符串键经 TranslateKey 转换显示:通知列表重建才会按新语言重译
+            OnPropertyChanged(nameof(TabFilters));
+            OnPropertyChanged(nameof(SortOptions));
+            OnPropertyChanged(nameof(ViewToggleTooltip));
+        };
 
         _ = InitializeAsync();
     }
@@ -354,6 +368,14 @@ public partial class MyWorksViewModel : ObservableObject
         card.NotifyFavoriteChanged(); // IsFavorite 是计算属性,需显式通知星标才会点亮/熄灭
         _ = UpdateAsync(card.Record);
         if (TabFilter == "Works.Tab.Favorite") RebuildCards(); // 收藏 Tab 实时增减
+    }
+
+    /// <summary>按作品风格与参数技术键反查本地化键(旧作品记录补齐用);找不到返回 null。</summary>
+    public string? ResolveParamDisplayKey(string? styleId, string? key)
+    {
+        if (string.IsNullOrEmpty(styleId) || string.IsNullOrEmpty(key)) return null;
+        var preset = _catalog.Presets.FirstOrDefault(x => x.Id == styleId);
+        return preset?.Parameters.FirstOrDefault(x => string.Equals(x.Key, key, StringComparison.OrdinalIgnoreCase))?.DisplayNameKey;
     }
 
     public void ExportWork(WorkCardViewModel card)
