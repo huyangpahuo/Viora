@@ -50,8 +50,8 @@
                                                 <TextBlock Grid.Column="1" Text="{Binding TitleKey, Converter={StaticResource TranslateKey}}"
                                                            FontSize="13" FontWeight="SemiBold" Margin="12,0,0,0" VerticalAlignment="Center"
                                                            Foreground="{DynamicResource Color.Text.Primary}" />
-                                                <controls:VioraIcon Geometry="{StaticResource Icon.ChevronRight}"
-                                                                    Width="11" Height="11" VerticalAlignment="Center"
+                                                <controls:VioraIcon Grid.Column="2" Geometry="{StaticResource Icon.ChevronRight}"
+                                                                    Width="11" Height="11" HorizontalAlignment="Right" VerticalAlignment="Center"
                                                                     Foreground="{DynamicResource Color.Text.Disabled}" />
                                             </Grid>
                                         </Border>

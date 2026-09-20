@@ -113,8 +113,8 @@
                                                         </TextBlock.Style>
                                                     </TextBlock>
                                                 </StackPanel>
-                                                <controls:VioraIcon Geometry="{StaticResource Icon.ChevronRight}"
-                                                                    Width="11" Height="11" VerticalAlignment="Center"
+                                                <controls:VioraIcon Grid.Column="2" Geometry="{StaticResource Icon.ChevronRight}"
+                                                                    Width="11" Height="11" HorizontalAlignment="Right" VerticalAlignment="Center"
                                                                     Foreground="{DynamicResource Color.Text.Disabled}" />
                                             </Grid>
                                         </Border>
