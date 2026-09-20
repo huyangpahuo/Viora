@@ -228,9 +228,15 @@ public partial class SettingsViewModel : ObservableObject
             if (string.IsNullOrEmpty(value) || value == _settings.Current.Language.Language) return;
             _settings.Update(s => s.Language.Language = value);
             _localization.SetLanguage(value);
-            // 部分由插件注册的文案在重启后才完整:明确提醒用户
-            _alert.Info(Tr.Get("Settings.Language.RestartNote"));
+            PromptRestart(Tr.Get("Settings.Language.RestartConfirm"));
         }
+    }
+
+    /// <summary>询问并执行应用重启(语言等需要重启完整生效的设置共用)。</summary>
+    private void PromptRestart(string confirmMessage)
+    {
+        if (!_alert.Confirm(Tr.Get("Settings.Restart.Title"), confirmMessage)) return;
+        AppRestart.Restart();
     }
 
     /// <summary>本机字体选项(按显示名排序)。</summary>
@@ -252,7 +258,7 @@ public partial class SettingsViewModel : ObservableObject
         }
     }
 
-    /// <summary>界面缩放(0.8 – 1.2),字号随缩放变化,即时生效。</summary>
+    /// <summary>界面缩放档位(选择块),字号随缩放变化,即时生效。</summary>
     public double UiScale
     {
         get => Math.Clamp(_settings.Current.Appearance.UiScale, 0.8, 1.2);
@@ -261,11 +267,11 @@ public partial class SettingsViewModel : ObservableObject
             var clamped = Math.Clamp(value, 0.8, 1.2);
             _settings.Update(s => s.Appearance.UiScale = clamped);
             OnPropertyChanged(nameof(UiScale));
-            OnPropertyChanged(nameof(UiScalePercent));
         }
     }
 
-    public string UiScalePercent => $"{UiScale * 100:0}%";
+    /// <summary>缩放预设档位(选择块)。</summary>
+    public double[] UiScaleOptions { get; } = [0.8, 0.9, 1.0, 1.1, 1.2];
 
     // ---------- 隐私 ----------
 

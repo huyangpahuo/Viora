@@ -215,6 +215,7 @@
                     </Grid.RowDefinitions>
                     <ScrollViewer x:Name="MarketScroll" Grid.Row="0" VerticalScrollBarVisibility="Auto" PreviewMouseWheel="OnListWheel">
                         <ListBox BorderThickness="0" Background="Transparent" Margin="-6,0,-6,0"
+                                 HorizontalContentAlignment="Center"
                                  ItemsSource="{Binding Cards}" SelectedItem="{Binding SelectedCard}"
                                  ItemContainerStyle="{StaticResource MarketCardItem}"
                                  ScrollViewer.VerticalScrollBarVisibility="Disabled"

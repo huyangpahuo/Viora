@@ -7,6 +7,7 @@ using Viora.UI.Pages.Placeholder;
 using Viora.UI.Pages.PluginMarket;
 using Viora.UI.Pages.Settings;
 using Viora.UI.Pages.Stylize;
+using Viora.UI.Pages.Support;
 
 namespace Viora.UI;
 
@@ -31,6 +32,10 @@ public static class ServiceCollectionExtensions
         services.AddTransient<PluginMarketPage>();
         services.AddTransient<PluginMarketViewModel>();
         services.AddTransient<PlaceholderPage>();
+        services.AddSingleton<Pages.Support.SupportViewModel>();
+        services.AddTransient<Pages.Support.AboutPage>();
+        services.AddTransient<Pages.Support.HelpPage>();
+        services.AddTransient<Pages.Support.FeedbackPage>();
         services.AddTransient<SettingsPage>();
 
         return services;

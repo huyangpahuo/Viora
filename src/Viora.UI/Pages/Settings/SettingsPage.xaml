@@ -323,7 +323,7 @@
                                 <ItemsControl ItemsSource="{Binding ThemeCards}">
                                     <ItemsControl.ItemsPanel>
                                         <ItemsPanelTemplate>
-                                            <WrapPanel />
+                                            <UniformGrid Columns="3" />
                                         </ItemsPanelTemplate>
                                     </ItemsControl.ItemsPanel>
                                     <ItemsControl.ItemTemplate>
@@ -333,7 +333,7 @@
                                                     CommandParameter="{Binding}">
                                                 <Button.Template>
                                                     <ControlTemplate TargetType="Button">
-                                                        <Border x:Name="Card" Width="128" CornerRadius="12" Padding="8"
+                                                        <Border x:Name="Card" CornerRadius="12" Padding="8" Margin="0,0,12,12" HorizontalAlignment="Stretch"
                                                                 Background="{DynamicResource Color.SurfaceElevated}"
                                                                 BorderBrush="{DynamicResource Color.Border}" BorderThickness="1.4">
                                                             <StackPanel>
@@ -394,9 +394,24 @@
                                     <StackPanel>
                                         <TextBlock Text="{loc:Translate Settings.Appearance.Scale.Desc}" FontSize="11"
                                                    Foreground="{DynamicResource Color.Text.Secondary}" TextWrapping="Wrap" />
-                                        <Slider Width="280" Minimum="0.8" Maximum="1.2" IsSnapToTickEnabled="True" TickFrequency="0.05"
-                                                Margin="0,10,0,0" HorizontalAlignment="Left"
-                                                Value="{Binding UiScale}" />
+                                        <ListBox BorderThickness="0" Background="Transparent" Padding="0" Margin="0,10,0,0"
+                                                 HorizontalAlignment="Left"
+                                                 ItemsSource="{Binding UiScaleOptions}"
+                                                 SelectedItem="{Binding UiScale}"
+                                                 ItemContainerStyle="{StaticResource ChipPillItem}"
+                                                 ScrollViewer.VerticalScrollBarVisibility="Disabled"
+                                                 ScrollViewer.HorizontalScrollBarVisibility="Hidden">
+                                            <ListBox.ItemsPanel>
+                                                <ItemsPanelTemplate>
+                                                    <StackPanel Orientation="Horizontal" />
+                                                </ItemsPanelTemplate>
+                                            </ListBox.ItemsPanel>
+                                            <ListBox.ItemTemplate>
+                                                <DataTemplate>
+                                                    <TextBlock Text="{Binding StringFormat={}{0:0%}}" FontSize="11.5" />
+                                                </DataTemplate>
+                                            </ListBox.ItemTemplate>
+                                        </ListBox>
                                     </StackPanel>
                                     <TextBlock Grid.Column="1" Text="{Binding UiScalePercent}" FontSize="13" FontWeight="SemiBold"
                                                VerticalAlignment="Center" Foreground="{DynamicResource Color.Text.Primary}" />

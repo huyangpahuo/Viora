@@ -196,6 +196,7 @@
                     <ScrollViewer x:Name="WorksScroll" Grid.Row="0" VerticalScrollBarVisibility="Auto" PreviewMouseWheel="OnListWheel">
                     <StackPanel>
                         <ListBox BorderThickness="0" Background="Transparent" Margin="-6,4,-6,0"
+                                 HorizontalContentAlignment="Center"
                                  Visibility="{Binding IsListView, Converter={StaticResource InverseBoolToVisibility}}"
                                  ItemsSource="{Binding Cards}" SelectedItem="{Binding SelectedCard}"
                                  ItemContainerStyle="{StaticResource WorkCardItem}"

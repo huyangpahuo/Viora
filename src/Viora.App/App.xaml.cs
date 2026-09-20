@@ -192,7 +192,8 @@ public partial class App : Application
         {
             var font = string.IsNullOrWhiteSpace(familyName)
                 ? new System.Windows.Media.FontFamily("Inter, Segoe UI Variable Display, Segoe UI, Microsoft YaHei UI")
-                : new System.Windows.Media.FontFamily(familyName);
+                : new System.Windows.Media.FontFamily(familyName + ", Microsoft YaHei UI, Segoe UI");
+            // 复合链:所选字体缺字形(如中文字符)时自动回退到雅黑/Segoe,保证任何语言不缺字
 
             // WPF 资源查找 merged 字典优先于顶层直接键:必须写入定义 Font.Family 的那个
             // merged 字典(Core.xaml)才会覆盖默认值并通知所有 DynamicResource 引用

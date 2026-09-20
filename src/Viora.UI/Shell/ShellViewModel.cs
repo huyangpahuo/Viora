@@ -78,9 +78,9 @@ public partial class ShellViewModel : ObservableObject
             new(Sections.Core, "Nav.MyWorks", "Nav.MyWorks.Sub", "Images", typeof(Pages.MyWorks.MyWorksPage), 1),
             new(Sections.Core, "Nav.PluginMarket", "Nav.PluginMarket.Sub", "PuzzlePiece", typeof(Pages.PluginMarket.PluginMarketPage), 2),
             new(Sections.Core, "Nav.Settings", "Nav.Settings.Sub", "Gear", typeof(Pages.Settings.SettingsPage), 3),
-            new(Sections.Aux, "Nav.About", null, "CircleInfo", typeof(Pages.Placeholder.PlaceholderPage), 4),
-            new(Sections.Aux, "Nav.Help", null, "CircleQuestion", typeof(Pages.Placeholder.PlaceholderPage), 5),
-            new(Sections.Aux, "Nav.Feedback", null, "Envelope", typeof(Pages.Placeholder.PlaceholderPage), 6),
+            new(Sections.Aux, "Nav.About", null, "CircleInfo", typeof(Pages.Support.AboutPage), 4),
+            new(Sections.Aux, "Nav.Help", null, "CircleQuestion", typeof(Pages.Support.HelpPage), 5),
+            new(Sections.Aux, "Nav.Feedback", null, "Envelope", typeof(Pages.Support.FeedbackPage), 6),
         };
 
         SelectedItem = Items[0];
@@ -157,8 +157,13 @@ public partial class ShellViewModel : ObservableObject
         _ = _settings.SaveAsync();
         _localization.SetLanguage(code);
         RefreshLanguageState();
-        // 与设置页一致:部分由插件注册的文案重启后才完整生效
-        _alert.Info(Viora.UI.Localization.Tr.Get("Settings.Language.RestartNote"));
+        // 与设置页一致:询问并立即重启以完整生效
+        if (_alert.Confirm(
+                Viora.UI.Localization.Tr.Get("Settings.Restart.Title"),
+                Viora.UI.Localization.Tr.Get("Settings.Language.RestartConfirm")))
+        {
+            AppRestart.Restart();
+        }
     }
 
     // ---------- 顶栏:窗口控制 ----------
