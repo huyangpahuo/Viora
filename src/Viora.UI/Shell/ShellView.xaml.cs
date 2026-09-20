@@ -21,6 +21,24 @@ public partial class ShellView : UserControl
         InitializeComponent();
         DataContextChanged += OnDataContextChanged;
         Loaded += (_, _) => HookWindow();
+        Loaded += (_, _) => BuildNavHotkeys();
+    }
+
+    /// <summary>导航快捷键(Ctrl+1..4,可在设置录制修改):页面加载时按服务配置生成。</summary>
+    private void BuildNavHotkeys()
+    {
+        if (DataContext is not ShellViewModel vm) return;
+        (string id, int index)[] navs =
+        [
+            ("nav.stylize", 0), ("nav.works", 1), ("nav.market", 2), ("nav.settings", 3),
+        ];
+        foreach (var (id, index) in navs)
+        {
+            var gesture = Services.HotkeyService.ToKeyGesture(vm.Hotkeys.GetGesture(id));
+            if (gesture is null) continue;
+            InputBindings.Add(new System.Windows.Input.KeyBinding(
+                vm.NavigateByIndexCommand, gesture) { CommandParameter = index });
+        }
     }
 
     private ShellViewModel? ViewModel => DataContext as ShellViewModel;

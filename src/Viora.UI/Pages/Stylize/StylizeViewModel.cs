@@ -163,6 +163,10 @@ public partial class StylizeViewModel : ObservableObject
     private readonly IExportProxy _export;
     private readonly IWorksStore _works;
     private readonly ILogger<StylizeViewModel> _logger;
+    private readonly HotkeyService _hotkeys;
+
+    /// <summary>快捷键服务(页面构建 InputBindings 用)。</summary>
+    public HotkeyService Hotkeys => _hotkeys;
 
     /// <summary>从“我的作品”重新生成时携带的原标题/来源名,落一条新作品后清空。</summary>
     private string? _pendingTitle;
@@ -179,6 +183,7 @@ public partial class StylizeViewModel : ObservableObject
         ISettingsService settings,
         IExportProxy export,
         IWorksStore works,
+        HotkeyService hotkeys,
         ILogger<StylizeViewModel> logger)
     {
         _catalog = catalog;
@@ -187,6 +192,7 @@ public partial class StylizeViewModel : ObservableObject
         _settings = settings;
         _export = export;
         _works = works;
+        _hotkeys = hotkeys;
         _logger = logger;
 
         // 市场安装/卸载官方插件后 catalog 变化,这里同步刷新可用风格。
@@ -419,6 +425,9 @@ public partial class StylizeViewModel : ObservableObject
     public string ZoomPercent => $"{Math.Round(Zoom * 100)}%";
 
     public string CtaText => IsBusy ? Tr.Get("Stylize.Cancel") : Tr.Get("Stylize.Start");
+
+    /// <summary>开始风格化的快捷键展示(随设置录制变化)。</summary>
+    public string RunGestureDisplay => _hotkeys.GetGesture("stylize.run").Replace("+", " + ");
 
     partial void OnIsBusyChanged(bool value)
     {

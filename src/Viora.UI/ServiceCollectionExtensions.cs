@@ -20,6 +20,7 @@ public static class ServiceCollectionExtensions
         services.AddSingleton<IFeatureRegistry, FeatureRegistry>();
         services.AddSingleton<IPresetCatalog, PresetCatalog>();
         services.AddSingleton<OfficialPluginService>();
+        services.AddSingleton<HotkeyService>();
 
         // Pages (transient; ShellViewModel caches instances)
         // StylizeViewModel 为单例:跨页“重新生成”要拿到同一个正在服务的实例。

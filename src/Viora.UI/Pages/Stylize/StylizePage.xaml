@@ -872,7 +872,7 @@
                                             <TextBlock Text="{Binding DataContext.CtaText, RelativeSource={RelativeSource AncestorType=UserControl}}"
                                                        FontSize="15" FontWeight="Bold" Foreground="White" Margin="10,0,0,0" VerticalAlignment="Center" />
                                         </StackPanel>
-                                        <TextBlock Text="Ctrl + Enter" FontSize="11" Foreground="#C8FFFFFF"
+                                        <TextBlock Text="{Binding DataContext.RunGestureDisplay, RelativeSource={RelativeSource AncestorType=UserControl}}" FontSize="11" Foreground="#C8FFFFFF"
                                                    HorizontalAlignment="Right" VerticalAlignment="Center" />
                                     </Grid>
                                 </Border>

@@ -50,6 +50,12 @@ public sealed class ExportSettings
     public string OutputFolder { get; set; } = string.Empty;
 }
 
+public sealed class HotkeySettings
+{
+    /// <summary>快捷键 id → 组合键串(如 stylize.run → Ctrl+Enter);空串 = 未设置。</summary>
+    public Dictionary<string, string> Bindings { get; set; } = new();
+}
+
 public sealed class PluginSettings
 {
     public bool EnablePluginLoading { get; set; } = true;
@@ -106,6 +112,8 @@ public sealed class VioraSettings
     public ExportSettings Export { get; set; } = new();
 
     public PluginSettings Plugins { get; set; } = new();
+
+    public HotkeySettings Hotkeys { get; set; } = new();
 
     public PerformanceSettings Performance { get; set; } = new();
 

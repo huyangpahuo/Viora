@@ -109,6 +109,27 @@ public sealed partial class ThemeColorRowViewModel : ObservableObject
     public Brush Brush => ThemeCard.Swatch(HexValue);
 }
 
+/// <summary>快捷键设置行(录制态切换 + 当前组合键展示)。</summary>
+public sealed partial class HotkeyRowViewModel : ObservableObject
+{
+    public HotkeyRowViewModel(string id, string labelKey, string gesture)
+    {
+        Id = id;
+        LabelKey = labelKey;
+        _gesture = string.IsNullOrWhiteSpace(gesture) ? "—" : gesture;
+    }
+
+    public string Id { get; }
+
+    public string LabelKey { get; }
+
+    [ObservableProperty]
+    private string _gesture;
+
+    [ObservableProperty]
+    private bool _isRecording;
+}
+
 /// <summary>导出格式下拉选项。</summary>
 public sealed record FormatOption(string Code, string DisplayNameKey);
 
@@ -124,6 +145,8 @@ public partial class SettingsViewModel : ObservableObject
     private readonly IUserThemeStore _themeStore;
     private readonly ILogger<SettingsViewModel> _logger;
     private bool _pluginRowsLoaded;
+    private bool _hotkeyRowsLoaded;
+    private readonly HotkeyService _hotkeys;
 
     public SettingsViewModel(
         ISettingsService settings,
@@ -132,6 +155,7 @@ public partial class SettingsViewModel : ObservableObject
         IWorksStore works,
         IUiAlert alert,
         IUserThemeStore themeStore,
+        HotkeyService hotkeys,
         ILogger<SettingsViewModel> logger)
     {
         _settings = settings;
@@ -140,6 +164,7 @@ public partial class SettingsViewModel : ObservableObject
         _works = works;
         _alert = alert;
         _themeStore = themeStore;
+        _hotkeys = hotkeys;
         _logger = logger;
 
         Sections = new ObservableCollection<SettingsSectionViewModel>
@@ -149,7 +174,7 @@ public partial class SettingsViewModel : ObservableObject
             new("performance", "Settings.Performance", "Settings.Performance.Sub", "Sliders"),
             new("plugins", "Settings.Plugins", "Settings.Plugins.Sub", "PuzzlePiece"),
             new("ai", "Settings.AI", "Settings.AI.Sub", "WandMagicSparkles", isEnabled: false),
-            new("hotkeys", "Settings.Hotkeys", "Settings.Hotkeys.Sub", "List", isEnabled: false),
+            new("hotkeys", "Settings.Hotkeys", "Settings.Hotkeys.Sub", "List"),
             new("about", "Settings.About", "Settings.About.Sub", "CircleInfo"),
         };
 
@@ -186,6 +211,8 @@ public partial class SettingsViewModel : ObservableObject
         OnPropertyChanged(nameof(IsAboutSelected));
         if (value?.Key == "plugins" && !_pluginRowsLoaded)
             _ = LoadPluginRowsAsync();
+        if (value?.Key == "hotkeys" && !_hotkeyRowsLoaded)
+            LoadHotkeyRows();
     }
 
     public bool IsGeneralSelected => SelectedSection?.Key == "general";
@@ -195,6 +222,8 @@ public partial class SettingsViewModel : ObservableObject
     public bool IsPerformanceSelected => SelectedSection?.Key == "performance";
 
     public bool IsPluginsSelected => SelectedSection?.Key == "plugins";
+
+    public bool IsHotkeysSelected => SelectedSection?.Key == "hotkeys";
 
     public bool IsAboutSelected => SelectedSection?.Key == "about";
 
@@ -619,6 +648,108 @@ public partial class SettingsViewModel : ObservableObject
             _alert.Warn(Tr.Get("Settings.Plugins.ToggleFailed.Title"), Tr.Get("Settings.Plugins.ToggleFailed.Body"));
             // 回滚开关视觉
             row.IsEnabled = !row.IsEnabled;
+        }
+    }
+
+    // ---------- 快捷键 ----------
+
+    public ObservableCollection<HotkeyRowViewModel> HotkeyRows { get; } = new();
+
+    private void LoadHotkeyRows()
+    {
+        HotkeyRows.Clear();
+        foreach (var def in HotkeyService.Defaults)
+            HotkeyRows.Add(new HotkeyRowViewModel(def.Id, def.LabelKey, _hotkeys.GetGesture(def.Id)));
+        _hotkeyRowsLoaded = true;
+    }
+
+    [RelayCommand]
+    private void StartRecord(HotkeyRowViewModel? row)
+    {
+        if (row is null) return;
+        foreach (var r in HotkeyRows)
+            if (r.IsRecording) r.IsRecording = false;
+        row.IsRecording = true;
+    }
+
+    /// <summary>录制中的按键处理(由页面 PreviewKeyDown 调用)。返回 true = 已处理。</summary>
+    public bool HandleRecordKey(System.Windows.Input.KeyEventArgs e)
+    {
+        var row = HotkeyRows.FirstOrDefault(r => r.IsRecording);
+        if (row is null) return false;
+
+        var key = e.Key == System.Windows.Input.Key.System ? e.SystemKey : e.Key;
+        var input = System.Windows.Input.Keyboard.Modifiers;
+
+        if (key is System.Windows.Input.Key.Escape)
+        {
+            row.IsRecording = false; // Esc 取消
+            return true;
+        }
+        if (key is System.Windows.Input.Key.LeftCtrl or System.Windows.Input.Key.RightCtrl
+            or System.Windows.Input.Key.LeftShift or System.Windows.Input.Key.RightShift
+            or System.Windows.Input.Key.LeftAlt or System.Windows.Input.Key.RightAlt
+            or System.Windows.Input.Key.LWin or System.Windows.Input.Key.RWin)
+            return true; // 纯修饰键:等待组合
+
+        // Delete/Backspace 清除绑定
+        if (input == System.Windows.Input.ModifierKeys.None
+            && key is System.Windows.Input.Key.Delete or System.Windows.Input.Key.Back)
+        {
+            ApplyGesture(row, string.Empty);
+            row.IsRecording = false;
+            return true;
+        }
+
+        // 必须带修饰键(功能键除外),避免抢占普通输入
+        if (input == System.Windows.Input.ModifierKeys.None
+            && key is not (>= System.Windows.Input.Key.F1 and <= System.Windows.Input.Key.F24))
+        {
+            row.IsRecording = false;
+            _alert.Warn(Tr.Get("Settings.Hotkeys.ConflictTitle"), Tr.Get("Settings.Hotkeys.NeedModifier"));
+            return true;
+        }
+
+        var parts = new List<string>();
+        if (input.HasFlag(System.Windows.Input.ModifierKeys.Control)) parts.Add("Ctrl");
+        if (input.HasFlag(System.Windows.Input.ModifierKeys.Alt)) parts.Add("Alt");
+        if (input.HasFlag(System.Windows.Input.ModifierKeys.Shift)) parts.Add("Shift");
+        parts.Add(KeyToToken(key));
+        ApplyGesture(row, string.Join("+", parts));
+        row.IsRecording = false;
+        return true;
+    }
+
+    private void ApplyGesture(HotkeyRowViewModel row, string gesture)
+    {
+        var conflict = _hotkeys.SetGesture(row.Id, gesture);
+        if (conflict is not null)
+        {
+            _alert.Warn(Tr.Get("Settings.Hotkeys.ConflictTitle"),
+                string.Format(Tr.Get("Settings.Hotkeys.Conflict"), Tr.Get(conflict.LabelKey)));
+            row.Gesture = _hotkeys.GetGesture(row.Id);
+            return;
+        }
+        row.Gesture = string.IsNullOrWhiteSpace(gesture) ? "—" : gesture;
+    }
+
+    private static string KeyToToken(System.Windows.Input.Key key) => key switch
+    {
+        >= System.Windows.Input.Key.D0 and <= System.Windows.Input.Key.D9
+            => ((int)(key - System.Windows.Input.Key.D0)).ToString(),
+        >= System.Windows.Input.Key.NumPad0 and <= System.Windows.Input.Key.NumPad9
+            => ((int)(key - System.Windows.Input.Key.NumPad0)).ToString(),
+        _ => key.ToString(),
+    };
+
+    [RelayCommand]
+    private void ResetHotkeys()
+    {
+        foreach (var row in HotkeyRows)
+        {
+            _hotkeys.SetGesture(row.Id, string.Empty);
+            row.Gesture = _hotkeys.GetGesture(row.Id);
+            row.IsRecording = false;
         }
     }
 

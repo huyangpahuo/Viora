@@ -50,15 +50,32 @@
                                                 <TextBlock Grid.Column="1" Text="{Binding TitleKey, Converter={StaticResource TranslateKey}}"
                                                            FontSize="13" FontWeight="SemiBold" Margin="12,0,0,0" VerticalAlignment="Center"
                                                            Foreground="{DynamicResource Color.Text.Primary}" />
-                                                <controls:VioraIcon Grid.Column="2" Geometry="{StaticResource Icon.ChevronRight}"
-                                                                    Width="11" Height="11" VerticalAlignment="Center"
-                                                                    Foreground="{DynamicResource Color.Text.Disabled}" />
+                                                <Grid Grid.Column="2" Margin="8,0,0,0">
+                                                    <controls:VioraIcon Geometry="{StaticResource Icon.ChevronRight}"
+                                                                        Width="11" Height="11" HorizontalAlignment="Right" VerticalAlignment="Center"
+                                                                        Foreground="{DynamicResource Color.Text.Disabled}" />
+                                                    <Popup x:Name="QrPopup" PlacementTarget="{Binding ElementName=Row}"
+                                                           Placement="Left" VerticalOffset="0" AllowsTransparency="True"
+                                                           PopupAnimation="Fade" StaysOpen="True">
+                                                        <Border Background="White" CornerRadius="10" Padding="8" Margin="12"
+                                                                BorderBrush="{DynamicResource Color.Outline}" BorderThickness="1">
+                                                            <Image Source="{Binding QrImage}" Width="150" Height="150" Stretch="Uniform" />
+                                                        </Border>
+                                                    </Popup>
+                                                </Grid>
                                             </Grid>
                                         </Border>
                                         <ControlTemplate.Triggers>
                                             <Trigger Property="IsMouseOver" Value="True">
                                                 <Setter TargetName="Row" Property="BorderBrush" Value="{DynamicResource Color.Primary}" />
                                             </Trigger>
+                                            <MultiTrigger>
+                                                <MultiTrigger.Conditions>
+                                                    <Condition Property="IsMouseOver" Value="True" />
+                                                    <Condition Binding="{Binding HasQr}" Value="True" />
+                                                </MultiTrigger.Conditions>
+                                                <Setter TargetName="QrPopup" Property="IsOpen" Value="True" />
+                                            </MultiTrigger>
                                         </ControlTemplate.Triggers>
                                     </ControlTemplate>
                                 </Button.Template>

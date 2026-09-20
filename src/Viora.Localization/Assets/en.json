@@ -537,5 +537,19 @@
   "Settings.Restart.Title": "Restart Viora",
   "Settings.Language.RestartConfirm": "Switching language needs a restart to fully apply. Restart now?",
   "Support.ShowQr": "View QR code",
-  "Support.Close": "Close"
+  "Support.Close": "Close",
+  "Settings.Hotkeys.Title": "Keyboard shortcuts",
+  "Settings.Hotkeys.Desc": "Click a binding then press the new combination to record: Esc cancels, Delete clears it. Function keys (e.g. F5) work alone; everything else needs Ctrl/Alt/Shift.",
+  "Settings.Hotkeys.Recording": "Press keys…",
+  "Settings.Hotkeys.Reset": "Reset to defaults",
+  "Settings.Hotkeys.Note": "Changes are saved instantly; if a shortcut isn't picked up right away, restart the app.",
+  "Settings.Hotkeys.ConflictTitle": "Shortcut conflict",
+  "Settings.Hotkeys.Conflict": "That combination is already used by \"{0}\". Pick another.",
+  "Settings.Hotkeys.NeedModifier": "Include Ctrl / Alt / Shift, or use a function key (F1–F12).",
+  "Hotkey.Stylize.Run": "Run stylize",
+  "Hotkey.Stylize.Open": "Open image",
+  "Hotkey.Nav.Stylize": "Go to Stylize",
+  "Hotkey.Nav.Works": "Go to My Works",
+  "Hotkey.Nav.Market": "Go to Plugin Market",
+  "Hotkey.Nav.Settings": "Go to Settings"
 }

@@ -113,17 +113,19 @@
                                                         </TextBlock.Style>
                                                     </TextBlock>
                                                 </StackPanel>
-                                                <Grid Grid.Column="2" Margin="8,0,0,0" Width="56" Height="56">
-                                                    <!-- 悬停行时显示二维码浮层(仅 QQ/TG 配置了二维码) -->
+                                                <Grid Grid.Column="2" Margin="8,0,0,0">
                                                     <controls:VioraIcon Geometry="{StaticResource Icon.ChevronRight}"
                                                                         Width="11" Height="11" HorizontalAlignment="Right" VerticalAlignment="Center"
                                                                         Foreground="{DynamicResource Color.Text.Disabled}" />
-                                                    <Border CornerRadius="8" BorderBrush="{DynamicResource Color.Outline}" BorderThickness="1"
-                                                            Background="White" Width="56" Height="56" HorizontalAlignment="Left"
-                                                            Visibility="{Binding HasQr, Converter={StaticResource BoolToVisibility}}"
-                                                            ToolTip="{loc:Translate Support.ShowQr}">
-                                                        <Image Source="{Binding QrImage}" Stretch="Uniform" Margin="3" />
-                                                    </Border>
+                                                    <!-- 悬停行时浮出二维码(仅配置了二维码的行) -->
+                                                    <Popup x:Name="QrPopup" PlacementTarget="{Binding ElementName=Row}"
+                                                           Placement="Left" VerticalOffset="0" AllowsTransparency="True"
+                                                           PopupAnimation="Fade" StaysOpen="True">
+                                                        <Border Background="White" CornerRadius="10" Padding="8" Margin="12"
+                                                                BorderBrush="{DynamicResource Color.Outline}" BorderThickness="1">
+                                                            <Image Source="{Binding QrImage}" Width="150" Height="150" Stretch="Uniform" />
+                                                        </Border>
+                                                    </Popup>
                                                 </Grid>
                                             </Grid>
                                         </Border>
@@ -131,6 +133,13 @@
                                             <Trigger Property="IsMouseOver" Value="True">
                                                 <Setter TargetName="Row" Property="BorderBrush" Value="{DynamicResource Color.Primary}" />
                                             </Trigger>
+                                            <MultiTrigger>
+                                                <MultiTrigger.Conditions>
+                                                    <Condition Property="IsMouseOver" Value="True" />
+                                                    <Condition Binding="{Binding HasQr}" Value="True" />
+                                                </MultiTrigger.Conditions>
+                                                <Setter TargetName="QrPopup" Property="IsOpen" Value="True" />
+                                            </MultiTrigger>
                                         </ControlTemplate.Triggers>
                                     </ControlTemplate>
                                 </Button.Template>

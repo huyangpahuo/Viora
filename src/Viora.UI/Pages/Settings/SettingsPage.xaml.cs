@@ -31,6 +31,13 @@ public partial class SettingsPage : UserControl
             ? $"#{chosen.Value.R:X2}{chosen.Value.G:X2}{chosen.Value.B:X2}"
             : $"#{chosen.Value.A:X2}{chosen.Value.R:X2}{chosen.Value.G:X2}{chosen.Value.B:X2}";
     }
+
+    /// <summary>快捷键录制:页面级 PreviewKeyDown 转发给 VM(仅录制中的行消费)。</summary>
+    private void OnPageKeyDown(object sender, System.Windows.Input.KeyEventArgs e)
+    {
+        if (DataContext is SettingsViewModel vm && vm.HandleRecordKey(e))
+            e.Handled = true;
+    }
 }
 
 /// <summary>comdlg32 标准取色对话框(含展开的自定义色板),避免引入 WinForms 命名空间冲突。</summary>

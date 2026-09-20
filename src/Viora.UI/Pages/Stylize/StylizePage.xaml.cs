@@ -33,6 +33,7 @@ public partial class StylizePage : UserControl
     {
         DataContext = vm;
         InitializeComponent();
+        BuildHotkeys(vm);
         Loaded += (_, _) => WireViewModel();
         SizeChanged += (_, _) => UpdateSplitLayout();
         LayoutUpdated += (_, _) => UpdateSplitLayout();
@@ -76,6 +77,20 @@ public partial class StylizePage : UserControl
     }
 
     /// <summary>缩略图条滚轮 → 横向滚动(每次插入新图也会跟随,见 WireViewModel)。</summary>
+    /// <summary>页面快捷键(开始风格化/打开图片):按服务配置生成 KeyBinding。</summary>
+    private void BuildHotkeys(StylizeViewModel vm)
+    {
+        var hotkeys = vm.Hotkeys;
+        void Bind(string id, System.Windows.Input.ICommand command)
+        {
+            var gesture = Viora.UI.Services.HotkeyService.ToKeyGesture(hotkeys.GetGesture(id));
+            if (gesture is not null)
+                InputBindings.Add(new System.Windows.Input.KeyBinding(command, gesture));
+        }
+        Bind("stylize.run", vm.RunCommand);
+        Bind("stylize.open", vm.ImportCommand);
+    }
+
     private void OnChipsWheel(object sender, MouseWheelEventArgs e)
     {
         if (sender is ListBox lb)

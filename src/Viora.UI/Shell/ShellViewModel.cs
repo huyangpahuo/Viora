@@ -60,16 +60,18 @@ public partial class ShellViewModel : ObservableObject
     private readonly ISettingsService _settings;
     private readonly ILogger<ShellViewModel> _logger;
     private readonly IUiAlert _alert;
+    public HotkeyService Hotkeys { get; }
 
     private readonly Dictionary<Type, object> _pageCache = new();
 
     public ShellViewModel(IServiceProvider services, ILocalizationService localization, ISettingsService settings,
-        IUiAlert alert, ILogger<ShellViewModel> logger)
+        IUiAlert alert, HotkeyService hotkeys, ILogger<ShellViewModel> logger)
     {
         _services = services;
         _localization = localization;
         _settings = settings;
         _alert = alert;
+        Hotkeys = hotkeys;
         _logger = logger;
 
         Items = new ObservableCollection<NavigationItem>
@@ -225,6 +227,18 @@ public partial class ShellViewModel : ObservableObject
     partial void OnSelectedItemChanged(NavigationItem? value) => OnPropertyChanged(nameof(CurrentPage));
 
     /// <summary>跨页跳转(如“我的作品 → 重新生成”回到风格化页)。</summary>
+    /// <summary>快捷键导航:按 Items 索引切换页面。</summary>
+    [RelayCommand]
+    private void NavigateByIndex(object? parameter)
+    {
+        if (parameter is int index
+            || (parameter is string str && int.TryParse(str, out index)))
+        {
+            if (index >= 0 && index < Items.Count)
+                SelectedItem = Items[index];
+        }
+    }
+
     public void NavigateTo(string titleKey)
     {
         var item = Items.FirstOrDefault(i => i.TitleKey == titleKey);
