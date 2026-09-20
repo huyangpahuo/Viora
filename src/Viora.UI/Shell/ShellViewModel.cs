@@ -7,6 +7,7 @@ using Microsoft.Extensions.Logging;
 using Viora.Core.Localization;
 using Viora.Core.Settings;
 using Viora.UI.Localization;
+using Viora.UI.Services;
 
 namespace Viora.UI.Shell;
 
@@ -58,15 +59,17 @@ public partial class ShellViewModel : ObservableObject
     private readonly ILocalizationService _localization;
     private readonly ISettingsService _settings;
     private readonly ILogger<ShellViewModel> _logger;
+    private readonly IUiAlert _alert;
 
     private readonly Dictionary<Type, object> _pageCache = new();
 
     public ShellViewModel(IServiceProvider services, ILocalizationService localization, ISettingsService settings,
-        ILogger<ShellViewModel> logger)
+        IUiAlert alert, ILogger<ShellViewModel> logger)
     {
         _services = services;
         _localization = localization;
         _settings = settings;
+        _alert = alert;
         _logger = logger;
 
         Items = new ObservableCollection<NavigationItem>
@@ -102,7 +105,7 @@ public partial class ShellViewModel : ObservableObject
     {
         get
         {
-            var scale = Math.Clamp(_settings.Current.Appearance.UiScale, 0.8, 1.5);
+            var scale = Math.Clamp(_settings.Current.Appearance.UiScale, 0.8, 1.2);
             return Math.Abs(scale - 1.0) < 0.005
                 ? System.Windows.Media.Transform.Identity
                 : new System.Windows.Media.ScaleTransform(scale, scale);
@@ -154,6 +157,8 @@ public partial class ShellViewModel : ObservableObject
         _ = _settings.SaveAsync();
         _localization.SetLanguage(code);
         RefreshLanguageState();
+        // 与设置页一致:部分由插件注册的文案重启后才完整生效
+        _alert.Info(Viora.UI.Localization.Tr.Get("Settings.Language.RestartNote"));
     }
 
     // ---------- 顶栏:窗口控制 ----------

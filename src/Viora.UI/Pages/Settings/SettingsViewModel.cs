@@ -252,13 +252,13 @@ public partial class SettingsViewModel : ObservableObject
         }
     }
 
-    /// <summary>界面缩放(0.8 – 1.5),字号随缩放变化,即时生效。</summary>
+    /// <summary>界面缩放(0.8 – 1.2),字号随缩放变化,即时生效。</summary>
     public double UiScale
     {
-        get => Math.Clamp(_settings.Current.Appearance.UiScale, 0.8, 1.5);
+        get => Math.Clamp(_settings.Current.Appearance.UiScale, 0.8, 1.2);
         set
         {
-            var clamped = Math.Clamp(value, 0.8, 1.5);
+            var clamped = Math.Clamp(value, 0.8, 1.2);
             _settings.Update(s => s.Appearance.UiScale = clamped);
             OnPropertyChanged(nameof(UiScale));
             OnPropertyChanged(nameof(UiScalePercent));

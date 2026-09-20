@@ -487,7 +487,7 @@
   "Settings.General.Font": "Interface font",
   "Settings.General.Font.Desc": "Pick any font installed on this PC; applies instantly. Empty = default",
   "Settings.Appearance.Scale": "UI scale",
-  "Settings.Appearance.Scale.Desc": "Scale the whole UI including text (80% – 150%); applies instantly",
+  "Settings.Appearance.Scale.Desc": "Scale the whole UI including text (80% – 120%); applies instantly",
   "Settings.Language.RestartNote": "Language switched. Some texts fully apply after restarting Viora.",
   "Settings.Update.Title": "Check for updates",
   "Settings.Update.Check": "Check for updates",

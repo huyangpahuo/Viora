@@ -190,9 +190,21 @@ public partial class App : Application
     {
         try
         {
-            Current.Resources["Font.Family"] = string.IsNullOrWhiteSpace(familyName)
+            var font = string.IsNullOrWhiteSpace(familyName)
                 ? new System.Windows.Media.FontFamily("Inter, Segoe UI Variable Display, Segoe UI, Microsoft YaHei UI")
                 : new System.Windows.Media.FontFamily(familyName);
+
+            // WPF 资源查找 merged 字典优先于顶层直接键:必须写入定义 Font.Family 的那个
+            // merged 字典(Core.xaml)才会覆盖默认值并通知所有 DynamicResource 引用
+            foreach (var dict in Current.Resources.MergedDictionaries)
+            {
+                if (dict.Contains("Font.Family"))
+                {
+                    dict["Font.Family"] = font;
+                    return;
+                }
+            }
+            Current.Resources["Font.Family"] = font; // 兜底:字典结构变化时顶层定义
         }
         catch
         {

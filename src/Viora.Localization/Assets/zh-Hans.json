@@ -487,7 +487,7 @@
   "Settings.General.Font": "界面字体",
   "Settings.General.Font.Desc": "选择本机安装的字体,立即生效;留空使用默认",
   "Settings.Appearance.Scale": "界面缩放",
-  "Settings.Appearance.Scale.Desc": "整体缩放界面与字号(80% – 150%),立即生效",
+  "Settings.Appearance.Scale.Desc": "整体缩放界面与字号(80% – 120%),立即生效",
   "Settings.Language.RestartNote": "已切换语言。部分文案将在重启 Viora 后完整生效。",
   "Settings.Update.Title": "检查更新",
   "Settings.Update.Check": "检查更新",

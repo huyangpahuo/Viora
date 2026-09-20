@@ -394,7 +394,7 @@
                                     <StackPanel>
                                         <TextBlock Text="{loc:Translate Settings.Appearance.Scale.Desc}" FontSize="11"
                                                    Foreground="{DynamicResource Color.Text.Secondary}" TextWrapping="Wrap" />
-                                        <Slider Width="280" Minimum="0.8" Maximum="1.5" IsSnapToTickEnabled="True" TickFrequency="0.05"
+                                        <Slider Width="280" Minimum="0.8" Maximum="1.2" IsSnapToTickEnabled="True" TickFrequency="0.05"
                                                 Margin="0,10,0,0" HorizontalAlignment="Left"
                                                 Value="{Binding UiScale}" />
                                     </StackPanel>
