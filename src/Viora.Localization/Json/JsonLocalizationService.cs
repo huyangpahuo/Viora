@@ -1,3 +1,6 @@
+using System.IO;
+using System.Text.Json;
+using System.Text.RegularExpressions;
 using Microsoft.Extensions.Logging;
 using Viora.Core.Localization;
 
@@ -18,8 +21,71 @@ public sealed partial class JsonLocalizationService : ILocalizationService
     {
         _logger = logger;
         LoadEmbeddedPacks();
+        LoadExternalPacks();
         LogPacksLoaded(_logger, _packs.Count, string.Join(",", _packs.Keys));
     }
+
+    /// <summary>
+    /// 外置语言包(方案 C):扫描 exe 旁 languages\*.json,按文件名识别语言码(如 fr.json → fr),
+    /// 与内置包按键合并(外置键覆盖内置键,缺键回落英文)。小众语言创作者无需重新编译客户端,
+    /// 复制翻译文件到该文件夹重启即可;也可以 PR 进官方仓库随版本内置。
+    /// </summary>
+    private void LoadExternalPacks()
+    {
+        try
+        {
+            var dir = Path.Combine(AppContext.BaseDirectory, "languages");
+            if (!Directory.Exists(dir)) return;
+
+            foreach (var file in Directory.EnumerateFiles(dir, "*.json"))
+            {
+                try
+                {
+                    var code = Path.GetFileNameWithoutExtension(file);
+                    // 语言码合法性:2-3 字母(可带 -脚本/地区后缀),避免误扫杂物
+                    if (!Regex.IsMatch(code, @"^[a-z]{2,3}(-[A-Za-z]+)*$", RegexOptions.IgnoreCase)) continue;
+
+                    var strings = JsonSerializer.Deserialize<Dictionary<string, string>>(File.ReadAllText(file));
+                    if (strings is null || strings.Count == 0) continue;
+
+                    var displayName = strings.TryGetValue("Language.DisplayName", out var dn) && !string.IsNullOrEmpty(dn)
+                        ? dn
+                        : code;
+
+                    lock (_gate)
+                    {
+                        if (_packs.TryGetValue(code, out var existing))
+                        {
+                            // 已有内置/先到的包:逐键覆盖
+                            foreach (var (key, value) in strings)
+                                existing.Strings[key] = value;
+                        }
+                        else
+                        {
+                            _packs[code] = new LanguagePack { Code = code, DisplayName = displayName, Strings = strings };
+                        }
+                    }
+                    LogExternalPackLoaded(_logger, code, strings.Count);
+                }
+                catch (Exception ex)
+                {
+                    LogExternalPackFailed(_logger, file, ex);
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            LogExternalPackFailed(_logger, "languages", ex);
+        }
+    }
+
+    [LoggerMessage(EventId = 10, Level = LogLevel.Information,
+        Message = "External language pack loaded: {Code} ({Count} keys)")]
+    private static partial void LogExternalPackLoaded(ILogger logger, string code, int count);
+
+    [LoggerMessage(EventId = 11, Level = LogLevel.Warning,
+        Message = "Failed to load external language pack {File}")]
+    private static partial void LogExternalPackFailed(ILogger logger, string file, Exception ex);
 
     [LoggerMessage(EventId = 9, Level = LogLevel.Information,
         Message = "Loaded {Count} language packs: {Codes}")]

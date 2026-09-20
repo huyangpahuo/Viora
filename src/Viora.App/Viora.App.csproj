@@ -40,4 +40,7 @@
     <Resource Include="..\..\assets\QQ.jpg" />
     <Resource Include="..\..\assets\Telegram.png" />
   </ItemGroup>
+  <ItemGroup>
+    <None Include="languages\**\*" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
 </Project>
