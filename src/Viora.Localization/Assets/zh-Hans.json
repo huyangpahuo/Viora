@@ -535,5 +535,7 @@
   "Support.Feedback.LogsDesc": "日志按天存放在本地文件夹,反馈问题时可直接把当天的日志文件发给我们:",
   "Support.Feedback.OpenLogs": "打开日志文件夹",
   "Settings.Restart.Title": "重启 Viora",
-  "Settings.Language.RestartConfirm": "切换语言需要重启 Viora 才能完整生效,现在重启吗?"
+  "Settings.Language.RestartConfirm": "切换语言需要重启 Viora 才能完整生效,现在重启吗?",
+  "Support.ShowQr": "查看二维码",
+  "Support.Close": "关闭"
 }

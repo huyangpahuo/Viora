@@ -535,5 +535,7 @@
   "Support.Feedback.LogsDesc": "Logs are stored locally per day — attach today's log file when reporting an issue:",
   "Support.Feedback.OpenLogs": "Open log folder",
   "Settings.Restart.Title": "Restart Viora",
-  "Settings.Language.RestartConfirm": "Switching language needs a restart to fully apply. Restart now?"
+  "Settings.Language.RestartConfirm": "Switching language needs a restart to fully apply. Restart now?",
+  "Support.ShowQr": "View QR code",
+  "Support.Close": "Close"
 }

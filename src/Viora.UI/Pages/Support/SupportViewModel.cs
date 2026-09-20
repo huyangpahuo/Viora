@@ -13,10 +13,10 @@ public static class SupportLinks
     public const string GitHub = "https://github.com/huyangpahuo/Viora";
     public const string PluginRepo = "https://github.com/huyangpahuo/Viora-plugins";
 
-    // TODO(官网就绪后填写):社区群邀请链接
-    public const string QQGroup = "";
-    public const string Discord = "";
-    public const string Telegram = "";
+    // 社区群邀请链接
+    public const string QQGroup = "https://qm.qq.com/cgi-bin/qm/qr?k=1057438076";
+    public const string Discord = "https://discord.gg/GRThdfrUjt";
+    public const string Telegram = "https://t.me/+MEjpv8FLI9IzYTA1";
 
     public static bool HasQQ => !string.IsNullOrEmpty(QQGroup);
     public static bool HasDiscord => !string.IsNullOrEmpty(Discord);
@@ -26,12 +26,14 @@ public static class SupportLinks
 /// <summary>外链按钮行。</summary>
 public sealed class LinkItemViewModel
 {
-    public LinkItemViewModel(string titleKey, string? url, string iconKey, string? subtitle = null)
+    public LinkItemViewModel(string titleKey, string? url, string iconKey, string? subtitle = null,
+        string? qrResource = null)
     {
         TitleKey = titleKey;
         Url = url;
         IconKey = iconKey;
         Subtitle = subtitle;
+        QrResource = qrResource;
     }
 
     public string TitleKey { get; }
@@ -42,7 +44,12 @@ public sealed class LinkItemViewModel
 
     public string? Subtitle { get; }
 
+    /// <summary>内置二维码图片的 pack URI(如关于页 QQ/TG);null = 无。</summary>
+    public string? QrResource { get; }
+
     public bool IsAvailable => !string.IsNullOrEmpty(Url);
+
+    public bool HasQr => QrResource is not null;
 }
 
 /// <summary>关于/帮助/反馈三个页面共享的 VM(链接、诊断信息、日志操作)。</summary>
@@ -79,10 +86,12 @@ public partial class SupportViewModel : ObservableObject
 
     public ObservableCollection<LinkItemViewModel> CommunityLinks { get; } = new()
     {
-        new("Support.Community.QQ", SupportLinks.QQGroup, "Icon.CircleUser"),
-        new("Support.Community.Discord", SupportLinks.Discord, "Icon.CircleQuestion"),
-        new("Support.Community.Telegram", SupportLinks.Telegram, "Icon.Envelope"),
-        new("Support.Community.GitHub", SupportLinks.GitHub, "Icon.Gear"),
+        new("Support.Community.QQ", SupportLinks.QQGroup, "Icon.Brand.QQ",
+            qrResource: "pack://application:,,,/Viora;component/assets/QQ.jpg"),
+        new("Support.Community.Discord", SupportLinks.Discord, "Icon.Brand.Discord"),
+        new("Support.Community.Telegram", SupportLinks.Telegram, "Icon.Brand.Telegram",
+            qrResource: "pack://application:,,,/Viora;component/assets/Telegram.png"),
+        new("Support.Community.GitHub", SupportLinks.GitHub, "Icon.Brand.GitHub"),
     };
 
     // ---------- 帮助页:快捷入口 ----------
@@ -135,10 +144,10 @@ public partial class SupportViewModel : ObservableObject
 
     public ObservableCollection<LinkItemViewModel> FeedbackLinks { get; } = new()
     {
-        new("Support.Feedback.Issues", $"{SupportLinks.GitHub}/issues", "Icon.PenToSquare"),
-        new("Support.Community.QQ", SupportLinks.QQGroup, "Icon.CircleUser"),
-        new("Support.Community.Discord", SupportLinks.Discord, "Icon.CircleQuestion"),
-        new("Support.Community.Telegram", SupportLinks.Telegram, "Icon.Envelope"),
+        new("Support.Feedback.Issues", $"{SupportLinks.GitHub}/issues", "Icon.Brand.GitHub"),
+        new("Support.Community.QQ", SupportLinks.QQGroup, "Icon.Brand.QQ"),
+        new("Support.Community.Discord", SupportLinks.Discord, "Icon.Brand.Discord"),
+        new("Support.Community.Telegram", SupportLinks.Telegram, "Icon.Brand.Telegram"),
     };
 
     [RelayCommand]
@@ -159,6 +168,33 @@ public partial class SupportViewModel : ObservableObject
             // 无默认浏览器等极端情况:静默
         }
     }
+
+    [ObservableProperty]
+    private System.Windows.Media.ImageSource? _qrImage;
+
+    [ObservableProperty]
+    private string _qrTitle = string.Empty;
+
+    [ObservableProperty]
+    private bool _isQrOpen;
+
+    [RelayCommand]
+    private void ShowQr(LinkItemViewModel? link)
+    {
+        if (link?.QrResource is null) return;
+        var image = new System.Windows.Media.Imaging.BitmapImage();
+        image.BeginInit();
+        image.CacheOption = System.Windows.Media.Imaging.BitmapCacheOption.OnLoad;
+        image.UriSource = new Uri(link.QrResource);
+        image.EndInit();
+        image.Freeze();
+        QrImage = image;
+        QrTitle = Viora.UI.Localization.Tr.Get(link.TitleKey);
+        IsQrOpen = true;
+    }
+
+    [RelayCommand]
+    private void CloseQr() => IsQrOpen = false;
 
     [RelayCommand]
     private void CopyDiagnostics()

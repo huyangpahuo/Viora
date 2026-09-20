@@ -113,9 +113,19 @@
                                                         </TextBlock.Style>
                                                     </TextBlock>
                                                 </StackPanel>
-                                                <controls:VioraIcon Grid.Column="2" Geometry="{StaticResource Icon.ChevronRight}"
-                                                                    Width="11" Height="11" VerticalAlignment="Center"
-                                                                    Foreground="{DynamicResource Color.Text.Disabled}" />
+                                                <StackPanel Grid.Column="2" Orientation="Horizontal">
+                                                    <Button Width="26" Height="26" Style="{DynamicResource IconButton}"
+                                                            Command="{Binding DataContext.ShowQrCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
+                                                            CommandParameter="{Binding}"
+                                                            ToolTip="{loc:Translate Support.ShowQr}"
+                                                            Visibility="{Binding HasQr, Converter={StaticResource BoolToVisibility}}">
+                                                        <controls:VioraIcon Geometry="{StaticResource Icon.FileImage}" Width="11" Height="11"
+                                                                            Foreground="{Binding Foreground, RelativeSource={RelativeSource AncestorType=Button}}" />
+                                                    </Button>
+                                                    <controls:VioraIcon Geometry="{StaticResource Icon.ChevronRight}"
+                                                                        Width="11" Height="11" VerticalAlignment="Center" Margin="4,0,0,0"
+                                                                        Foreground="{DynamicResource Color.Text.Disabled}" />
+                                                </StackPanel>
                                             </Grid>
                                         </Border>
                                         <ControlTemplate.Triggers>
@@ -131,5 +141,25 @@
                 </ItemsControl>
             </StackPanel>
         </Border>
+
+        <!-- 二维码弹层 -->
+        <Grid Grid.Column="0" Grid.ColumnSpan="3" Background="{DynamicResource Color.Scrim}"
+              Visibility="{Binding IsQrOpen, Converter={StaticResource BoolToVisibility}}"
+              MouseLeftButtonDown="OnQrBackdropClick">
+            <Border Background="{DynamicResource Color.Surface}" CornerRadius="16" Padding="24"
+                    HorizontalAlignment="Center" VerticalAlignment="Center"
+                    BorderBrush="{DynamicResource Color.Border}" BorderThickness="1">
+                <StackPanel>
+                    <TextBlock Text="{Binding QrTitle}" FontSize="15" FontWeight="Bold" HorizontalAlignment="Center"
+                               Foreground="{DynamicResource Color.Text.Primary}" />
+                    <Border Margin="0,14,0,0" CornerRadius="10" ClipToBounds="True">
+                        <Image Source="{Binding QrImage}" Width="260" Height="260" Stretch="Uniform" />
+                    </Border>
+                    <Button Style="{DynamicResource SecondaryButton}" Height="34" Padding="20,0" Margin="0,16,0,0"
+                            HorizontalAlignment="Center" Command="{Binding CloseQrCommand}"
+                            Content="{loc:Translate Support.Close}" />
+                </StackPanel>
+            </Border>
+        </Grid>
     </Grid>
 </UserControl>
