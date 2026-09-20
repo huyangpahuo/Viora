@@ -7,6 +7,8 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <UseWPF>true</UseWPF>
     <LangVersion>latest</LangVersion>
+    <!-- 只保留 en/zh-Hans 运行时资源:裁掉 cs/de/es 等十几个 .NET 系统语言文件夹(与界面语言无关) -->
+    <SatelliteResourceLanguages>en;zh-Hans</SatelliteResourceLanguages>
     <AssemblyName>Viora</AssemblyName>
     <RootNamespace>Viora.App</RootNamespace>
     <Version>1.0.0</Version>
