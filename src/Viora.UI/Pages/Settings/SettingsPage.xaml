@@ -413,8 +413,6 @@
                                             </ListBox.ItemTemplate>
                                         </ListBox>
                                     </StackPanel>
-                                    <TextBlock Grid.Column="1" Text="{Binding UiScalePercent}" FontSize="13" FontWeight="SemiBold"
-                                               VerticalAlignment="Center" Foreground="{DynamicResource Color.Text.Primary}" />
                                 </Grid>
                             </StackPanel>
                         </Border>

@@ -10,6 +10,4 @@ public partial class AboutPage : UserControl
         InitializeComponent();
     }
 
-    private void OnQrBackdropClick(object sender, System.Windows.Input.MouseButtonEventArgs e)
-        => ((SupportViewModel)DataContext).CloseQrCommand.Execute(null);
 }
