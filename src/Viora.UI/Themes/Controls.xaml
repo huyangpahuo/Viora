@@ -147,7 +147,7 @@
     <Style x:Key="DarkMenuItem" TargetType="MenuItem">
         <Setter Property="Foreground" Value="{DynamicResource Color.Text.Primary}" />
         <Setter Property="FontSize" Value="13" />
-        <Setter Property="FontFamily" Value="{StaticResource Font.Family}" />
+        <Setter Property="FontFamily" Value="{DynamicResource Font.Family}" />
         <Setter Property="Template">
             <Setter.Value>
                 <ControlTemplate TargetType="MenuItem">
@@ -219,7 +219,7 @@
     <Style x:Key="ChipPillItem" TargetType="ListBoxItem">
         <Setter Property="Foreground" Value="{DynamicResource Color.Text.Secondary}" />
         <Setter Property="FontSize" Value="12" />
-        <Setter Property="FontFamily" Value="{StaticResource Font.Family}" />
+        <Setter Property="FontFamily" Value="{DynamicResource Font.Family}" />
         <Setter Property="Cursor" Value="Hand" />
         <Setter Property="FocusVisualStyle" Value="{x:Null}" />
         <Setter Property="Margin" Value="0,0,8,0" />
@@ -249,7 +249,7 @@
     <Style x:Key="PagerPageButton" TargetType="ToggleButton">
         <Setter Property="Foreground" Value="{DynamicResource Color.Text.Secondary}" />
         <Setter Property="FontSize" Value="12" />
-        <Setter Property="FontFamily" Value="{StaticResource Font.Family}" />
+        <Setter Property="FontFamily" Value="{DynamicResource Font.Family}" />
         <Setter Property="Background" Value="Transparent" />
         <Setter Property="FocusVisualStyle" Value="{x:Null}" />
         <Setter Property="Cursor" Value="Hand" />
@@ -285,7 +285,7 @@
         <Setter Property="MinWidth" Value="96" />
         <Setter Property="Cursor" Value="Hand" />
         <Setter Property="FocusVisualStyle" Value="{x:Null}" />
-        <Setter Property="FontFamily" Value="{StaticResource Font.Family}" />
+        <Setter Property="FontFamily" Value="{DynamicResource Font.Family}" />
         <Setter Property="FontSize" Value="14" />
         <Setter Property="FontWeight" Value="SemiBold" />
         <Setter Property="Template">
@@ -444,7 +444,7 @@
         <Setter Property="Height" Value="34" />
         <Setter Property="Cursor" Value="Hand" />
         <Setter Property="FocusVisualStyle" Value="{x:Null}" />
-        <Setter Property="FontFamily" Value="{StaticResource Font.Family}" />
+        <Setter Property="FontFamily" Value="{DynamicResource Font.Family}" />
         <Setter Property="Template">
             <Setter.Value>
                 <ControlTemplate TargetType="Button">
@@ -477,7 +477,7 @@
         <Setter Property="Foreground" Value="{DynamicResource Color.Primary}" />
         <Setter Property="Cursor" Value="Hand" />
         <Setter Property="FocusVisualStyle" Value="{x:Null}" />
-        <Setter Property="FontFamily" Value="{StaticResource Font.Family}" />
+        <Setter Property="FontFamily" Value="{DynamicResource Font.Family}" />
         <Setter Property="FontSize" Value="14" />
         <Setter Property="Template">
             <Setter.Value>
@@ -631,7 +631,7 @@
         <Setter Property="Padding" Value="12,0" />
         <Setter Property="Height" Value="36" />
         <Setter Property="FocusVisualStyle" Value="{x:Null}" />
-        <Setter Property="FontFamily" Value="{StaticResource Font.Family}" />
+        <Setter Property="FontFamily" Value="{DynamicResource Font.Family}" />
         <Setter Property="FontSize" Value="14" />
         <Setter Property="Template">
             <Setter.Value>

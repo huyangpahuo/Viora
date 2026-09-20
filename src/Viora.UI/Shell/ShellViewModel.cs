@@ -92,6 +92,21 @@ public partial class ShellViewModel : ObservableObject
             OnPropertyChanged(nameof(AppTagline));
             RefreshLanguageState();
         };
+
+        // 界面缩放:设置变化后重建变换(主体区 LayoutTransform 绑定此属性)
+        settings.SettingsChanged += (_, _) => OnPropertyChanged(nameof(UiScaleTransform));
+    }
+
+    /// <summary>界面缩放变换(1.0 = 100%);由设置的 Appearance.UiScale 驱动。</summary>
+    public System.Windows.Media.Transform UiScaleTransform
+    {
+        get
+        {
+            var scale = Math.Clamp(_settings.Current.Appearance.UiScale, 0.8, 1.5);
+            return Math.Abs(scale - 1.0) < 0.005
+                ? System.Windows.Media.Transform.Identity
+                : new System.Windows.Media.ScaleTransform(scale, scale);
+        }
     }
 
     public static class Sections

@@ -483,5 +483,17 @@
   "Settings.General.ImportMax.Desc": "单张图片导入的大小上限,0 表示不限制",
   "Stylize.Import.SizeHint": "支持 JPG / PNG / WEBP 等格式,最大 {0}MB",
   "Stylize.Import.SizeHint.None": "支持 JPG / PNG / WEBP 等格式,大小不限",
-  "Settings.Theme.PickColor": "点击选择颜色"
+  "Settings.Theme.PickColor": "点击选择颜色",
+  "Settings.General.Font": "界面字体",
+  "Settings.General.Font.Desc": "选择本机安装的字体,立即生效;留空使用默认",
+  "Settings.Appearance.Scale": "界面缩放",
+  "Settings.Appearance.Scale.Desc": "整体缩放界面与字号(80% – 150%),立即生效",
+  "Settings.Language.RestartNote": "已切换语言。部分文案将在重启 Viora 后完整生效。",
+  "Settings.Update.Title": "检查更新",
+  "Settings.Update.Check": "检查更新",
+  "Settings.Update.OpenReleases": "打开发布页",
+  "Settings.Update.Checking": "正在检查…",
+  "Settings.Update.UpToDate": "当前已是最新版本",
+  "Settings.Update.NewVersion": "发现新版本 {0}",
+  "Settings.Update.Failed": "检查失败,请检查网络后重试"
 }

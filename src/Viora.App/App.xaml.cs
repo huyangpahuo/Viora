@@ -116,6 +116,7 @@ public partial class App : Application
             return palette?.Colors;
         };
         Viora.UI.Theming.ThemeManager.Apply(settings.Current.Appearance.Theme);
+        ApplyFontFamily(settings.Current.General.FontFamily);
 
         // Live-apply theme + log level when settings change.
         settings.SettingsChanged += (_, _) =>
@@ -129,6 +130,7 @@ public partial class App : Application
             return palette?.Colors;
         };
         Viora.UI.Theming.ThemeManager.Apply(settings.Current.Appearance.Theme);
+        ApplyFontFamily(settings.Current.General.FontFamily);
             fileLogger.SetLevel(Enum.TryParse<Microsoft.Extensions.Logging.LogLevel>(
                 settings.Current.Debug.LogLevel, out var lvl) ? lvl : Microsoft.Extensions.Logging.LogLevel.Information);
             fileLogger.SetRedactPaths(settings.Current.Privacy.RedactPathsInLogs);
@@ -182,6 +184,20 @@ public partial class App : Application
         _serviceProvider?.GetRequiredService<ILogger<App>>().LogInformation("Viora exiting");
         _serviceProvider?.Dispose();
         base.OnExit(e);
+    }
+
+    private static void ApplyFontFamily(string familyName)
+    {
+        try
+        {
+            Current.Resources["Font.Family"] = string.IsNullOrWhiteSpace(familyName)
+                ? new System.Windows.Media.FontFamily("Inter, Segoe UI Variable Display, Segoe UI, Microsoft YaHei UI")
+                : new System.Windows.Media.FontFamily(familyName);
+        }
+        catch
+        {
+            // 字体名无效:保留默认
+        }
     }
 
     private static void ShowFatal(Exception exception)

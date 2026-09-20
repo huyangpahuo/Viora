@@ -12,6 +12,9 @@ public sealed class GeneralSettings
     /// <summary>单张导入图片大小上限(MB);0 = 不限制。</summary>
     public int ImportMaxSizeMb { get; set; } = 10;
 
+    /// <summary>界面字体(本机字体族名);空 = 默认。</summary>
+    public string FontFamily { get; set; } = string.Empty;
+
     public bool ConfirmBeforeCloseDuringProcessing { get; set; } = true;
 }
 

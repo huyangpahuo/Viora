@@ -53,7 +53,7 @@
             <Setter Property="Foreground" Value="{DynamicResource Color.Text.Secondary}" />
             <Setter Property="FontSize" Value="13" />
             <Setter Property="FontWeight" Value="SemiBold" />
-            <Setter Property="FontFamily" Value="{StaticResource Font.Family}" />
+            <Setter Property="FontFamily" Value="{DynamicResource Font.Family}" />
             <Setter Property="Cursor" Value="Hand" />
             <Setter Property="FocusVisualStyle" Value="{x:Null}" />
             <Setter Property="Margin" Value="0,0,18,0" />
@@ -98,7 +98,7 @@
         <Style x:Key="VioraCheck" TargetType="CheckBox">
             <Setter Property="Foreground" Value="{DynamicResource Color.Text.Primary}" />
             <Setter Property="FontSize" Value="12.5" />
-            <Setter Property="FontFamily" Value="{StaticResource Font.Family}" />
+            <Setter Property="FontFamily" Value="{DynamicResource Font.Family}" />
             <Setter Property="Cursor" Value="Hand" />
             <Setter Property="FocusVisualStyle" Value="{x:Null}" />
             <Setter Property="Template">

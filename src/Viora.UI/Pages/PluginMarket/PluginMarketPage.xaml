@@ -19,14 +19,14 @@
             <Setter Property="Foreground" Value="{DynamicResource Color.Text.Primary}" />
             <Setter Property="CaretBrush" Value="{DynamicResource Color.Primary}" />
             <Setter Property="FontSize" Value="12.5" />
-            <Setter Property="FontFamily" Value="{StaticResource Font.Family}" />
+            <Setter Property="FontFamily" Value="{DynamicResource Font.Family}" />
             <Setter Property="VerticalContentAlignment" Value="Center" />
             <Setter Property="Template">
                 <Setter.Value>
                     <ControlTemplate TargetType="TextBox">
                         <Grid Background="Transparent">
                             <ScrollViewer x:Name="PART_ContentHost" VerticalAlignment="Center" Margin="0,8" />
-                            <TextBlock Text="{TemplateBinding Tag}" FontSize="12.5" FontFamily="{StaticResource Font.Family}"
+                            <TextBlock Text="{TemplateBinding Tag}" FontSize="12.5" FontFamily="{DynamicResource Font.Family}"
                                        Foreground="{DynamicResource Color.Text.Disabled}" VerticalAlignment="Center"
                                        Visibility="{Binding Text, RelativeSource={RelativeSource TemplatedParent}, Converter={StaticResource StringEmptyToVisibility}}" />
                         </Grid>

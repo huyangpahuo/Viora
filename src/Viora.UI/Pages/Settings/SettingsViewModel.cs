@@ -228,8 +228,44 @@ public partial class SettingsViewModel : ObservableObject
             if (string.IsNullOrEmpty(value) || value == _settings.Current.Language.Language) return;
             _settings.Update(s => s.Language.Language = value);
             _localization.SetLanguage(value);
+            // 部分由插件注册的文案在重启后才完整:明确提醒用户
+            _alert.Info(Tr.Get("Settings.Language.RestartNote"));
         }
     }
+
+    /// <summary>本机字体选项(按显示名排序)。</summary>
+    public IReadOnlyList<LanguageOption> FontItems { get; } =
+        System.Windows.Media.Fonts.SystemFontFamilies
+            .Select(f => new LanguageOption(f.Source, f.FamilyNames.TryGetValue(
+                System.Windows.Markup.XmlLanguage.GetLanguage("zh-hans"), out var zh) && !string.IsNullOrEmpty(zh) ? zh : f.Source))
+            .OrderBy(f => f.DisplayName, StringComparer.OrdinalIgnoreCase)
+            .ToList();
+
+    public string SelectedFontFamily
+    {
+        get => _settings.Current.General.FontFamily;
+        set
+        {
+            if (value == _settings.Current.General.FontFamily) return;
+            _settings.Update(s => s.General.FontFamily = value ?? string.Empty);
+            OnPropertyChanged(nameof(SelectedFontFamily));
+        }
+    }
+
+    /// <summary>界面缩放(0.8 – 1.5),字号随缩放变化,即时生效。</summary>
+    public double UiScale
+    {
+        get => Math.Clamp(_settings.Current.Appearance.UiScale, 0.8, 1.5);
+        set
+        {
+            var clamped = Math.Clamp(value, 0.8, 1.5);
+            _settings.Update(s => s.Appearance.UiScale = clamped);
+            OnPropertyChanged(nameof(UiScale));
+            OnPropertyChanged(nameof(UiScalePercent));
+        }
+    }
+
+    public string UiScalePercent => $"{UiScale * 100:0}%";
 
     // ---------- 隐私 ----------
 
@@ -592,6 +628,98 @@ public partial class SettingsViewModel : ObservableObject
     }
 
     public const string RepoUrl = "https://github.com/huyangpahuo/Viora";
+    public const string ReleasesUrl = "https://github.com/huyangpahuo/Viora/releases/latest";
+
+    private static readonly System.Net.Http.HttpClient UpdateClient = CreateUpdateClient();
+
+    private static System.Net.Http.HttpClient CreateUpdateClient()
+    {
+        var client = new System.Net.Http.HttpClient { Timeout = TimeSpan.FromSeconds(8) };
+        client.DefaultRequestHeaders.UserAgent.ParseAdd("Viora/1.0 (+https://github.com/huyangpahuo/Viora)");
+        return client;
+    }
+
+    [ObservableProperty]
+    private bool _isCheckingUpdate;
+
+    [ObservableProperty]
+    private string _updateStatusText = string.Empty;
+
+    [ObservableProperty]
+    private string? _latestVersion;
+
+    [ObservableProperty]
+    private string? _latestNotes;
+
+    public bool HasNewVersion => LatestVersion is not null;
+
+    [RelayCommand]
+    private async Task CheckForUpdateAsync()
+    {
+        if (IsCheckingUpdate) return;
+        IsCheckingUpdate = true;
+        UpdateStatusText = Tr.Get("Settings.Update.Checking");
+        LatestVersion = null;
+        LatestNotes = null;
+        try
+        {
+            using var response = await UpdateClient.GetAsync(
+                "https://api.github.com/repos/huyangpahuo/Viora/releases/latest");
+            response.EnsureSuccessStatusCode();
+            await using var stream = await response.Content.ReadAsStreamAsync();
+            using var doc = await System.Text.Json.JsonDocument.ParseAsync(stream);
+
+            var tag = doc.RootElement.TryGetProperty("tag_name", out var tagEl) ? tagEl.GetString() : null;
+            var notes = doc.RootElement.TryGetProperty("body", out var bodyEl) ? bodyEl.GetString() : null;
+
+            if (string.IsNullOrEmpty(tag))
+            {
+                UpdateStatusText = Tr.Get("Settings.Update.Failed");
+                return;
+            }
+
+            var latest = ParseVersion(tag);
+            var current = System.Reflection.Assembly.GetEntryAssembly()?.GetName().Version;
+            if (latest is null || current is null || latest <= current)
+            {
+                UpdateStatusText = Tr.Get("Settings.Update.UpToDate");
+                return;
+            }
+
+            LatestVersion = tag;
+            LatestNotes = string.IsNullOrWhiteSpace(notes) ? null : notes.Trim();
+            UpdateStatusText = string.Format(Tr.Get("Settings.Update.NewVersion"), tag);
+        }
+        catch
+        {
+            UpdateStatusText = Tr.Get("Settings.Update.Failed");
+        }
+        finally
+        {
+            IsCheckingUpdate = false;
+        }
+    }
+
+    private static Version? ParseVersion(string tag)
+    {
+        var text = tag.TrimStart('v', 'V');
+        var cut = text.IndexOf('-');
+        if (cut >= 0) text = text[..cut];
+        return Version.TryParse(text, out var v) ? v : null;
+    }
+
+    [RelayCommand]
+    private void OpenReleasePage()
+    {
+        try
+        {
+            Process.Start(new ProcessStartInfo(ReleasesUrl) { UseShellExecute = true });
+        }
+        catch
+        {
+            // 无默认浏览器等极端情况:静默
+        }
+    }
 
     [RelayCommand]
     private void OpenRepo()

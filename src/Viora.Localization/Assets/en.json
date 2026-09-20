@@ -483,5 +483,17 @@
   "Settings.General.ImportMax.Desc": "Max size per imported image; 0 means no limit",
   "Stylize.Import.SizeHint": "JPG / PNG / WEBP and more, up to {0}MB",
   "Stylize.Import.SizeHint.None": "JPG / PNG / WEBP and more, no size limit",
-  "Settings.Theme.PickColor": "Click to pick a color"
+  "Settings.Theme.PickColor": "Click to pick a color",
+  "Settings.General.Font": "Interface font",
+  "Settings.General.Font.Desc": "Pick any font installed on this PC; applies instantly. Empty = default",
+  "Settings.Appearance.Scale": "UI scale",
+  "Settings.Appearance.Scale.Desc": "Scale the whole UI including text (80% – 150%); applies instantly",
+  "Settings.Language.RestartNote": "Language switched. Some texts fully apply after restarting Viora.",
+  "Settings.Update.Title": "Check for updates",
+  "Settings.Update.Check": "Check for updates",
+  "Settings.Update.OpenReleases": "Open releases",
+  "Settings.Update.Checking": "Checking…",
+  "Settings.Update.UpToDate": "You're up to date",
+  "Settings.Update.NewVersion": "New version {0} available",
+  "Settings.Update.Failed": "Check failed — check your network and retry"
 }

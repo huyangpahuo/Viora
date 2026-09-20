@@ -20,7 +20,7 @@
             <Setter Property="Background" Value="Transparent" />
             <Setter Property="Foreground" Value="{DynamicResource Color.Text.Secondary}" />
             <Setter Property="FontSize" Value="12.5" />
-            <Setter Property="FontFamily" Value="{StaticResource Font.Family}" />
+            <Setter Property="FontFamily" Value="{DynamicResource Font.Family}" />
             <Setter Property="Cursor" Value="Hand" />
             <Setter Property="FocusVisualStyle" Value="{x:Null}" />
             <Setter Property="shellns:WindowChrome.IsHitTestVisibleInChrome" Value="True" />
@@ -230,8 +230,8 @@
             </Grid>
         </Border>
 
-        <!-- ================= 主体 ================= -->
-        <Grid Grid.Row="1">
+        <!-- ================= 主体(界面缩放挂载于此,顶栏/窗口边框不缩放) ================= -->
+        <Grid Grid.Row="1" LayoutTransform="{Binding UiScaleTransform}">
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="224" />
                 <ColumnDefinition Width="*" />

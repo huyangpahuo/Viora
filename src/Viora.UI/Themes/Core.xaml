@@ -12,19 +12,19 @@
     <FontFamily x:Key="Font.Family">Inter, Segoe UI Variable Display, Segoe UI, Microsoft YaHei UI</FontFamily>
 
     <Style x:Key="Typography.Title" TargetType="TextBlock">
-        <Setter Property="FontFamily" Value="{StaticResource Font.Family}" />
+        <Setter Property="FontFamily" Value="{DynamicResource Font.Family}" />
         <Setter Property="FontSize" Value="28" />
         <Setter Property="FontWeight" Value="SemiBold" />
         <Setter Property="Foreground" Value="{DynamicResource Color.Text.Primary}" />
     </Style>
     <Style x:Key="Typography.Heading" TargetType="TextBlock">
-        <Setter Property="FontFamily" Value="{StaticResource Font.Family}" />
+        <Setter Property="FontFamily" Value="{DynamicResource Font.Family}" />
         <Setter Property="FontSize" Value="18" />
         <Setter Property="FontWeight" Value="SemiBold" />
         <Setter Property="Foreground" Value="{DynamicResource Color.Text.Primary}" />
     </Style>
     <Style x:Key="Typography.Body" TargetType="TextBlock">
-        <Setter Property="FontFamily" Value="{StaticResource Font.Family}" />
+        <Setter Property="FontFamily" Value="{DynamicResource Font.Family}" />
         <Setter Property="FontSize" Value="14" />
         <Setter Property="Foreground" Value="{DynamicResource Color.Text.Primary}" />
     </Style>
@@ -32,7 +32,7 @@
         <Setter Property="Foreground" Value="{DynamicResource Color.Text.Secondary}" />
     </Style>
     <Style x:Key="Typography.Caption" TargetType="TextBlock">
-        <Setter Property="FontFamily" Value="{StaticResource Font.Family}" />
+        <Setter Property="FontFamily" Value="{DynamicResource Font.Family}" />
         <Setter Property="FontSize" Value="12" />
         <Setter Property="Foreground" Value="{DynamicResource Color.Text.Secondary}" />
     </Style>

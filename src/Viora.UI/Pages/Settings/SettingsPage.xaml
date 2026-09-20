@@ -170,6 +170,30 @@
                                     </ComboBox>
                                 </Grid>
                                 <Separator Margin="0,12,0,12" Background="{DynamicResource Color.Divider}" />
+                                <Grid Margin="0,0,0,14">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="*" />
+                                        <ColumnDefinition Width="Auto" />
+                                    </Grid.ColumnDefinitions>
+                                    <StackPanel>
+                                        <TextBlock Text="{loc:Translate Settings.General.Font}" FontSize="13"
+                                                   Foreground="{DynamicResource Color.Text.Primary}" />
+                                        <TextBlock Text="{loc:Translate Settings.General.Font.Desc}" FontSize="11" Margin="0,3,0,0"
+                                                   Foreground="{DynamicResource Color.Text.Secondary}" TextWrapping="Wrap" />
+                                    </StackPanel>
+                                    <ComboBox Grid.Column="1" Style="{DynamicResource VioraCombo}" Width="220" Height="34"
+                                              VerticalAlignment="Center"
+                                              ItemsSource="{Binding FontItems}"
+                                              SelectedValue="{Binding SelectedFontFamily}"
+                                              SelectedValuePath="Code">
+                                        <ComboBox.ItemTemplate>
+                                            <DataTemplate>
+                                                <TextBlock Text="{Binding DisplayName}" FontSize="12" />
+                                            </DataTemplate>
+                                        </ComboBox.ItemTemplate>
+                                    </ComboBox>
+                                </Grid>
+                                <Separator Margin="0,12,0,12" Background="{DynamicResource Color.Divider}" />
                                 <Grid>
                                     <Grid.ColumnDefinitions>
                                         <ColumnDefinition Width="*" />
@@ -355,6 +379,28 @@
                                 </ItemsControl>
                                 <TextBlock Text="{loc:Translate Settings.Appearance.Note}" FontSize="10.5" Margin="2,2,0,0"
                                            Foreground="{DynamicResource Color.Text.Secondary}" />
+                            </StackPanel>
+                        </Border>
+                        <Border Style="{StaticResource SettingsCard}">
+                            <StackPanel>
+                                <TextBlock Text="{loc:Translate Settings.Appearance.Scale}" FontSize="13" FontWeight="SemiBold"
+                                           Foreground="{DynamicResource Color.Text.Primary}" />
+                                <Separator Margin="0,10,0,12" Background="{DynamicResource Color.Divider}" />
+                                <Grid>
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="*" />
+                                        <ColumnDefinition Width="Auto" />
+                                    </Grid.ColumnDefinitions>
+                                    <StackPanel>
+                                        <TextBlock Text="{loc:Translate Settings.Appearance.Scale.Desc}" FontSize="11"
+                                                   Foreground="{DynamicResource Color.Text.Secondary}" TextWrapping="Wrap" />
+                                        <Slider Width="280" Minimum="0.8" Maximum="1.5" IsSnapToTickEnabled="True" TickFrequency="0.05"
+                                                Margin="0,10,0,0" HorizontalAlignment="Left"
+                                                Value="{Binding UiScale}" />
+                                    </StackPanel>
+                                    <TextBlock Grid.Column="1" Text="{Binding UiScalePercent}" FontSize="13" FontWeight="SemiBold"
+                                               VerticalAlignment="Center" Foreground="{DynamicResource Color.Text.Primary}" />
+                                </Grid>
                             </StackPanel>
                         </Border>
 
@@ -613,6 +659,28 @@
                                         </Button>
                                     </StackPanel>
                                 </Grid>
+
+                                <Separator Margin="0,12,0,12" Background="{DynamicResource Color.Divider}" />
+                                <TextBlock Text="{loc:Translate Settings.Update.Title}" FontSize="13" FontWeight="SemiBold"
+                                           Foreground="{DynamicResource Color.Text.Primary}" />
+                                <StackPanel Orientation="Horizontal" Margin="0,10,0,0">
+                                    <Button Style="{DynamicResource SecondaryButton}" Height="34" Padding="16,0"
+                                            Command="{Binding CheckForUpdateCommand}"
+                                            Content="{loc:Translate Settings.Update.Check}" />
+                                    <Button Style="{DynamicResource SecondaryButton}" Height="34" Padding="14,0" Margin="10,0,0,0"
+                                            Command="{Binding OpenReleasePageCommand}"
+                                            Content="{loc:Translate Settings.Update.OpenReleases}" />
+                                    <TextBlock Text="{Binding UpdateStatusText}" FontSize="11.5" Margin="14,0,0,0" VerticalAlignment="Center"
+                                               Foreground="{DynamicResource Color.Text.Secondary}" TextWrapping="Wrap" MaxWidth="180" />
+                                </StackPanel>
+                                <StackPanel Margin="0,12,0,0"
+                                            Visibility="{Binding HasNewVersion, Converter={StaticResource BoolToVisibility}}">
+                                    <TextBlock Text="{Binding LatestVersion}" FontSize="13" FontWeight="Bold"
+                                               Foreground="{DynamicResource Color.Primary}" />
+                                    <TextBlock Text="{Binding LatestNotes}" FontSize="11.5" Margin="0,6,0,0" TextWrapping="Wrap"
+                                               MaxHeight="140" VerticalAlignment="Top"
+                                               Foreground="{DynamicResource Color.Text.Secondary}" />
+                                </StackPanel>
                             </StackPanel>
                         </Border>
                     </StackPanel>
