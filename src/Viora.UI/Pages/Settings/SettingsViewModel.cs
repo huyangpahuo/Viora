@@ -208,6 +208,7 @@ public partial class SettingsViewModel : ObservableObject
         OnPropertyChanged(nameof(IsAppearanceSelected));
         OnPropertyChanged(nameof(IsPerformanceSelected));
         OnPropertyChanged(nameof(IsPluginsSelected));
+        OnPropertyChanged(nameof(IsHotkeysSelected));
         OnPropertyChanged(nameof(IsAboutSelected));
         if (value?.Key == "plugins" && !_pluginRowsLoaded)
             _ = LoadPluginRowsAsync();

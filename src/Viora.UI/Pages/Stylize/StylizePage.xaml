@@ -717,7 +717,7 @@
                          ItemsSource="{Binding CategoryFilters}" SelectedItem="{Binding CategoryFilter}"
                          ItemContainerStyle="{StaticResource ChipPillItem}"
                          ScrollViewer.VerticalScrollBarVisibility="Disabled"
-                         ScrollViewer.HorizontalScrollBarVisibility="Hidden"
+                         ScrollViewer.HorizontalScrollBarVisibility="Visible"
                          PreviewMouseWheel="OnChipsWheel">
                     <ListBox.ItemsPanel>
                         <ItemsPanelTemplate>

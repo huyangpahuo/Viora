@@ -133,13 +133,13 @@
                                             <Trigger Property="IsMouseOver" Value="True">
                                                 <Setter TargetName="Row" Property="BorderBrush" Value="{DynamicResource Color.Primary}" />
                                             </Trigger>
-                                            <MultiTrigger>
-                                                <MultiTrigger.Conditions>
-                                                    <Condition Property="IsMouseOver" Value="True" />
+                                            <MultiDataTrigger>
+                                                <MultiDataTrigger.Conditions>
+                                                    <Condition Binding="{Binding IsMouseOver, ElementName=Row}" Value="True" />
                                                     <Condition Binding="{Binding HasQr}" Value="True" />
-                                                </MultiTrigger.Conditions>
+                                                </MultiDataTrigger.Conditions>
                                                 <Setter TargetName="QrPopup" Property="IsOpen" Value="True" />
-                                            </MultiTrigger>
+                                            </MultiDataTrigger>
                                         </ControlTemplate.Triggers>
                                     </ControlTemplate>
                                 </Button.Template>
