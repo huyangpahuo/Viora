@@ -31,7 +31,6 @@
 
   <ItemGroup>
     <ProjectReference Include="..\Viora.Core\Viora.Core.csproj" />
-    <ProjectReference Include="..\Viora.Features\Viora.Features.csproj" />
     <ProjectReference Include="..\Viora.Infrastructure\Viora.Infrastructure.csproj" />
     <ProjectReference Include="..\Viora.Localization\Viora.Localization.csproj" />
     <ProjectReference Include="..\Viora.PluginSdk\Viora.PluginSdk.csproj" />

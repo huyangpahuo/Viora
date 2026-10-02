@@ -34,7 +34,7 @@ public sealed record PresetParameter(
 
 /// <summary>
 /// A stylization preset: a named, parameterized pipeline composition.
-/// Implemented by built-in features (Viora.Features) and by plugins alike.
+/// Implemented by plugins (official and community alike) via the plugin SDK.
 /// </summary>
 public interface IStylePreset
 {

@@ -136,26 +136,12 @@ public partial class App : Application
             fileLogger.SetRedactPaths(settings.Current.Privacy.RedactPathsInLogs);
         };
 
-        // Bridge feature-layer exporters to the Infrastructure WIC implementations.
-        Viora.Features.Convert.AnimeVector.HostExportBridge.Export =
-            (buffer, stream, format, options, ct) =>
-            {
-                IImageExporter exporter = format switch
-                {
-                    Viora.Features.Convert.AnimeVector.HostExportBridge.WicFormatFromFeatures.Png => new Infrastructure.Export.PngExporter(),
-                    Viora.Features.Convert.AnimeVector.HostExportBridge.WicFormatFromFeatures.Jpeg => new Infrastructure.Export.JpegExporter(),
-                    _ => new Infrastructure.Export.BmpExporter(),
-                };
-                return exporter.ExportAsync(buffer, stream, options, ct);
-            };
-
+        // 宿主级导出器:直接注册 Infrastructure 的 WIC 实现,与插件走同一 IPluginContext 通道。
         var pluginHost = _serviceProvider.GetRequiredService<IPluginHost>();
-
-        // 宿主级导出器(原先由 AnimeVector 内置特性注册;风格全部插件化后归宿主)。
         var pluginContext = ((Viora.Infrastructure.Plugins.AssemblyPluginHost)pluginHost).Context;
-        pluginContext.RegisterExporter(new Viora.Features.Convert.AnimeVector.InfrastructureExportBridge.PngExporterProxy());
-        pluginContext.RegisterExporter(new Viora.Features.Convert.AnimeVector.InfrastructureExportBridge.JpegExporterProxy());
-        pluginContext.RegisterExporter(new Viora.Features.Convert.AnimeVector.InfrastructureExportBridge.BmpExporterProxy());
+        pluginContext.RegisterExporter(new Viora.Infrastructure.Export.PngExporter());
+        pluginContext.RegisterExporter(new Viora.Infrastructure.Export.JpegExporter());
+        pluginContext.RegisterExporter(new Viora.Infrastructure.Export.BmpExporter());
 
         // 客户端不预装任何插件:安装区从空开始,全部由用户在插件市场按需安装(真下载)。
         // Discover installed plugins (metadata only) and enable those not disabled.
@@ -232,7 +218,6 @@ public partial class App : Application
         // Layers below UI register themselves; App only wires the composition root.
         Viora.Infrastructure.ServiceCollectionExtensions.AddVioraInfrastructure(services);
         Viora.Localization.ServiceCollectionExtensions.AddVioraLocalization(services);
-        Viora.Features.ServiceCollectionExtensions.AddVioraFeatures(services);
         Viora.UI.ServiceCollectionExtensions.AddVioraUi(services);
 
         // UI proxies → Infrastructure implementations (composition-root wiring).

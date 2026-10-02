@@ -1,4 +1,4 @@
-using Microsoft.Extensions.DependencyInjection;
+﻿using Microsoft.Extensions.DependencyInjection;
 using Viora.UI.Hosting;
 using Viora.UI.Shell;
 using Viora.UI.Services;
@@ -17,7 +17,6 @@ public static class ServiceCollectionExtensions
     {
         // Shell
         services.AddSingleton<ShellViewModel>();
-        services.AddSingleton<IFeatureRegistry, FeatureRegistry>();
         services.AddSingleton<IPresetCatalog, PresetCatalog>();
         services.AddSingleton<OfficialPluginService>();
         services.AddSingleton<HotkeyService>();
