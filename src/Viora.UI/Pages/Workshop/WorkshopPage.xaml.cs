@@ -8,10 +8,11 @@ namespace Viora.UI.Pages.Workshop;
 
 /// <summary>
 /// 插件工坊 code-behind:
-/// - 双层编辑器(透明输入层 + 语法高亮只读层),编辑层内 ScrollViewer 滚动镜像到高亮层;
-/// - 编译状态徽章;
-/// - Before/After 对比:预览框圆角裁剪 + 拖动分割线裁剪左半原图;
-/// - 输出面板 编译/运行 Tab 切换。
+/// - 双层编辑器(透明输入层 + 高亮只读层),编辑层内部 ScrollViewer 滚动镜像到高亮层
+///   (RichTextBox 自带内部滚动,必须镜像到它的内部 ScrollViewer,而非外层包装);
+/// - 源码/效果预览 视图切换;编译状态徽章;
+/// - Before/After 对比:预览框圆角裁剪 + 分割线裁左半原图;
+/// - Minimap / registry 高亮文档赋值(RichTextBox.Document 非依赖属性,不能 XAML 绑定)。
 /// </summary>
 public partial class WorkshopPage : UserControl
 {
@@ -23,37 +24,56 @@ public partial class WorkshopPage : UserControl
         InitializeComponent();
         Loaded += OnLoaded;
 
-        // RichTextBox.Document 非依赖属性,不能 XAML 绑定:手动赋值并跟随 VM 更新
+        // RichTextBox.Document 非依赖属性:手动赋值并跟随 VM 更新
         vm.HighlightDocument = CSharpHighlighter.Build(vm.SourceCode, CSharpHighlighter.TokenPalette.Instance);
+        vm.MinimapDocument = CSharpHighlighter.Build(vm.SourceCode, CSharpHighlighter.TokenPalette.Instance, minimap: true);
         HighlightBox.Document = vm.HighlightDocument;
+        MinimapBox.Document = vm.MinimapDocument;
         vm.PropertyChanged += (_, e) =>
         {
-            if (e.PropertyName == nameof(WorkshopViewModel.CompileState))
-                UpdateBadge(vm.CompileState);
-            else if (e.PropertyName == nameof(WorkshopViewModel.HighlightDocument) && vm.HighlightDocument is not null)
-                HighlightBox.Document = vm.HighlightDocument;
+            switch (e.PropertyName)
+            {
+                case nameof(WorkshopViewModel.CompileState):
+                    UpdateBadge(vm.CompileState);
+                    break;
+                case nameof(WorkshopViewModel.HighlightDocument) when vm.HighlightDocument is not null:
+                    HighlightBox.Document = vm.HighlightDocument;
+                    break;
+                case nameof(WorkshopViewModel.MinimapDocument) when vm.MinimapDocument is not null:
+                    MinimapBox.Document = vm.MinimapDocument;
+                    break;
+                case nameof(WorkshopViewModel.ActiveTab):
+                    bool preview = vm.ActiveTab == "preview";
+                    SourceHost.Visibility = preview ? Visibility.Collapsed : Visibility.Visible;
+                    PreviewHost.Visibility = preview ? Visibility.Visible : Visibility.Collapsed;
+                    break;
+                case nameof(WorkshopViewModel.ShowMinimap):
+                    MinimapToggle.Content = vm.ShowMinimap ? "" : "";
+                    break;
+            }
         };
         UpdateBadge(vm.CompileState);
     }
 
     private void OnLoaded(object sender, RoutedEventArgs e)
     {
-        // 编辑层的内部 ScrollViewer:滚轮/拖动滚动时把偏移镜像到高亮层
+        // 编辑层的内部 ScrollViewer:滚动时镜像到高亮层 RichTextBox 的内部 ScrollViewer
         var editorScroll = FindScrollViewer(EditorBox);
-        if (editorScroll is not null)
+        var highlightScroll = FindScrollViewer(HighlightBox);
+        if (editorScroll is not null && highlightScroll is not null)
             editorScroll.ScrollChanged += (_, args) =>
             {
                 if (_syncing) return;
                 _syncing = true;
                 try
                 {
-                    HighlightScroller.ScrollToVerticalOffset(args.VerticalOffset);
-                    HighlightScroller.ScrollToHorizontalOffset(args.HorizontalOffset);
+                    highlightScroll.ScrollToVerticalOffset(args.VerticalOffset);
+                    highlightScroll.ScrollToHorizontalOffset(args.HorizontalOffset);
                 }
                 finally { _syncing = false; }
             };
         ApplyRoundedClips();
-        ApplyCompareClip(DataContext is WorkshopViewModel vm ? vm.ComparePosition : 50);
+        if (DataContext is WorkshopViewModel vm) ApplyCompareClip(vm.ComparePosition);
     }
 
     private static System.Windows.Controls.ScrollViewer? FindScrollViewer(System.Windows.DependencyObject root)
@@ -87,7 +107,11 @@ public partial class WorkshopPage : UserControl
         if (DataContext is WorkshopViewModel vm)
         {
             _syncing = true;
-            try { vm.HighlightDocument = CSharpHighlighter.Build(box.Text, CSharpHighlighter.TokenPalette.Instance); }
+            try
+            {
+                vm.HighlightDocument = CSharpHighlighter.Build(box.Text, CSharpHighlighter.TokenPalette.Instance);
+                vm.MinimapDocument = CSharpHighlighter.Build(box.Text, CSharpHighlighter.TokenPalette.Instance, minimap: true);
+            }
             finally { _syncing = false; }
         }
     }
@@ -116,6 +140,17 @@ public partial class WorkshopPage : UserControl
     {
         if (DataContext is not WorkshopViewModel vm) return;
         vm.SetOutputTab(TabBuild.IsChecked == true ? "build" : "run");
+    }
+
+    // ---------- 视图切换:切换到效果预览后重算布局裁剪 ----------
+
+    private void ViewTab_OnChanged(object sender, RoutedEventArgs e)
+    {
+        Dispatcher.BeginInvoke(() =>
+        {
+            ApplyRoundedClips();
+            if (DataContext is WorkshopViewModel vm) ApplyCompareClip(vm.ComparePosition);
+        }, System.Windows.Threading.DispatcherPriority.Loaded);
     }
 
     // ---------- Before/After 对比 + 圆角裁剪 ----------

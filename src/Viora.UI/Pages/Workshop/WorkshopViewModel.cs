@@ -37,16 +37,36 @@ public partial class WorkshopViewModel : ObservableObject
         _import = import;
         _alert = alert;
         _logger = logger;
+        Files.Add(new WorkshopFile { Name = "main.cs", Source = DefaultTemplate });
+        ActiveFile = Files[0];
         SourceCode = DefaultTemplate;
-        Categories = Viora.UI.StyleCategories.AllKeys
-            .Select(k => new CategoryItem(k, Tr.Get(k)))
-            .ToList();
+        RebuildCategories();
+        LocalizationSource.Current.PropertyChanged += (_, _) => RebuildCategories();
         CreateSyntheticSample();
     }
 
-    public IReadOnlyList<CategoryItem> Categories { get; }
+    /// <summary>分类显示名列表(当前语言);显示名 ↔ 键 双向映射随语言重建。</summary>
+    public System.Collections.ObjectModel.ObservableCollection<string> Categories { get; } = new();
 
-    public sealed record CategoryItem(string Key, string Display);
+    private Dictionary<string, string> _keyByDisplay = new();
+
+    [ObservableProperty]
+    private string _categoryDisplay = "";
+
+    partial void OnCategoryDisplayChanged(string value)
+    {
+        if (_keyByDisplay.TryGetValue(value, out var key)) CategoryKey = key;
+    }
+
+    private void RebuildCategories()
+    {
+        var selectedKey = CategoryKey;
+        _keyByDisplay = Viora.UI.StyleCategories.AllKeys.ToDictionary(k => Tr.Get(k), k => k);
+        Categories.Clear();
+        foreach (var k in Viora.UI.StyleCategories.AllKeys) Categories.Add(Tr.Get(k));
+        CategoryDisplay = _keyByDisplay.FirstOrDefault(kv => kv.Value == selectedKey).Key
+                          ?? Categories.FirstOrDefault() ?? "";
+    }
 
     [ObservableProperty]
     private string _sourceCode;
@@ -54,6 +74,69 @@ public partial class WorkshopViewModel : ObservableObject
     /// <summary>语法高亮只读层(RichTextBox 流文档),编辑层为透明 TextBox 叠加其上。</summary>
     [ObservableProperty]
     private System.Windows.Documents.FlowDocument? _highlightDocument;
+
+    /// <summary>VSCode 式 minimap(超小字号文档,可折叠)。</summary>
+    [ObservableProperty]
+    private System.Windows.Documents.FlowDocument? _minimapDocument;
+
+    [ObservableProperty]
+    private bool _showMinimap = true;
+
+    /// <summary>左栏视图:"code" | "preview"。</summary>
+    [ObservableProperty]
+    private string _activeTab = "code";
+
+    /// <summary>源码文件列表(main.cs 默认;可多文件,编译时全部纳入)。</summary>
+    public System.Collections.ObjectModel.ObservableCollection<WorkshopFile> Files { get; } = new();
+
+    [ObservableProperty]
+    private WorkshopFile? _activeFile;
+
+    private bool _switchingFile;
+
+    partial void OnActiveFileChanged(WorkshopFile? value)
+    {
+        if (value is null) return;
+        _switchingFile = true;
+        try { SourceCode = value.Source; }
+        finally { _switchingFile = false; }
+    }
+
+    partial void OnSourceCodeChanged(string value)
+    {
+        if (!_switchingFile && ActiveFile is not null)
+            ActiveFile.Source = value;
+        HighlightDocument = CSharpHighlighter.Build(value, CSharpHighlighter.TokenPalette.Instance);
+        MinimapDocument = CSharpHighlighter.Build(value, CSharpHighlighter.TokenPalette.Instance, minimap: true);
+    }
+
+    public sealed class WorkshopFile
+    {
+        public string Name { get; init; } = "file.cs";
+        public string Source { get; set; } = "";
+        public override string ToString() => Name;
+    }
+
+    [CommunityToolkit.Mvvm.Input.RelayCommand]
+    private void SwitchTab(string tab)
+    {
+        ActiveTab = tab;
+        if (tab == "preview" && CompileState != 1 && !IsBusy)
+            _ = RunPreviewAsync(CancellationToken.None);   // 切到效果预览即自动运行
+    }
+
+    [CommunityToolkit.Mvvm.Input.RelayCommand]
+    private void AddFile()
+    {
+        int n = Files.Count + 1;
+        string name = $"file{n}.cs";
+        while (Files.Any(f => f.Name == name)) { n++; name = $"file{n}.cs"; }
+        Files.Add(new WorkshopFile { Name = name, Source = "// 新文件:可放额外的阶段类或入口类" + Environment.NewLine });
+        ActiveFile = Files[^1];
+    }
+
+    [CommunityToolkit.Mvvm.Input.RelayCommand]
+    private void ToggleMinimap() => ShowMinimap = !ShowMinimap;
 
     [ObservableProperty]
     private string _pluginId = "builtin.viora.my-style";
@@ -78,6 +161,15 @@ public partial class WorkshopViewModel : ObservableObject
 
     [ObservableProperty]
     private string _registryText = "";
+
+    /// <summary>registry 条目的高亮只读文档(JsonHighlighter)。</summary>
+    [ObservableProperty]
+    private System.Windows.Documents.FlowDocument? _registryDocument;
+
+    partial void OnRegistryTextChanged(string value)
+    {
+        RegistryDocument = string.IsNullOrEmpty(value) ? null : JsonHighlighter.Build(value);
+    }
 
     [ObservableProperty]
     private ImageSource? _previewImage;
@@ -163,10 +255,12 @@ public partial class WorkshopViewModel : ObservableObject
 
     private async Task<(byte[]? Pe, string Diagnostics)> CompileAsync(string source, CancellationToken ct)
     {
-        var tree = CSharpSyntaxTree.ParseText(source, new CSharpParseOptions(LanguageVersion.Latest));
+        // 全部源码文件纳入同一次编译(单文件时等价于该文件)
+        var sources = Files.Count > 0 ? Files.Select(f => f.Source).ToArray() : new[] { source };
+        var trees = sources.Select(t => CSharpSyntaxTree.ParseText(t, new CSharpParseOptions(LanguageVersion.Latest)));
         var compilation = CSharpCompilation.Create(
             AssemblyName,
-            new[] { tree },
+            trees,
             BuildReferences(),
             new CSharpCompilationOptions(OutputKind.DynamicallyLinkedLibrary)
                 .WithOptimizationLevel(OptimizationLevel.Release)

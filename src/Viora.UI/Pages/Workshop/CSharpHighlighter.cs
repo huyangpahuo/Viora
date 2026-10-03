@@ -1,4 +1,4 @@
-using System.Text.RegularExpressions;
+﻿using System.Text.RegularExpressions;
 using System.Windows;
 using System.Windows.Media;
 using System.Windows.Documents;
@@ -22,13 +22,13 @@ public static partial class CSharpHighlighter
     private static partial Regex TokenRegex();
 
     /// <summary>把 C# 源码渲染到 FlowDocument(段落=行,带行号列由 UI 层负责)。</summary>
-    public static FlowDocument Build(string source, IHighlightPalette palette)
+    public static FlowDocument Build(string source, IHighlightPalette palette, bool minimap = false)
     {
         var doc = new FlowDocument
         {
             PagePadding = new Thickness(0),
             FontFamily = new FontFamily("Consolas"),
-            FontSize = 12.5,
+            FontSize = minimap ? 2.2 : 12.5,
         };
 
         var lines = source.Replace("\r\n", "\n").Split('\n');
@@ -38,9 +38,11 @@ public static partial class CSharpHighlighter
             if (lineText.Length == 0)
             {
                 paragraph.Inlines.Add(new Run(" "));
+                if (minimap) paragraph.LineHeight = 2;
                 doc.Blocks.Add(paragraph);
                 continue;
             }
+            if (minimap) paragraph.LineHeight = 2.6;
 
             int last = 0;
             foreach (Match m in TokenRegex().Matches(lineText))
