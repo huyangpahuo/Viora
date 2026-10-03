@@ -16,8 +16,8 @@ Viora is a **local-first** photo stylization app for Windows (WPF / .NET 8). Imp
 
 ## Features
 
-- **Stylize** — 55 art styles (all via the plugin market), live preview while tweaking sliders, batch queue, split before/after compare, history, retry on failure; everything runs locally.
-- **Plugin market** — browse / search (name · author · tags · description) / category filter / one-click install & uninstall. Installing downloads a zip from the official GitHub repository into the `plugins` folder next to the app; uninstalling deletes it — adding or removing folders in Explorer works exactly the same.
+- **Stylize** — 55 art styles (all via the plugin market), live preview while tweaking sliders, batch queue, split before/after compare, history, retry on failure; previews render at the preview resolution and exports automatically re-run the pipeline at full export resolution — everything runs locally.
+- **Plugin market** — browse / search (name · author · tags · description) / category filter / one-click install, uninstall and **update** (the button switches to *Update* when a plugin ships a newer version, upgrading in place by version). Downloads try GitHub raw first with a jsDelivr CDN fallback, then a local mirror; installing unzips into the `plugins` folder next to the app, uninstalling deletes it — adding or removing folders in Explorer works exactly the same.
 - **My Works** — grid & list views, favorites, inline rename, regenerate, duplicate, export (6 formats: PNG / JPEG / BMP / TIFF / GIF / WebP).
 - **Settings** — general (startup, UI language, import size cap, custom log folder), appearance (10 color schemes + custom theme editor + UI scale 80%–120%), performance (preview quality, size caps, export format & JPEG quality), plugin management (master switch + per-plugin toggle), keyboard shortcuts (visual recording; defaults: Ctrl+Enter run, Ctrl+O import, Ctrl+1~4 switch pages), check for updates (compares against GitHub Releases).
 - **Bilingual + extensible language packs** — Simplified Chinese / English built in; drop a translated JSON into the `languages` folder and restart to add a new language (see [Settings & Localization](docs/05-设置与本地化.md)); PRs into the main repo are welcome too.
@@ -45,7 +45,7 @@ From source: install the [.NET 8 SDK](https://dotnet.microsoft.com/download/dotn
 
 - Official plugin repository: [huyangpahuo/Viora-plugins](https://github.com/huyangpahuo/Viora-plugins) — the distribution source for all 55 styles and the entry point for third-party plugins (submit a PR);
 - A plugin is just a folder (`plugin.json` manifest + compiled DLL); the market's zip is that folder compressed. Drop it into `plugins` to install, delete it to uninstall;
-- Building your own style plugin: reference `Viora.PluginSdk`, write ~30 lines of entry code, and the algorithm can be any managed code — full tutorial in the [plugin guide](docs/03-插件开发指南.md).
+- Building your own style plugin: every plugin's source lives in a fully self-contained folder (algorithm + entry class + manifest); reference `Viora.PluginSdk`, write ~30 lines of entry code, and the algorithm can be any managed code — full tutorial in the [plugin guide](docs/03-插件开发指南.md).
 
 ## Acknowledgements
 
