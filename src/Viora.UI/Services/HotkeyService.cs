@@ -25,12 +25,13 @@ public sealed class HotkeyService
         new("nav.settings", "Hotkey.Nav.Settings", "Ctrl+4"),
     ];
 
-    /// <summary>当前生效的组合键串(未自定义时回退默认)。</summary>
+    /// <summary>当前生效的组合键串:未自定义时回退默认;显式清除(空串)= 真正禁用,不再回退默认。</summary>
     public string GetGesture(string id)
     {
         var custom = _settings.Current.Hotkeys.Bindings;
         var def = Defaults.First(d => d.Id == id);
-        return custom.TryGetValue(id, out var g) && !string.IsNullOrWhiteSpace(g) ? g : def.DefaultGesture;
+        // 键存在于自定义表 = 用户做过决定(自定义或清除);不存在 = 从未改过,用默认。
+        return custom.TryGetValue(id, out var g) ? g : def.DefaultGesture;
     }
 
     /// <summary>设置组合键(空串 = 清除)。返回冲突的其它定义(无冲突返回 null),不落地冲突修改。</summary>

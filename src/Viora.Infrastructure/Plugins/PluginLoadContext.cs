@@ -46,15 +46,16 @@ public sealed class PluginLoadContext : System.Runtime.Loader.AssemblyLoadContex
 
     protected override System.Reflection.Assembly? Load(System.Reflection.AssemblyName assemblyName)
     {
+        // 契约程序集无条件回退 Default ALC(宿主副本):保证接口身份统一,
+        // 插件即使自带同名 DLL 也不可能劫持契约(自带副本会被忽略)。
+        if (assemblyName.Name is "Viora.Core" or "Viora.PluginSdk"
+            or "Microsoft.Extensions.Logging.Abstractions")
+            return null;
+
         // Private copy in the plugin folder wins (plugin dependency isolation).
         var candidate = Path.Combine(_pluginFolder, assemblyName.Name + ".dll");
         if (File.Exists(candidate))
             return LoadFromAssemblyPath(candidate);
-
-        // Contracts are shared with the host so interfaces unify across the boundary.
-        if (assemblyName.Name is "Viora.Core" or "Viora.PluginSdk"
-            or "Microsoft.Extensions.Logging.Abstractions")
-            return null; // fall back to the Default ALC (host's copy)
 
         return null;
     }

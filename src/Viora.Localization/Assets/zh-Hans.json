@@ -1,4 +1,4 @@
-{
+﻿{
   "App.Name": "Viora",
   "App.Tagline": "让每一张图片,都拥有新的风格",
   "Param.Colors": "调色板数量",
@@ -329,6 +329,7 @@
   "Market.Tab.Mine": "我的插件",
   "Market.Search.Placeholder": "搜索插件名称 / 作者 / 关键词...",
   "Market.Install": "安装",
+  "Market.Action.Update": "更新",
   "Market.Installing": "安装中…",
   "Market.Installed": "已安装",
   "Market.Uninstall": "卸载",

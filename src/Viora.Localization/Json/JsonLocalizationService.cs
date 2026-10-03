@@ -47,6 +47,10 @@ public sealed partial class JsonLocalizationService : ILocalizationService
 
                     var strings = JsonSerializer.Deserialize<Dictionary<string, string>>(File.ReadAllText(file));
                     if (strings is null || strings.Count == 0) continue;
+                    // 空值 = 未翻译占位:剔除后走内置回退链,避免界面显示空白
+                    foreach (var key in strings.Where(kv => string.IsNullOrWhiteSpace(kv.Value)).Select(kv => kv.Key).ToList())
+                        strings.Remove(key);
+                    if (strings.Count == 0) continue;
 
                     var displayName = strings.TryGetValue("Language.DisplayName", out var dn) && !string.IsNullOrEmpty(dn)
                         ? dn
@@ -56,9 +60,13 @@ public sealed partial class JsonLocalizationService : ILocalizationService
                     {
                         if (_packs.TryGetValue(code, out var existing))
                         {
-                            // 已有内置/先到的包:逐键覆盖
+                            // 已有内置/先到的包:逐键覆盖,但跳过空值——
+                            // 半成品翻译(空串占位)应回退内置文案而不是把界面变成空白
                             foreach (var (key, value) in strings)
+                            {
+                                if (string.IsNullOrWhiteSpace(value)) continue;
                                 existing.Strings[key] = value;
+                            }
                         }
                         else
                         {

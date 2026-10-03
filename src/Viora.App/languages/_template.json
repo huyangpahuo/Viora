@@ -1,4 +1,4 @@
-{
+﻿{
   "App.Name": "",
   "App.Tagline": "",
   "Param.Colors": "",
@@ -329,6 +329,7 @@
   "Market.Tab.Mine": "",
   "Market.Search.Placeholder": "",
   "Market.Install": "",
+  "Market.Action.Update": "",
   "Market.Installing": "",
   "Market.Installed": "",
   "Market.Uninstall": "",
@@ -536,7 +537,21 @@
   "Support.Feedback.OpenLogs": "",
   "Settings.Restart.Title": "",
   "Settings.Language.RestartConfirm": "",
-  "Support.ShowQr": "",
   "Support.Close": "",
-  "Language.DisplayName": "My Language"
+  "Settings.Hotkeys.Title": "",
+  "Settings.Hotkeys.Desc": "",
+  "Settings.Hotkeys.Recording": "",
+  "Settings.Hotkeys.Reset": "",
+  "Settings.Hotkeys.Note": "",
+  "Settings.Hotkeys.ConflictTitle": "",
+  "Settings.Hotkeys.Conflict": "",
+  "Settings.Hotkeys.NeedModifier": "",
+  "Hotkey.Stylize.Run": "",
+  "Hotkey.Stylize.Open": "",
+  "Hotkey.Nav.Stylize": "",
+  "Hotkey.Nav.Works": "",
+  "Hotkey.Nav.Market": "",
+  "Hotkey.Nav.Settings": "",
+  "Language.DisplayName": "",
+  "Support.ShowQr": ""
 }

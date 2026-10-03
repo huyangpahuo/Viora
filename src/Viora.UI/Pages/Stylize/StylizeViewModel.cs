@@ -1,4 +1,4 @@
-using System.Collections.ObjectModel;
+﻿using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.IO;
 using System.Windows;
@@ -122,11 +122,12 @@ public sealed partial class StyleItemViewModel : ObservableObject
 /// <summary>One imported image (工作项): source + latest result, drives one thumbnail.</summary>
 public sealed partial class WorkItemViewModel : ObservableObject
 {
-    public WorkItemViewModel(string fileName, IImageBuffer sourceBuffer, ImageSource sourceImage)
+    public WorkItemViewModel(string fileName, IImageBuffer sourceBuffer, ImageSource sourceImage, int importCap)
     {
         FileName = fileName;
         SourceBuffer = sourceBuffer;
         SourceImage = sourceImage;
+        ImportCap = importCap;
     }
 
     public string FileName { get; }
@@ -134,6 +135,9 @@ public sealed partial class WorkItemViewModel : ObservableObject
     public IImageBuffer SourceBuffer { get; }
 
     public ImageSource SourceImage { get; }
+
+    /// <summary>导入时应用的尺寸上限(导出时据此判断是否需要全质量重跑)。</summary>
+    public int ImportCap { get; }
 
     public string Title => Path.GetFileNameWithoutExtension(FileName);
 
@@ -203,7 +207,6 @@ public partial class StylizeViewModel : ObservableObject
         Parameters = new ObservableCollection<ParameterItemViewModel>();
         Items = new ObservableCollection<WorkItemViewModel>();
         LoadStyles();
-        _catalog.Changed += (_, _) => LoadStyles();
         LocalizationSource.Current.PropertyChanged += (_, _) =>
         {
             foreach (var s in Styles) s.Refresh();
@@ -559,7 +562,7 @@ public partial class StylizeViewModel : ObservableObject
             {
                 if (BatchQueue.Any(q => string.Equals(q.FileName, path, StringComparison.OrdinalIgnoreCase))) continue;
                 var buffer = await _import.LoadFromFileAsync(path, cap);
-                var item = new WorkItemViewModel(path, buffer, _import.ToImageSource(buffer));
+                var item = new WorkItemViewModel(path, buffer, _import.ToImageSource(buffer), cap);
                 BatchQueue.Add(item);
             }
             OnPropertyChanged(nameof(HasBatchQueue));
@@ -717,7 +720,7 @@ public partial class StylizeViewModel : ObservableObject
             }
 
             var sourceBuffer = await _import.LoadFromFileAsync(sourcePath, cap);
-            var item = new WorkItemViewModel(sourcePath, sourceBuffer, _import.ToImageSource(sourceBuffer));
+            var item = new WorkItemViewModel(sourcePath, sourceBuffer, _import.ToImageSource(sourceBuffer), cap);
             _pendingTitle = record.Title;
             _pendingSourceFileName = record.SourceFileName;
 
@@ -796,7 +799,7 @@ public partial class StylizeViewModel : ObservableObject
             foreach (var path in paths)
             {
                 var buffer = await _import.LoadFromFileAsync(path, cap);
-                var item = new WorkItemViewModel(path, buffer, _import.ToImageSource(buffer));
+                var item = new WorkItemViewModel(path, buffer, _import.ToImageSource(buffer), cap);
                 Items.Add(item);
                 firstNew ??= item;
             }
@@ -943,7 +946,9 @@ public partial class StylizeViewModel : ObservableObject
                 AiQuality = AiQualityMode,
             };
             foreach (var p in Parameters)
-                record.Parameters.Add(new WorkParameterSnapshot { Key = p.Key, Label = p.Label, DisplayNameKey = p.Model.DisplayNameKey, Value = p.ValueDisplay });
+                record.Parameters.Add(new WorkParameterSnapshot { Key = p.Key, Label = p.Label, DisplayNameKey = p.Model.DisplayNameKey, Value = p.Step >= 1
+                        ? Math.Round(p.SliderValue).ToString(System.Globalization.CultureInfo.InvariantCulture)
+                        : p.SliderValue.ToString("0.00", System.Globalization.CultureInfo.InvariantCulture) });
 
             _pendingTitle = null;
             _pendingSourceFileName = null;
@@ -1018,16 +1023,26 @@ public partial class StylizeViewModel : ObservableObject
             IsBusy = true;
             StatusText = Tr.Get("Common.Loading");
 
-            // 预览质量的结果在导出时重跑一次完整质量。
+            // 预览质量导入的项,导出时以导出上限重新导入原图并全质量重跑一次。
             var buffer = item.ResultBuffer;
-            if (buffer.Width < item.SourceBuffer.Width || buffer.Height < item.SourceBuffer.Height)
+            var exportCap = _settings.Current.ImageProcessing.ExportMaxDimension;
+            if (item.ImportCap < exportCap && File.Exists(item.FileName))
             {
-                StatusText = Tr.Get("Stylize.Progress").Replace("{0}", "…");
-                var parameters = new Dictionary<string, object>();
-                foreach (var p in Parameters) parameters[p.Key] = p.ToParameterValue();
-                var pipeline = SelectedStyle!.Model.BuildPipeline(parameters);
-                var result = await _engine.ExecuteAsync(pipeline, item.SourceBuffer, parameters, false, null, CancellationToken.None);
-                buffer = result.Result;
+                try
+                {
+                    StatusText = Tr.Get("Stylize.Progress").Replace("{0}", "…");
+                    var fullSource = await _import.LoadFromFileAsync(item.FileName, exportCap);
+                    var parameters = new Dictionary<string, object>();
+                    foreach (var p in Parameters) parameters[p.Key] = p.ToParameterValue();
+                    var pipeline = SelectedStyle!.Model.BuildPipeline(parameters);
+                    var result = await _engine.ExecuteAsync(pipeline, fullSource, parameters, false, null, CancellationToken.None);
+                    buffer = result.Result;
+                }
+                catch (Exception ex)
+                {
+                    // 原图缺失/解码失败等:回退导出当前预览结果,不让用户卡在导出上
+                    _logger.LogWarning(ex, "Full-quality rerun failed; exporting preview result instead");
+                }
             }
 
             await _export.ExportAsync(buffer, path, _settings.Current.Export.JpegQuality);

@@ -28,7 +28,8 @@ public sealed record VersionRange
         foreach (var token in raw.Split(' ', StringSplitOptions.RemoveEmptyEntries))
         {
             bool isMax = token.StartsWith('<');
-            bool inclusive = token.StartsWith(">=") || token.StartsWith("<=");
+            bool inclusive = token.StartsWith(">=") || token.StartsWith("<=") || !isMax && !token.StartsWith('>');
+            // 裸版本号(如 "1.2.3")语义为"至少此版本"(>=),而非严格大于
             var digits = token.TrimStart('>', '<', '=');
             var v = Version.TryParse(digits.Count(c => c == '.') == 2 ? digits : digits + ".0", out var parsed)
                 ? parsed

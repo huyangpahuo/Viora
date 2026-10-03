@@ -30,14 +30,23 @@ public sealed class OfficialPluginService
         string Author, string Category, string Version, string DescZh, string DescEn,
         string PackageFile, string? Repository, string[] Tags);
 
-    private static readonly HttpClient Http = CreateClient();
+    private static readonly HttpClient Http = CreateClient(TimeSpan.FromSeconds(8));
 
-    private static HttpClient CreateClient()
+    /// <summary>包下载专用:整体超时放宽到 120s(原 6s 全局超时让稍大的包在正常网络也装不上)。</summary>
+    private static readonly HttpClient DownloadHttp = CreateClient(TimeSpan.FromMinutes(2));
+
+    private static HttpClient CreateClient(TimeSpan timeout)
     {
-        var client = new HttpClient();
+        var client = new HttpClient { Timeout = timeout };
         client.DefaultRequestHeaders.UserAgent.ParseAdd("Viora/1.0 (+https://github.com/huyangpahuo/Viora)");
-        client.Timeout = TimeSpan.FromSeconds(6);
         return client;
+    }
+
+    /// <summary>同一文件的候选下载源:GitHub raw 优先,jsDelivr CDN 兜底(raw 在部分地区不可达)。</summary>
+    private static IEnumerable<string> RemoteUrls(string repoPath)
+    {
+        yield return $"https://raw.githubusercontent.com/{RepoOwner}/{RepoName}/{RepoBranch}/{repoPath}";
+        yield return $"https://cdn.jsdelivr.net/gh/{RepoOwner}/{RepoName}@{RepoBranch}/{repoPath}";
     }
 
     private List<OfficialItem> _items = new();
@@ -126,19 +135,22 @@ public sealed class OfficialPluginService
         _items = list;
     }
 
-    /// <summary>从官方 GitHub 仓库拉取最新 registry(网络不佳时静默保留当前目录)。</summary>
+    /// <summary>从官方 GitHub 仓库拉取最新 registry(raw → jsDelivr;网络不佳时静默保留当前目录)。</summary>
     public async Task RefreshFromGitHubAsync()
     {
-        try
+        foreach (var url in RemoteUrls("registry.json"))
         {
-            string url = $"https://raw.githubusercontent.com/{RepoOwner}/{RepoName}/{RepoBranch}/registry.json";
-            string json = await Http.GetStringAsync(url);
-            ParseRegistry(json);
-            RaiseChanged();
-        }
-        catch
-        {
-            // 网络不佳 / 仓库不可达:保留当前目录
+            try
+            {
+                string json = await Http.GetStringAsync(url);
+                ParseRegistry(json);
+                RaiseChanged();
+                return;
+            }
+            catch
+            {
+                // 尝试下一个源
+            }
         }
     }
 
@@ -147,23 +159,43 @@ public sealed class OfficialPluginService
     public bool IsInstalled(string? pluginId) =>
         !string.IsNullOrEmpty(pluginId) && Directory.Exists(Path.Combine(PluginsDir, pluginId));
 
-    /// <summary>
-    /// 定位插件包:优先从官方 GitHub 仓库 raw 下载(真实的远程分发)到临时文件,
-    /// 网络不可达时回退本地镜像 packages/(离线开发兜底)。返回 null = 两者均不可用。
-    /// </summary>
-    public async Task<string?> PreparePackageAsync(string packageFile)
+    /// <summary>已安装插件的清单版本(读安装区 plugin.json);未安装或清单损坏返回 null。</summary>
+    public string? GetInstalledVersion(string? pluginId)
     {
+        if (string.IsNullOrEmpty(pluginId)) return null;
         try
         {
-            string url = $"https://raw.githubusercontent.com/{RepoOwner}/{RepoName}/{RepoBranch}/{packageFile}";
-            string temp = Path.Combine(Path.GetTempPath(), packageFile.Replace('/', '_'));
-            var bytes = await Http.GetByteArrayAsync(url);
-            await File.WriteAllBytesAsync(temp, bytes);
-            return temp;
+            var path = Path.Combine(PluginsDir, pluginId, "plugin.json");
+            if (!File.Exists(path)) return null;
+            using var doc = JsonDocument.Parse(File.ReadAllText(path));
+            var version = doc.RootElement.GetProperty("version").GetString();
+            return string.IsNullOrWhiteSpace(version) ? null : version.Trim();
         }
         catch
         {
-            // 网络不佳 / 仓库不可达:回退本地镜像
+            return null;
+        }
+    }
+
+    /// <summary>
+    /// 定位插件包:GitHub raw → jsDelivr CDN → 本地镜像 packages/(离线开发兜底)。
+    /// 返回 null = 全部不可用。
+    /// </summary>
+    public async Task<string?> PreparePackageAsync(string packageFile)
+    {
+        string temp = Path.Combine(Path.GetTempPath(), packageFile.Replace('/', '_'));
+        foreach (var url in RemoteUrls(packageFile))
+        {
+            try
+            {
+                var bytes = await DownloadHttp.GetByteArrayAsync(url);
+                await File.WriteAllBytesAsync(temp, bytes);
+                return temp;
+            }
+            catch
+            {
+                // 尝试下一个源
+            }
         }
 
         foreach (var mirror in MirrorRoots())

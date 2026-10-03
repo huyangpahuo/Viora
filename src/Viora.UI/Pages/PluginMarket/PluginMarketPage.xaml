@@ -64,9 +64,9 @@
                 <Setter.Value>
                     <ControlTemplate TargetType="Button">
                         <Grid>
-                            <!-- 未安装:安装 -->
+                            <!-- 未安装/有更新:安装/更新 -->
                             <Border x:Name="Install" Background="{DynamicResource Brush.Brand}" CornerRadius="10" Padding="16,5">
-                                <TextBlock Text="{loc:Translate Market.Install}" FontSize="11.5" FontWeight="SemiBold" Foreground="White" />
+                                <TextBlock Text="{Binding InstallButtonText}" FontSize="11.5" FontWeight="SemiBold" Foreground="White" />
                             </Border>
                             <!-- 安装中:下载 → 校验 → 安装 → 启用 -->
                             <Border x:Name="Installing" Background="{DynamicResource Color.SurfaceHigh}" CornerRadius="10" Padding="12,5"
@@ -91,7 +91,11 @@
                             </Border>
                         </Grid>
                         <ControlTemplate.Triggers>
-                            <DataTrigger Binding="{Binding IsInstalled}" Value="True">
+                            <DataTrigger Binding="{Binding ShowInstallBorder}" Value="True">
+                                <Setter TargetName="Install" Property="Visibility" Value="Visible" />
+                                <Setter TargetName="Installed" Property="Visibility" Value="Collapsed" />
+                            </DataTrigger>
+                            <DataTrigger Binding="{Binding ShowInstalledBorder}" Value="True">
                                 <Setter TargetName="Install" Property="Visibility" Value="Collapsed" />
                                 <Setter TargetName="Installed" Property="Visibility" Value="Visible" />
                             </DataTrigger>
@@ -104,9 +108,7 @@
                                     <Condition Binding="{Binding IsInstalled}" Value="False" />
                                     <Condition Binding="{Binding IsInstallingThis}" Value="False" />
                                 </MultiDataTrigger.Conditions>
-                                <Setter TargetName="Install" Property="Visibility" Value="Visible" />
                                 <Setter TargetName="Installing" Property="Visibility" Value="Collapsed" />
-                                <Setter TargetName="Installed" Property="Visibility" Value="Collapsed" />
                             </MultiDataTrigger>
                             <Trigger Property="IsEnabled" Value="False">
                                 <Setter TargetName="Install" Property="Opacity" Value="0.45" />
@@ -477,7 +479,7 @@
                                                 Effect="{DynamicResource Shadow.BrandGlow}">
                                             <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" VerticalAlignment="Center">
                                                 <controls:VioraIcon Geometry="{StaticResource Icon.CloudArrowDown}" Width="15" Height="15" Foreground="White" />
-                                                <TextBlock Text="{loc:Translate Market.Install}" FontSize="13.5" FontWeight="Bold"
+                                                <TextBlock Text="{Binding SelectedCard.InstallButtonText}" FontSize="13.5" FontWeight="Bold"
                                                            Foreground="White" Margin="9,0,0,0" VerticalAlignment="Center" />
                                             </StackPanel>
                                         </Border>
@@ -491,7 +493,11 @@
                                         </Border>
                                     </Grid>
                                     <ControlTemplate.Triggers>
-                                        <DataTrigger Binding="{Binding SelectedCard.IsInstalled}" Value="True">
+                                        <DataTrigger Binding="{Binding SelectedCard.ShowInstallBorder}" Value="True">
+                                            <Setter TargetName="Brand" Property="Visibility" Value="Visible" />
+                                            <Setter TargetName="Done" Property="Visibility" Value="Collapsed" />
+                                        </DataTrigger>
+                                        <DataTrigger Binding="{Binding SelectedCard.ShowInstalledBorder}" Value="True">
                                             <Setter TargetName="Brand" Property="Visibility" Value="Collapsed" />
                                             <Setter TargetName="Done" Property="Visibility" Value="Visible" />
                                         </DataTrigger>

@@ -1,4 +1,4 @@
-{
+﻿{
   "App.Name": "Viora",
   "App.Tagline": "Give every picture a new style",
   "Param.Colors": "Palette size",
@@ -329,6 +329,7 @@
   "Market.Tab.Mine": "My plugins",
   "Market.Search.Placeholder": "Search plugins / authors / keywords...",
   "Market.Install": "Install",
+  "Market.Action.Update": "Update",
   "Market.Installing": "Installing…",
   "Market.Installed": "Installed",
   "Market.Uninstall": "Uninstall",

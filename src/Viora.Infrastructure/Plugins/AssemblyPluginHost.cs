@@ -71,16 +71,26 @@ public sealed partial class AssemblyPluginHost : IPluginHost
                 continue;
             }
 
+            // 清单字段非法(如版本号写错)只跳过这一个文件夹,绝不中断整批发现。
+            Viora.Core.Plugins.PluginMetadata metadata;
+            try
+            {
+                metadata = ToMetadata(manifest);
+            }
+            catch (Exception ex)
+            {
+                LogInvalidManifest(_logger, dir);
+                _logger.LogError(ex, "Plugin manifest has invalid fields: {Dir}", dir);
+                continue;
+            }
+
             lock (_gate)
             {
                 if (_plugins.ContainsKey(manifest.Id)) continue;
 
-                var metadata = ToMetadata(manifest);
                 var state = !metadata.RequiredHostVersion.Contains(HostVersion.Current)
                     ? PluginLoadState.Incompatible
-                    : _settings.Current.Plugins.DisabledPlugins.Contains(manifest.Id)
-                        ? PluginLoadState.Discovered
-                        : PluginLoadState.Discovered;
+                    : PluginLoadState.Discovered;
                 _plugins[manifest.Id] = new LoadedPlugin
                 {
                     Manifest = manifest,
@@ -146,29 +156,36 @@ public sealed partial class AssemblyPluginHost : IPluginHost
 #pragma warning restore CA1031
     }
 
-    public Task UnloadAsync(string pluginId, CancellationToken cancellationToken = default)
+    public async Task UnloadAsync(string pluginId, CancellationToken cancellationToken = default)
     {
+        LoadedPlugin? plugin;
         lock (_gate)
         {
-            if (_plugins.TryGetValue(pluginId, out var plugin) && plugin.State is PluginLoadState.Loaded or PluginLoadState.Enabled)
-            {
-                try
-                {
-                    plugin.Instance?.ShutdownAsync(cancellationToken).Wait(cancellationToken);
-                }
-                catch (Exception ex)
-                {
-                    LogShutdownFailed(_logger, pluginId, ex);
-                }
-
-                bool unloaded = TryUnload(plugin);
-                plugin.State = PluginLoadState.Discovered;
-                if (!unloaded)
-                    LogUnloadDeferred(_logger, pluginId); // keep disabled-but-loaded trade-off documented
-                RaiseChanged(plugin);
-            }
+            _plugins.TryGetValue(pluginId, out plugin);
         }
-        return Task.CompletedTask;
+
+        if (plugin is null || plugin.State is not (PluginLoadState.Loaded or PluginLoadState.Enabled))
+            return;
+
+        try
+        {
+            // await 而非 .Wait():插件异步关机在 UI 线程调用时不会死锁
+            await plugin.Instance!.ShutdownAsync(cancellationToken);
+        }
+        catch (Exception ex)
+        {
+            LogShutdownFailed(_logger, pluginId, ex);
+        }
+
+        bool unloaded = TryUnload(plugin);
+        lock (_gate)
+        {
+            if (plugin.State is PluginLoadState.Loaded or PluginLoadState.Enabled)
+                plugin.State = PluginLoadState.Discovered;
+        }
+        if (!unloaded)
+            LogUnloadDeferred(_logger, pluginId); // keep disabled-but-loaded trade-off documented
+        RaiseChanged(plugin);
     }
 
     public async Task EnableAsync(string pluginId, CancellationToken cancellationToken = default)
@@ -215,12 +232,32 @@ public sealed partial class AssemblyPluginHost : IPluginHost
             if (manifest is null || string.IsNullOrWhiteSpace(manifest.Id) || manifest.EntryAssembly.Length == 0)
                 return new InstallResult(false, "invalid_package", "Manifest incomplete.");
 
+            // id 是安装目录名:只允许安全文件名字符,阻断路径逃逸
+            if (!IsValidPluginId(manifest.Id) ||
+                manifest.EntryAssembly.Contains('/') || manifest.EntryAssembly.Contains('\\'))
+                return new InstallResult(false, "invalid_package", "Invalid plugin id or entry assembly.");
+
             var target = Path.Combine(_paths.PluginsFolder, manifest.Id);
             if (Directory.Exists(target))
-                return new InstallResult(false, "duplicate", "Already installed.");
+            {
+                // 已安装:仅当新包版本更高时执行升级安装(覆盖),否则视为重复
+                var existing = PluginManifest.TryLoad(Path.Combine(target, "plugin.json"));
+                var existingVersion = ParseVersionSafe(existing?.Version) ?? new Version(0, 0, 0);
+                var incomingVersion = ParseVersionSafe(manifest.Version) ?? new Version(0, 0, 0);
+                if (incomingVersion <= existingVersion)
+                    return new InstallResult(false, "duplicate", "Already installed.");
+                Directory.Delete(target, recursive: true);
+            }
 
             Directory.CreateDirectory(target);
             archive.ExtractToDirectory(target, overwriteFiles: true);
+
+            // 入口程序集必须真实存在,防止"有清单无 DLL"的半残安装
+            if (!File.Exists(Path.Combine(target, manifest.EntryAssembly)))
+            {
+                Directory.Delete(target, recursive: true);
+                return new InstallResult(false, "invalid_package", $"Entry assembly '{manifest.EntryAssembly}' missing.");
+            }
 
             LogInstalled(_logger, manifest.Id);
             return new InstallResult(true, null, manifest.Id);
@@ -232,31 +269,49 @@ public sealed partial class AssemblyPluginHost : IPluginHost
         }
     }
 
-    public Task UninstallAsync(string pluginId, CancellationToken cancellationToken = default)
+    /// <summary>插件 id 同时是安装目录名:仅允许 ASCII 字母数字与点/横线/下划线,禁止路径分隔与连续点。</summary>
+    private static bool IsValidPluginId(string id) =>
+        id.Length <= 128 && !id.Contains("..") &&
+        System.Text.RegularExpressions.Regex.IsMatch(id, @"^[A-Za-z0-9][A-Za-z0-9._-]*$");
+
+    private static Version? ParseVersionSafe(string? raw)
+    {
+        if (string.IsNullOrWhiteSpace(raw)) return null;
+        // 兼容 "1.2.3-beta" 之类:取首个数值段
+        var match = System.Text.RegularExpressions.Regex.Match(raw.Trim(), @"^\d+(\.\d+)*");
+        return match.Success && Version.TryParse(match.Value, out var v) ? v : null;
+    }
+
+    public async Task UninstallAsync(string pluginId, CancellationToken cancellationToken = default)
     {
         LoadedPlugin? plugin;
         lock (_gate)
         {
-            if (!_plugins.TryGetValue(pluginId, out plugin)) return Task.CompletedTask;
+            if (!_plugins.TryGetValue(pluginId, out plugin)) return;
             _plugins.Remove(pluginId);
         }
 
         if (plugin.State is PluginLoadState.Loaded or PluginLoadState.Enabled)
         {
-            try { plugin.Instance?.ShutdownAsync(cancellationToken).Wait(cancellationToken); }
+            try { await plugin.Instance!.ShutdownAsync(cancellationToken); }
             catch { /* containment: uninstall must proceed */ }
             TryUnload(plugin);
-            // 可收集 ALC 的卸载在 GC 后才真正完成;主动催收一次,让目录大概率能当场删除。
-            GC.Collect();
-            GC.WaitForPendingFinalizers();
-            GC.Collect();
+            // 可收集 ALC 的卸载在 GC 后才真正完成;催收放后台线程,避免阻塞 UI。
+            await Task.Run(() =>
+            {
+                GC.Collect();
+                GC.WaitForPendingFinalizers();
+                GC.Collect();
+            }, cancellationToken);
         }
+
+        // 卸载即清除禁用记录:重装同 id 插件后直接可用,不再被历史禁用挡住。
+        _settings.Update(s => s.Plugins.DisabledPlugins.Remove(pluginId));
 
         DeletePluginFolder(pluginId, plugin.Folder);
 
         plugin.State = PluginLoadState.Disabled;
         PluginStateChanged?.Invoke(this, ToDescriptor(plugin));
-        return Task.CompletedTask;
     }
 
     public Task<IReadOnlyList<PluginDescriptor>> GetPluginsAsync(CancellationToken cancellationToken = default)

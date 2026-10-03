@@ -67,7 +67,9 @@ public sealed class JsonWorksStore : IWorksStore
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Failed to load works index");
+            // 索引损坏(如写一半断电):把坏文件留档后从空库启动,图片文件仍在磁盘上可人工恢复
+            try { File.Copy(IndexFile, IndexFile + ".corrupt", overwrite: true); } catch { }
+            _logger.LogError(ex, "Failed to load works index; backed up to .corrupt and starting empty");
         }
         finally
         {
@@ -192,8 +194,17 @@ public sealed class JsonWorksStore : IWorksStore
         List<WorkRecord> snapshot;
         lock (_works) snapshot = _works.ToList();
         Directory.CreateDirectory(WorksFolder);
-        await using var stream = File.Create(IndexFile);
-        await JsonSerializer.SerializeAsync(stream, snapshot, JsonOpts, cancellationToken);
+        // 原子写:先写临时文件再替换,写一半崩溃不会损坏整个作品库索引
+        var temp = IndexFile + ".tmp";
+        await using (var stream = File.Create(temp))
+        {
+            await JsonSerializer.SerializeAsync(stream, snapshot, JsonOpts, cancellationToken);
+        }
+
+        if (File.Exists(IndexFile))
+            File.Replace(temp, IndexFile, destinationBackupFileName: null);
+        else
+            File.Move(temp, IndexFile);
     }
 
     private static WorkRecord Clone(WorkRecord record) => new()

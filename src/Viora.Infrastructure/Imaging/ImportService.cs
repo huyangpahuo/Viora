@@ -89,7 +89,9 @@ public sealed class ImportService : IImportService
                 raw = metadata.GetQuery("System.Photo.Orientation");
             raw ??= metadata.GetQuery("/app1/ifd/exif/{ushort=" + OrientationId + "}");
         }
-        uint orientation = raw is uint o ? o : 1u;
+        // WIC 对 EXIF SHORT 返回装箱 ushort(`is uint` 精确拆箱必然失配),统一走 Convert
+        uint orientation = 1u;
+        try { if (raw is not null) orientation = Convert.ToUInt32(raw); } catch { orientation = 1u; }
 
         BitmapSource upright = orientation switch
         {

@@ -1,4 +1,4 @@
-using System.Collections.ObjectModel;
+﻿using System.Collections.ObjectModel;
 using System.IO;
 using System.Windows.Media;
 using CommunityToolkit.Mvvm.ComponentModel;
@@ -107,18 +107,44 @@ public sealed partial class MarketCardViewModel : ObservableObject
     [ObservableProperty]
     private bool _isInstalled;
 
+    /// <summary>已安装但目录里有更高版本(registry version &gt; installed version)。</summary>
+    [ObservableProperty]
+    private bool _updateAvailable;
+
     /// <summary>本卡片是否正在安装(按钮显示安装中)。</summary>
     [ObservableProperty]
     private bool _isInstallingThis;
 
-    public bool ShowInstallButton => !IsInstalled;
+    public bool ShowInstallButton => !IsInstalled || UpdateAvailable;
 
-    public bool CanInstall => !IsInstalled && !Owner.IsInstalling;
+    public bool CanInstall => (!IsInstalled || UpdateAvailable) && !Owner.IsInstalling;
+
+    /// <summary>安装/更新按钮(品牌态)可见:未安装,或已安装但有更新;安装中让位给进度态。</summary>
+    public bool ShowInstallBorder => ShowInstallButton && !IsInstallingThis;
+
+    /// <summary>已安装态(打勾)可见:已安装、无更新且不在安装中。</summary>
+    public bool ShowInstalledBorder => IsInstalled && !UpdateAvailable && !IsInstallingThis;
+
+    /// <summary>安装按钮文案:已安装且有更新时显示"更新",否则"安装"。</summary>
+    public string InstallButtonText =>
+        Tr.Get(UpdateAvailable && IsInstalled ? "Market.Action.Update" : "Market.Install");
 
     partial void OnIsInstalledChanged(bool value)
     {
         OnPropertyChanged(nameof(ShowInstallButton));
         OnPropertyChanged(nameof(CanInstall));
+        OnPropertyChanged(nameof(ShowInstallBorder));
+        OnPropertyChanged(nameof(ShowInstalledBorder));
+        OnPropertyChanged(nameof(InstallButtonText));
+    }
+
+    partial void OnUpdateAvailableChanged(bool value)
+    {
+        OnPropertyChanged(nameof(ShowInstallButton));
+        OnPropertyChanged(nameof(CanInstall));
+        OnPropertyChanged(nameof(ShowInstallBorder));
+        OnPropertyChanged(nameof(ShowInstalledBorder));
+        OnPropertyChanged(nameof(InstallButtonText));
     }
 
     /// <summary>语言切换后刷新文案(主 VM 通过它触发,避免跨类调用受保护成员)。</summary>
@@ -128,10 +154,16 @@ public sealed partial class MarketCardViewModel : ObservableObject
         OnPropertyChanged(nameof(RatingDetailText));
         OnPropertyChanged(nameof(MetaLine));
         OnPropertyChanged(nameof(CategoryDisplay));
+        OnPropertyChanged(nameof(InstallButtonText));
     }
 
     /// <summary>安装状态变化后由主 VM 调用。</summary>
-    public void NotifyInstallStateChanged() => OnPropertyChanged(nameof(IsInstallingThis));
+    public void NotifyInstallStateChanged()
+    {
+        OnPropertyChanged(nameof(IsInstallingThis));
+        OnPropertyChanged(nameof(ShowInstallBorder));
+        OnPropertyChanged(nameof(ShowInstalledBorder));
+    }
 
     [RelayCommand]
     private Task Install() => Owner.InstallAsync(this);
@@ -432,8 +464,10 @@ public partial class PluginMarketViewModel : ObservableObject
             .Where(p => _allCardsAuthor is null || p.Author.Equals(_allCardsAuthor, StringComparison.OrdinalIgnoreCase));
         foreach (var plugin in ApplySearch(source))
         {
-            AllCards.Add(new MarketCardViewModel(this, plugin,
-                plugin.PluginId is not null && _official.IsInstalled(plugin.PluginId)));
+            bool installed = plugin.PluginId is not null && _official.IsInstalled(plugin.PluginId);
+            bool update = installed && IsNewerVersion(plugin.Version,
+                plugin.PluginId is not null ? _official.GetInstalledVersion(plugin.PluginId) : null);
+            AllCards.Add(new MarketCardViewModel(this, plugin, installed) { UpdateAvailable = update });
         }
         OnPropertyChanged(nameof(AllCount));
         OnPropertyChanged(nameof(AllHeaderText));
@@ -525,6 +559,21 @@ public partial class PluginMarketViewModel : ObservableObject
         }
         return query;
     }
+    /// <summary>registry 版本是否高于已安装版本(非语义化后缀如 -beta 取数值段比较)。</summary>
+    private static bool IsNewerVersion(string? registryVersion, string? installedVersion)
+    {
+        var newer = ParseLooseVersion(registryVersion);
+        var current = ParseLooseVersion(installedVersion);
+        return newer is not null && current is not null && newer > current;
+    }
+
+    private static Version? ParseLooseVersion(string? raw)
+    {
+        if (string.IsNullOrWhiteSpace(raw)) return null;
+        var m = System.Text.RegularExpressions.Regex.Match(raw.Trim(), @"^\d+(?:\.\d+)*");
+        return m.Success && Version.TryParse(m.Value, out var v) ? v : null;
+    }
+
     private async Task RefreshCardsAsync()
     {
         RebuildAllCards();
@@ -537,7 +586,9 @@ public partial class PluginMarketViewModel : ObservableObject
         foreach (var plugin in slice)
         {
             bool installed = plugin.PluginId is not null && _official.IsInstalled(plugin.PluginId);
-            Cards.Add(new MarketCardViewModel(this, plugin, installed));
+            bool update = installed && IsNewerVersion(plugin.Version,
+                plugin.PluginId is not null ? _official.GetInstalledVersion(plugin.PluginId) : null);
+            Cards.Add(new MarketCardViewModel(this, plugin, installed) { UpdateAvailable = update });
         }
 
         // 首次进入(或当前详情为空)默认选中本 Tab 第一张。
@@ -571,7 +622,7 @@ public partial class PluginMarketViewModel : ObservableObject
 
     public async Task InstallAsync(MarketCardViewModel card)
     {
-        if (card.IsInstalled || _installing) return;
+        if ((card.IsInstalled && !card.UpdateAvailable) || _installing) return;
         if (card.Model.PluginId is null || card.Model.PackageFile.Length == 0) return;
 
         // 定位插件包 → 宿主安装(内置查重)→ 发现并启用 → 预设进入风格化面板。
@@ -599,6 +650,7 @@ public partial class PluginMarketViewModel : ObservableObject
         await _pluginHost.DiscoverAsync();
         await _pluginHost.EnableAsync(card.Model.PluginId);
         card.IsInstalled = true;
+        card.UpdateAvailable = false;
         _logger.LogInformation("Plugin installed: {Id}", card.Model.PluginId);
         FinishInstall(card);
         await RefreshCardsAsync(); // 同步「我的插件」与右侧列表的安装标记
@@ -625,6 +677,7 @@ public partial class PluginMarketViewModel : ObservableObject
         if (card.Model.PluginId is not null)
             await _pluginHost.UninstallAsync(card.Model.PluginId);
         card.IsInstalled = false;
+        card.UpdateAvailable = false;
         _logger.LogInformation("Plugin uninstalled (deleted): {Id}", card.Model.PluginId);
         await RefreshCardsAsync(); // 同步「我的插件」与右侧列表的安装标记
     }

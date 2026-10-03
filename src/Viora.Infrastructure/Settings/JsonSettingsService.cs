@@ -90,14 +90,23 @@ public sealed partial class JsonSettingsService : ISettingsService
             var loaded = await JsonSerializer.DeserializeAsync<VioraSettings>(stream, SerializerOptions, cancellationToken);
             if (loaded is null) return null;
             if (loaded.SchemaVersion > new VioraSettings().SchemaVersion)
-                throw new InvalidDataException("Settings were written by a newer Viora.");
+            {
+                // 未来版本的设置:备份后按默认值继续。绝不阻断启动,也绝不覆盖用户文件。
+                TryBackupSettingsFile(_paths.SettingsFile + ".newer");
+                return null;
+            }
             return loaded; // missing properties fill from defaults automatically
         }
-        catch (JsonException ex)
+        catch (Exception ex) when (ex is JsonException or IOException or UnauthorizedAccessException)
         {
-            // Corrupt settings: back them up, start fresh — never block startup.
-            try { File.Copy(_paths.SettingsFile, _paths.SettingsFile + ".corrupt", overwrite: true); } catch { }
-            throw new InvalidDataException("Settings file was corrupt.", ex);
+            // 损坏/被占用:备份后按默认值启动 —— 任何用户数据问题都不允许阻断启动。
+            TryBackupSettingsFile(_paths.SettingsFile + ".corrupt");
+            return null;
         }
+    }
+
+    private void TryBackupSettingsFile(string backupPath)
+    {
+        try { File.Copy(_paths.SettingsFile, backupPath, overwrite: true); } catch { }
     }
 }

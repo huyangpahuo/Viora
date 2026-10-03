@@ -142,19 +142,39 @@ public partial class App : Application
         pluginContext.RegisterExporter(new Viora.Infrastructure.Export.PngExporter());
         pluginContext.RegisterExporter(new Viora.Infrastructure.Export.JpegExporter());
         pluginContext.RegisterExporter(new Viora.Infrastructure.Export.BmpExporter());
+        pluginContext.RegisterExporter(new Viora.Infrastructure.Export.TiffExporter());
+        pluginContext.RegisterExporter(new Viora.Infrastructure.Export.GifExporter());
+        pluginContext.RegisterExporter(new Viora.Infrastructure.Export.WebpExporter());
 
         // 客户端不预装任何插件:安装区从空开始,全部由用户在插件市场按需安装(真下载)。
         // Discover installed plugins (metadata only) and enable those not disabled.
-        await pluginHost.DiscoverAsync();
-        if (settings.Current.Plugins.EnablePluginLoading)
+        // 单个坏插件(如清单字段非法)不允许炸掉启动,这里再做一层兜底。
+        IReadOnlyList<PluginDescriptor> discovered = Array.Empty<PluginDescriptor>();
+        try
         {
-            foreach (var plugin in await pluginHost.GetPluginsAsync())
+            discovered = await pluginHost.DiscoverAsync();
+        }
+        catch (Exception ex)
+        {
+            logger.LogError(ex, "Plugin discovery failed; continuing without plugins");
+        }
+
+        try
+        {
+            if (settings.Current.Plugins.EnablePluginLoading)
             {
-                if (plugin.State == PluginLoadState.Incompatible)
-                    continue; // surfaced in the Plugins page with a localized error
-                if (!settings.Current.Plugins.DisabledPlugins.Contains(plugin.Metadata.Id))
-                    await pluginHost.EnableAsync(plugin.Metadata.Id);
+                foreach (var plugin in discovered)
+                {
+                    if (plugin.State == PluginLoadState.Incompatible)
+                        continue; // surfaced in the Plugins page with a localized error
+                    if (!settings.Current.Plugins.DisabledPlugins.Contains(plugin.Metadata.Id))
+                        await pluginHost.EnableAsync(plugin.Metadata.Id);
+                }
             }
+        }
+        catch (Exception ex)
+        {
+            logger.LogError(ex, "Enabling discovered plugins failed; continuing");
         }
 
         var mainWindow = _serviceProvider.GetRequiredService<MainWindow>();
