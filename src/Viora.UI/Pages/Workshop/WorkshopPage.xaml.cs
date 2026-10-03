@@ -263,6 +263,8 @@ public partial class WorkshopPage : UserControl
 
     private void OutputCollapse_OnChecked(object sender, RoutedEventArgs e)
     {
+        // XAML 解析时 IsChecked="True" 会在 OutputBorder 创建前触发 Checked,须判空
+        if (OutputBorder is null) return;
         OutputBorder.Visibility = OutputCollapse.IsChecked == true ? Visibility.Visible : Visibility.Collapsed;
     }
 
