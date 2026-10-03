@@ -60,12 +60,10 @@ public partial class WorkshopPage : UserControl
                     if (!preview) Dispatcher.BeginInvoke(ApplyRoundedClips);
                     break;
                 case nameof(WorkshopViewModel.ShowMinimap):
-                    MinimapColumn.Width = vm.ShowMinimap ? new GridLength(56) : new GridLength(30);
                     MinimapHost.Visibility = vm.ShowMinimap ? Visibility.Visible : Visibility.Collapsed;
                     MinimapExpand.Visibility = vm.ShowMinimap ? Visibility.Collapsed : Visibility.Visible;
                     break;
                 case nameof(WorkshopViewModel.ShowFileList):
-                    FileListColumn.Width = vm.ShowFileList ? new GridLength(150) : new GridLength(30);
                     FileListHost.Visibility = vm.ShowFileList ? Visibility.Visible : Visibility.Collapsed;
                     FileListExpand.Visibility = vm.ShowFileList ? Visibility.Collapsed : Visibility.Visible;
                     break;
@@ -285,12 +283,6 @@ public partial class WorkshopPage : UserControl
     }
 
     // ---------- 输出 Tab ----------
-
-    private void OutTab_OnChecked(object sender, RoutedEventArgs e)
-    {
-        if (DataContext is not WorkshopViewModel vm) return;
-        vm.SetOutputTab(TabBuild.IsChecked == true ? "build" : "run");
-    }
 
     // ---------- 视图切换 ----------
 

@@ -202,16 +202,10 @@
 
                 <!-- ===== 源码视图:文件列表(左,可折叠) | AvalonEdit | minimap ===== -->
                 <Grid Grid.Row="2" x:Name="SourceHost">
-                    <Grid.ColumnDefinitions>
-                        <ColumnDefinition x:Name="FileListColumn" Width="150" />
-                        <ColumnDefinition Width="8" />
-                        <ColumnDefinition Width="*" />
-                        <ColumnDefinition Width="8" />
-                        <ColumnDefinition x:Name="MinimapColumn" Width="56" />
-                    </Grid.ColumnDefinitions>
 
                     <!-- 文件列表 -->
-                    <Border Grid.Column="0" x:Name="FileListHost" CornerRadius="10"
+                    <Border Grid.Column="0" x:Name="FileListHost" CornerRadius="10" Width="150"
+                            HorizontalAlignment="Left" VerticalAlignment="Stretch" Panel.ZIndex="2" Margin="6"
                             Background="{DynamicResource Color.SurfaceElevated}"
                             BorderBrush="{DynamicResource Color.Border}" BorderThickness="1">
                         <Grid>
@@ -223,8 +217,10 @@
                                 <Grid>
                                     <TextBlock Text="{loc:Translate Workshop.Files}" FontSize="10.5" FontWeight="SemiBold"
                                                Foreground="{DynamicResource Color.Text.Disabled}" VerticalAlignment="Center" />
-                                    <Button Style="{StaticResource WsMini}" Command="{Binding AddFileCommand}"
-                                            HorizontalAlignment="Right" Content="+" ToolTip="{loc:Translate Workshop.AddFile}" />
+                                    <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
+                                                <Button Style="{StaticResource WsMini}" Command="{Binding AddFileCommand}" Content="+" ToolTip="{loc:Translate Workshop.AddFile}" />
+                                                <Button Style="{StaticResource WsMini}" Command="{Binding ToggleFileListCommand}" Margin="3,0,0,0" Content="‹" />
+                                            </StackPanel>
                                 </Grid>
                             </Border>
                             <ListBox Grid.Row="1" x:Name="FileList" ItemsSource="{Binding Files}"
@@ -249,8 +245,6 @@
                                                            MouseLeftButtonDown="FileName_OnDoubleClick"
                                                            Foreground="{DynamicResource Color.Text.Secondary}"
                                                            VerticalAlignment="Center" ToolTip="{Binding Name}" />
-                                                <Button Style="{StaticResource WsMini}" Width="16" Height="16" Margin="4,0,0,0"
-                                                        FontSize="10" Content="✎" Click="Rename_OnClick" />
                                                 <Button Style="{StaticResource WsMini}" Width="16" Height="16" Margin="2,0,0,0"
                                                         FontSize="10" Content="✕"
                                                         Command="{Binding DataContext.DeleteFileCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
@@ -269,7 +263,7 @@
                             Content="›" x:Name="FileListExpand" Panel.ZIndex="2" />
 
                     <!-- AvalonEdit 编辑器 -->
-                    <Border Grid.Column="2" CornerRadius="10" BorderBrush="{DynamicResource Color.Border}" BorderThickness="1"
+                    <Border Grid.Column="0" CornerRadius="10" BorderBrush="{DynamicResource Color.Border}" BorderThickness="1"
                             Background="{DynamicResource Color.SurfaceElevated}" ClipToBounds="True">
                         <avalon:TextEditor x:Name="Editor"
                                            PreviewMouseWheel="Editor_PreviewMouseWheel"
@@ -284,7 +278,7 @@
                     </Border>
 
                     <!-- Minimap(窄条,点击标题区域折叠/展开) -->
-                    <Border Grid.Column="4" x:Name="MinimapHost" CornerRadius="10"
+                    <Border Grid.Column="0" x:Name="MinimapHost" HorizontalAlignment="Right" VerticalAlignment="Stretch" Width="56" Margin="6" Panel.ZIndex="2" CornerRadius="10"
                             Background="{DynamicResource Color.SurfaceElevated}"
                             BorderBrush="{DynamicResource Color.Border}" BorderThickness="1" ClipToBounds="True">
                         <Grid>
@@ -301,7 +295,7 @@
                         </Grid>
                     </Border>
                     <!-- minimap 折叠后的展开钮 -->
-                    <Button Grid.Column="4" x:Name="MinimapExpand" Style="{StaticResource WsMini}" Width="26" Height="40"
+                    <Button Grid.Column="0" x:Name="MinimapExpand" HorizontalAlignment="Right" VerticalAlignment="Top" Margin="0,6,6,0" Panel.ZIndex="2" Style="{StaticResource WsMini}" Width="26" Height="40"
                             Command="{Binding ToggleMinimapCommand}" Content="›"
                             Visibility="{Binding ShowMinimap, Converter={StaticResource InverseBoolToVisibility}}" />
                 </Grid>
@@ -387,12 +381,8 @@
                         <ColumnDefinition Width="*" />
                         <ColumnDefinition Width="Auto" />
                     </Grid.ColumnDefinitions>
-                    <StackPanel Grid.Column="0" Orientation="Horizontal">
-                        <RadioButton x:Name="TabBuild" Content="{loc:Translate Workshop.TabBuild}" GroupName="WsOut"
-                                     IsChecked="True" Style="{StaticResource WsOutTab}" Checked="OutTab_OnChecked" />
-                        <RadioButton Content="{loc:Translate Workshop.TabRun}" GroupName="WsOut"
-                                     Style="{StaticResource WsOutTab}" Margin="4,0,0,0" Checked="OutTab_OnChecked" />
-                    </StackPanel>
+                    <TextBlock Grid.Column="0" Text="{loc:Translate Workshop.Output}" FontSize="12" FontWeight="SemiBold"
+                               Foreground="{DynamicResource Color.Text.Primary}" VerticalAlignment="Center" />
                     <StackPanel Grid.Column="2" Orientation="Horizontal">
                         <controls:VioraIcon Geometry="{StaticResource Icon.CircleCheck}" Width="10" Height="10"
                                             Foreground="{DynamicResource Color.Success}" VerticalAlignment="Center" />

@@ -55,6 +55,7 @@ public partial class WorkshopViewModel : ObservableObject
 
         RebuildCategories();
         LocalizationSource.Current.PropertyChanged += (_, _) => RebuildCategories();
+        UpdateMinimap(SourceCode);
         CreateSyntheticSample();
     }
 
@@ -152,11 +153,26 @@ public partial class WorkshopViewModel : ObservableObject
         finally { _switchingFile = false; }
     }
 
+    private System.Windows.Threading.DispatcherTimer? _minimapTimer;
+
     partial void OnSourceCodeChanged(string value)
     {
         // 编辑内容写回当前文件(切换文件时不回写)
         if (!_switchingFile && ActiveFile is not null)
             ActiveFile.Source = value;
+
+        // minimap 防抖刷新
+        _minimapTimer ??= new System.Windows.Threading.DispatcherTimer { Interval = TimeSpan.FromMilliseconds(200) };
+        _minimapTimer.Stop();
+        _minimapTimer.Tick -= OnMinimapTimerTick;
+        _minimapTimer.Tick += OnMinimapTimerTick;
+        _minimapTimer.Start();
+    }
+
+    private void OnMinimapTimerTick(object? sender, EventArgs e)
+    {
+        if (sender is System.Windows.Threading.DispatcherTimer t) t.Stop();
+        UpdateMinimap(SourceCode);
     }
 
     [ObservableProperty]
@@ -760,33 +776,26 @@ public partial class WorkshopViewModel : ObservableObject
 
     // ---------- 输出日志(编译 / 运行双 Tab) ----------
 
-    private readonly List<(string Tag, string Line)> _logEntries = new();
-    private string _outputTab = "build";
-
     [ObservableProperty]
     private string _outputLog = "";
 
-    /// <summary>输出 Tab:"build" | "run"。</summary>
-    public void SetOutputTab(string tab)
-    {
-        if (_outputTab == tab) return;
-        _outputTab = tab;
-        OutputLog = string.Join(Environment.NewLine,
-            _logEntries.Where(e => e.Tag == _outputTab).Select(e => e.Line));
-    }
-
+    /// <summary>单一流输出:编译与运行按序记录,来源加前缀。</summary>
     private void Log(string line) => Log(line, "run");
 
     private void Log(string line, string tag)
     {
-        _logEntries.Add((tag, line));
-        if (tag == _outputTab) OutputLog += line + Environment.NewLine;
+        var prefix = tag == "build" ? "[编译] " : "[运行] ";
+        // 分组标题与续行不加前缀,避免噪音
+        bool isHeader = line.StartsWith("——");
+        bool isContinuation = line.StartsWith("  ") || line.StartsWith("(");
+        OutputLog += (isHeader || isContinuation ? "" : prefix) + line + Environment.NewLine;
     }
 
     // ---------- 默认模板 ----------
 
     public const string DefaultTemplate =
 """
+#nullable enable
 // Viora style plugin - one file is one complete plugin (compiled to DLL on pack).
 // Must contain: 1) a style class implementing IStylePreset; 2) an entry class implementing IVioraPlugin.
 using System;
