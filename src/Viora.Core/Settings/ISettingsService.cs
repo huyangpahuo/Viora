@@ -30,6 +30,8 @@ public sealed class AppearanceSettings
     public bool WorkshopJetBrainsHighlight { get; set; } = true;
 
     public bool WorkshopShowMinimap { get; set; } = true;
+
+    public string ExternalEditorPath { get; set; } = string.Empty;
 }
 
 public sealed class LanguageSettings

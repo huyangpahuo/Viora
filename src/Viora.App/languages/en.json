@@ -644,5 +644,12 @@
   "Settings.Workshop.FontSize": "Code font size",
   "Settings.Workshop.Highlight": "Highlight style",
   "Settings.Workshop.Minimap": "Minimap (default)",
-  "Workshop.Params": "Parameters"
+  "Workshop.Params": "Parameters",
+  "Workshop.OpenExternal": "External editor",
+  "Workshop.OpenExternalTip": "Open sources in external editor",
+  "Workshop.RegistryPreview": "registry.json preview",
+  "Workshop.ZoomIn": "Zoom in",
+  "Workshop.ZoomOut": "Zoom out",
+  "Workshop.ZoomFit": "Fit",
+  "Common.Browse": "Browse"
 }

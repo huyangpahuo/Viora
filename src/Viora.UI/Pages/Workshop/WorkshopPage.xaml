@@ -43,7 +43,6 @@
         </Style>
         <Style x:Key="WsInputMultiline" TargetType="TextBox" BasedOn="{StaticResource WsInput}">
             <Setter Property="TextWrapping" Value="Wrap" />
-            <Setter Property="VerticalContentAlignment" Value="Top" />
             <Setter Property="MinHeight" Value="56" />
             <Setter Property="AcceptsReturn" Value="True" />
             <Setter Property="ScrollViewer.VerticalScrollBarVisibility" Value="Auto" />
@@ -83,7 +82,7 @@
             <Setter Property="Template">
                 <Setter.Value>
                     <ControlTemplate TargetType="RadioButton">
-                        <Border Background="Transparent" CornerRadius="9" Padding="14,6">
+                        <Border Background="Transparent" CornerRadius="9" Padding="12,6">
                             <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center" />
                         </Border>
                         <ControlTemplate.Triggers>
@@ -97,41 +96,18 @@
                 </Setter.Value>
             </Setter>
         </Style>
-        <Style x:Key="WsOutTab" TargetType="RadioButton">
-            <Setter Property="Background" Value="Transparent" />
-            <Setter Property="Foreground" Value="{DynamicResource Color.Text.Secondary}" />
-            <Setter Property="FontSize" Value="12" />
-            <Setter Property="Cursor" Value="Hand" />
-            <Setter Property="FocusVisualStyle" Value="{x:Null}" />
-            <Setter Property="Template">
-                <Setter.Value>
-                    <ControlTemplate TargetType="RadioButton">
-                        <Border Background="Transparent" CornerRadius="8" Padding="10,4">
-                            <ContentPresenter VerticalAlignment="Center" />
-                        </Border>
-                        <ControlTemplate.Triggers>
-                            <Trigger Property="IsChecked" Value="True">
-                                <Setter Property="Background" Value="{DynamicResource Color.SurfaceElevated}" />
-                                <Setter Property="Foreground" Value="{DynamicResource Color.Text.Primary}" />
-                                <Setter Property="FontWeight" Value="SemiBold" />
-                            </Trigger>
-                        </ControlTemplate.Triggers>
-                    </ControlTemplate>
-                </Setter.Value>
-            </Setter>
-        </Style>
         <Style x:Key="WsMini" TargetType="Button">
             <Setter Property="Background" Value="{DynamicResource Brush.Glass}" />
             <Setter Property="Foreground" Value="{DynamicResource Color.Text.Secondary}" />
             <Setter Property="BorderThickness" Value="0" />
             <Setter Property="FontSize" Value="12" />
-            <Setter Property="Width" Value="20" />
-            <Setter Property="Height" Value="20" />
+            <Setter Property="Width" Value="22" />
+            <Setter Property="Height" Value="22" />
             <Setter Property="Cursor" Value="Hand" />
             <Setter Property="Template">
                 <Setter.Value>
                     <ControlTemplate TargetType="Button">
-                        <Border Background="{TemplateBinding Background}" CornerRadius="6">
+                        <Border Background="{TemplateBinding Background}" CornerRadius="7">
                             <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center" />
                         </Border>
                         <ControlTemplate.Triggers>
@@ -153,6 +129,29 @@
             <Setter Property="VerticalAlignment" Value="Center" />
             <Setter Property="Height" Value="34" />
         </Style>
+        <!-- 视图分段/面板开关共用 -->
+        <Style x:Key="WsHeaderToggle" TargetType="RadioButton">
+            <Setter Property="Foreground" Value="{DynamicResource Color.Text.Secondary}" />
+            <Setter Property="FontSize" Value="12.5" />
+            <Setter Property="Cursor" Value="Hand" />
+            <Setter Property="FocusVisualStyle" Value="{x:Null}" />
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="ToggleButton">
+                        <Border Background="Transparent" CornerRadius="9" Padding="{TemplateBinding Padding}">
+                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center" />
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsChecked" Value="True">
+                                <Setter Property="Background" Value="{DynamicResource Brush.Brand}" />
+                                <Setter Property="Foreground" Value="White" />
+                                <Setter Property="FontWeight" Value="SemiBold" />
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
     </UserControl.Resources>
 
     <Grid Margin="16,14,16,14">
@@ -166,46 +165,108 @@
             <Grid>
                 <Grid.RowDefinitions>
                     <RowDefinition Height="Auto" />
-                    <RowDefinition Height="Auto" />
                     <RowDefinition Height="*" />
                     <RowDefinition Height="Auto" />
                     <RowDefinition Height="170" />
                 </Grid.RowDefinitions>
 
-                <StackPanel Grid.Row="0" Orientation="Horizontal" Margin="0,0,0,10">
-                    <controls:VioraIcon Geometry="{StaticResource Icon.PenToSquare}" Width="16" Height="16"
-                                        Foreground="{DynamicResource Color.Primary}" VerticalAlignment="Center" />
-                    <TextBlock Text="{loc:Translate Workshop.SourceLabel}" FontSize="15" FontWeight="Bold" Margin="8,0,10,0"
-                               Foreground="{DynamicResource Color.Text.Primary}" VerticalAlignment="Center" />
-                    <Border x:Name="CompileBadge" CornerRadius="8" Padding="8,2" Background="{DynamicResource Brush.Glass}"
-                            BorderBrush="{DynamicResource Color.Border}" BorderThickness="1" Visibility="Collapsed">
-                        <StackPanel Orientation="Horizontal">
-                            <controls:VioraIcon x:Name="BadgeIcon" Width="11" Height="11" VerticalAlignment="Center"
-                                                Geometry="{StaticResource Icon.CircleCheck}"
-                                                Foreground="{DynamicResource Color.Success}" />
-                            <TextBlock x:Name="BadgeText" Text="OK" FontSize="11" Margin="5,0,0,0" VerticalAlignment="Center"
-                                       Foreground="{DynamicResource Color.Text.Secondary}" />
-                        </StackPanel>
-                    </Border>
-                </StackPanel>
-
-                <Grid Grid.Row="1" Margin="0,0,0,10">
+                <!-- 标题行:标题+徽章 …… 视图分段+面板开关+外部编辑器 -->
+                <Grid Grid.Row="0" Margin="0,0,0,10">
                     <StackPanel Orientation="Horizontal">
-                        <RadioButton x:Name="TabSource" Style="{StaticResource WsSeg}" GroupName="WsView"
-                                     IsChecked="True" Content="{loc:Translate Workshop.TabCode}"
-                                     Checked="ViewTab_OnChanged" Tag="code" />
-                        <RadioButton Style="{StaticResource WsSeg}" GroupName="WsView"
-                                     Content="{loc:Translate Workshop.TabPreview}" Margin="6,0,0,0"
-                                     Checked="ViewTab_OnChanged" Tag="preview" />
+                        <controls:VioraIcon Geometry="{StaticResource Icon.PenToSquare}" Width="16" Height="16"
+                                            Foreground="{DynamicResource Color.Primary}" VerticalAlignment="Center" />
+                        <TextBlock Text="{loc:Translate Workshop.SourceLabel}" FontSize="15" FontWeight="Bold" Margin="8,0,10,0"
+                                   Foreground="{DynamicResource Color.Text.Primary}" VerticalAlignment="Center" />
+                        <Border x:Name="CompileBadge" CornerRadius="8" Padding="8,2" Background="{DynamicResource Brush.Glass}"
+                                BorderBrush="{DynamicResource Color.Border}" BorderThickness="1" Visibility="Collapsed">
+                            <StackPanel Orientation="Horizontal">
+                                <controls:VioraIcon x:Name="BadgeIcon" Width="11" Height="11" VerticalAlignment="Center"
+                                                    Geometry="{StaticResource Icon.CircleCheck}"
+                                                    Foreground="{DynamicResource Color.Success}" />
+                                <TextBlock x:Name="BadgeText" Text="OK" FontSize="11" Margin="5,0,0,0" VerticalAlignment="Center"
+                                           Foreground="{DynamicResource Color.Text.Secondary}" />
+                            </StackPanel>
+                        </Border>
+                    </StackPanel>
+                    <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" VerticalAlignment="Center">
+                        <RadioButton Style="{StaticResource WsHeaderToggle}" GroupName="WsView" IsChecked="True"
+                                      Checked="ViewTab_OnChanged" Tag="code"
+                                      ToolTip="{loc:Translate Workshop.TabCode}">
+                            <StackPanel Orientation="Horizontal">
+                                <controls:VioraIcon Geometry="{StaticResource Icon.PenToSquare}" Width="12" Height="12" VerticalAlignment="Center" />
+                                <TextBlock Text="{loc:Translate Workshop.TabCode}" Margin="6,0,0,0" />
+                            </StackPanel>
+                        </RadioButton>
+                        <RadioButton Style="{StaticResource WsHeaderToggle}" GroupName="WsView" Margin="6,0,0,0"
+                                      Checked="ViewTab_OnChanged" Tag="preview"
+                                      ToolTip="{loc:Translate Workshop.TabPreview}">
+                            <StackPanel Orientation="Horizontal">
+                                <controls:VioraIcon Geometry="{StaticResource Icon.Image}" Width="12" Height="12" VerticalAlignment="Center" />
+                                <TextBlock Text="{loc:Translate Workshop.TabPreview}" Margin="6,0,0,0" />
+                            </StackPanel>
+                        </RadioButton>
+                        <Border Width="1" Height="20" Background="{DynamicResource Color.Divider}" Margin="10,0" />
+                        <ToggleButton x:Name="FilesToggle" Width="30" Height="28" Cursor="Hand"
+                                      IsChecked="{Binding ShowFileList, Mode=TwoWay}" FocusVisualStyle="{x:Null}"
+                                      ToolTip="{loc:Translate Workshop.Files}">
+                            <ToggleButton.Template>
+                                <ControlTemplate TargetType="ToggleButton">
+                                    <Border Background="Transparent" CornerRadius="9" Padding="8,5">
+                                        <controls:VioraIcon Geometry="{StaticResource Icon.List}" Width="13" Height="13"
+                                                            Foreground="{TemplateBinding Foreground}" HorizontalAlignment="Center" VerticalAlignment="Center" />
+                                    </Border>
+                                    <ControlTemplate.Triggers>
+                                        <Trigger Property="IsChecked" Value="True">
+                                            <Setter Property="Background" Value="{DynamicResource Color.SurfaceElevated}" />
+                                            <Setter Property="Foreground" Value="{DynamicResource Color.Primary}" />
+                                        </Trigger>
+                                    </ControlTemplate.Triggers>
+                                </ControlTemplate>
+                            </ToggleButton.Template>
+                        </ToggleButton>
+                        <ToggleButton x:Name="MinimapToggle" Width="30" Height="28" Margin="4,0,0,0" Cursor="Hand"
+                                      IsChecked="{Binding ShowMinimap, Mode=TwoWay}" FocusVisualStyle="{x:Null}"
+                                      ToolTip="{loc:Translate Settings.Workshop.Minimap}">
+                            <ToggleButton.Template>
+                                <ControlTemplate TargetType="ToggleButton">
+                                    <Border Background="Transparent" CornerRadius="9" Padding="8,5">
+                                        <controls:VioraIcon Geometry="{StaticResource Icon.TableCells}" Width="13" Height="13"
+                                                            Foreground="{TemplateBinding Foreground}" HorizontalAlignment="Center" VerticalAlignment="Center" />
+                                    </Border>
+                                    <ControlTemplate.Triggers>
+                                        <Trigger Property="IsChecked" Value="True">
+                                            <Setter Property="Background" Value="{DynamicResource Color.SurfaceElevated}" />
+                                            <Setter Property="Foreground" Value="{DynamicResource Color.Primary}" />
+                                        </Trigger>
+                                    </ControlTemplate.Triggers>
+                                </ControlTemplate>
+                            </ToggleButton.Template>
+                        </ToggleButton>
+                        <Button Style="{StaticResource WsMini}" Width="30" Height="28" Margin="8,0,0,0" FontSize="12"
+                                Command="{Binding OpenExternalCommand}" Content=" ↗ "
+                                ToolTip="{loc:Translate Workshop.OpenExternalTip}" />
                     </StackPanel>
                 </Grid>
 
-                <!-- ===== 源码视图:文件列表(左,可折叠) | AvalonEdit | minimap ===== -->
-                <Grid Grid.Row="2" x:Name="SourceHost">
+                <!-- ===== 源码视图:编辑器全宽,文件列表/小地图 浮层 ===== -->
+                <Grid Grid.Row="1" x:Name="SourceHost">
+                    <!-- 编辑器 -->
+                    <Border CornerRadius="10" BorderBrush="{DynamicResource Color.Border}" BorderThickness="1"
+                            Background="{DynamicResource Color.SurfaceElevated}" ClipToBounds="True">
+                        <avalon:TextEditor x:Name="Editor"
+                                           PreviewMouseWheel="Editor_PreviewMouseWheel"
+                                           FontFamily="Consolas" FontSize="12.5"
+                                           Background="{DynamicResource Color.SurfaceElevated}"
+                                           Foreground="{DynamicResource Color.Text.Primary}"
+                                           WordWrap="False"
+                                           HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Auto"
+                                           ShowLineNumbers="True"
+                                           TextChanged="Editor_OnTextChanged" />
+                    </Border>
 
-                    <!-- 文件列表 -->
-                    <Border Grid.Column="0" x:Name="FileListHost" CornerRadius="10" Width="150"
-                            HorizontalAlignment="Left" VerticalAlignment="Stretch" Panel.ZIndex="2" Margin="6"
+                    <!-- 文件列表浮层(左) -->
+                    <Border x:Name="FileListHost" CornerRadius="10" Width="150" HorizontalAlignment="Left"
+                            VerticalAlignment="Stretch" Margin="8" Panel.ZIndex="2"
                             Background="{DynamicResource Color.SurfaceElevated}"
                             BorderBrush="{DynamicResource Color.Border}" BorderThickness="1">
                         <Grid>
@@ -217,10 +278,8 @@
                                 <Grid>
                                     <TextBlock Text="{loc:Translate Workshop.Files}" FontSize="10.5" FontWeight="SemiBold"
                                                Foreground="{DynamicResource Color.Text.Disabled}" VerticalAlignment="Center" />
-                                    <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
-                                                <Button Style="{StaticResource WsMini}" Command="{Binding AddFileCommand}" Content="+" ToolTip="{loc:Translate Workshop.AddFile}" />
-                                                <Button Style="{StaticResource WsMini}" Command="{Binding ToggleFileListCommand}" Margin="3,0,0,0" Content="‹" />
-                                            </StackPanel>
+                                    <Button Style="{StaticResource WsMini}" Command="{Binding AddFileCommand}"
+                                            HorizontalAlignment="Right" Content="+" ToolTip="{loc:Translate Workshop.AddFile}" />
                                 </Grid>
                             </Border>
                             <ListBox Grid.Row="1" x:Name="FileList" ItemsSource="{Binding Files}"
@@ -230,7 +289,10 @@
                                 <ListBox.ItemTemplate>
                                     <DataTemplate>
                                         <Grid Margin="0,1">
-                                            <!-- 编辑态:重命名输入框 -->
+                                            <Grid.ColumnDefinitions>
+                                                <ColumnDefinition Width="*" />
+                                                <ColumnDefinition Width="Auto" />
+                                            </Grid.ColumnDefinitions>
                                             <TextBox x:Name="RenameBox" FontSize="11"
                                                      Background="{DynamicResource Color.SurfaceHigh}"
                                                      Foreground="{DynamicResource Color.Text.Primary}"
@@ -238,14 +300,12 @@
                                                      Visibility="{Binding IsEditing, Converter={StaticResource BoolToVisibility}}"
                                                      Text="{Binding EditName, UpdateSourceTrigger=PropertyChanged}"
                                                      KeyDown="RenameBox_OnKeyDown" LostFocus="RenameBox_OnLostFocus" />
-                                            <!-- 常态:名字 + 重命名/删除 -->
                                             <StackPanel Orientation="Horizontal"
                                                         Visibility="{Binding IsEditing, Converter={StaticResource InverseBoolToVisibility}}">
                                                 <TextBlock Text="{Binding Name}" FontSize="11" Margin="2,2,0,2"
-                                                           MouseLeftButtonDown="FileName_OnDoubleClick"
-                                                           Foreground="{DynamicResource Color.Text.Secondary}"
-                                                           VerticalAlignment="Center" ToolTip="{Binding Name}" />
-                                                <Button Style="{StaticResource WsMini}" Width="16" Height="16" Margin="2,0,0,0"
+                                                           Foreground="{DynamicResource Color.Text.Secondary}" VerticalAlignment="Center"
+                                                           ToolTip="{Binding Name}" MouseLeftButtonDown="FileName_OnDoubleClick" />
+                                                <Button Style="{StaticResource WsMini}" Width="16" Height="16" Margin="4,0,0,0"
                                                         FontSize="10" Content="✕"
                                                         Command="{Binding DataContext.DeleteFileCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
                                                         CommandParameter="{Binding}" />
@@ -256,126 +316,115 @@
                             </ListBox>
                         </Grid>
                     </Border>
-                    <!-- 折叠钮(列表头) + 折叠态展开钮 -->
-                    <Button Grid.Column="0" Style="{StaticResource WsMini}" Command="{Binding ToggleFileListCommand}"
-                            VerticalAlignment="Top" HorizontalAlignment="Left" Margin="4,4,0,0"
-                            Visibility="{Binding ShowFileList, Converter={StaticResource InverseBoolToVisibility}}"
-                            Content="›" x:Name="FileListExpand" Panel.ZIndex="2" />
 
-                    <!-- AvalonEdit 编辑器 -->
-                    <Border Grid.Column="0" CornerRadius="10" BorderBrush="{DynamicResource Color.Border}" BorderThickness="1"
-                            Background="{DynamicResource Color.SurfaceElevated}" ClipToBounds="True">
-                        <avalon:TextEditor x:Name="Editor"
-                                           PreviewMouseWheel="Editor_PreviewMouseWheel"
-                                           FontFamily="Consolas" FontSize="12.5"
-                                           Background="{DynamicResource Color.SurfaceElevated}"
-                                           Foreground="{DynamicResource Color.Text.Primary}"
-                                           WordWrap="False"
-                                           HorizontalScrollBarVisibility="Auto"
-                                           VerticalScrollBarVisibility="Auto"
-                                           ShowLineNumbers="True"
-                                           TextChanged="Editor_OnTextChanged" />
-                    </Border>
-
-                    <!-- Minimap(窄条,点击标题区域折叠/展开) -->
-                    <Border Grid.Column="0" x:Name="MinimapHost" HorizontalAlignment="Right" VerticalAlignment="Stretch" Width="56" Margin="6" Panel.ZIndex="2" CornerRadius="10"
+                    <!-- minimap 浮层(右):行条 + 视口指示 -->
+                    <Border x:Name="MinimapHost" CornerRadius="10" Width="56" HorizontalAlignment="Right"
+                            VerticalAlignment="Stretch" Margin="8" Panel.ZIndex="2"
                             Background="{DynamicResource Color.SurfaceElevated}"
                             BorderBrush="{DynamicResource Color.Border}" BorderThickness="1" ClipToBounds="True">
                         <Grid>
-                            <RichTextBox x:Name="MinimapBox" IsReadOnly="True" Background="Transparent" BorderThickness="0"
-                                         FontFamily="Consolas" Cursor="Hand"
-                                         VerticalScrollBarVisibility="Hidden" HorizontalScrollBarVisibility="Hidden"
-                                         MouseDown="Minimap_MouseDown" MouseWheel="Minimap_MouseWheel" />
-                            <Canvas x:Name="MinimapViewportCanvas" IsHitTestVisible="False">
-                                <Rectangle x:Name="MinimapViewport" Fill="#22FFFFFF" />
-                            </Canvas>
-                            <Button Style="{StaticResource WsMini}" Command="{Binding ToggleMinimapCommand}"
-                                    Width="16" Height="16" HorizontalAlignment="Right" VerticalAlignment="Top"
-                                    Margin="0,3,3,0" Content="‹" Background="Transparent" />
+                            <ScrollViewer x:Name="MinimapScroll" VerticalScrollBarVisibility="Hidden"
+                                          HorizontalScrollBarVisibility="Hidden">
+                                <ItemsControl x:Name="MinimapItemsHost" ItemsSource="{Binding MinimapLines}">
+                                    <ItemsControl.ItemTemplate>
+                                        <DataTemplate>
+                                            <Grid Height="3">
+                                                <Rectangle Width="{Binding Width}" Height="2"
+                                                           HorizontalAlignment="Left" Margin="{Binding Indent}"
+                                                           RadiusX="1" RadiusY="1">
+                                                    <Rectangle.Style>
+                                                        <Style TargetType="Rectangle">
+                                                            <Setter Property="Fill" Value="#7FA9B7C6" />
+                                                            <Style.Triggers>
+                                                                <DataTrigger Binding="{Binding ColorKey}" Value="comment">
+                                                                    <Setter Property="Fill" Value="#666A7559" />
+                                                                </DataTrigger>
+                                                                <DataTrigger Binding="{Binding ColorKey}" Value="string">
+                                                                    <Setter Property="Fill" Value="#666A8759" />
+                                                                </DataTrigger>
+                                                            </Style.Triggers>
+                                                        </Style>
+                                                    </Rectangle.Style>
+                                                </Rectangle>
+                                            </Grid>
+                                        </DataTemplate>
+                                    </ItemsControl.ItemTemplate>
+                                </ItemsControl>
+                            </ScrollViewer>
+                        <Canvas x:Name="MinimapViewportCanvas" IsHitTestVisible="False">
+                            <Rectangle x:Name="MinimapViewport" Fill="#22FFFFFF" Height="40" />
+                        </Canvas>
                         </Grid>
                     </Border>
-                    <!-- minimap 折叠后的展开钮 -->
-                    <Button Grid.Column="0" x:Name="MinimapExpand" HorizontalAlignment="Right" VerticalAlignment="Top" Margin="0,6,6,0" Panel.ZIndex="2" Style="{StaticResource WsMini}" Width="26" Height="40"
-                            Command="{Binding ToggleMinimapCommand}" Content="›"
-                            Visibility="{Binding ShowMinimap, Converter={StaticResource InverseBoolToVisibility}}" />
                 </Grid>
 
-                <!-- ===== 效果预览视图 ===== -->
-                <Grid Grid.Row="2" x:Name="PreviewHost" Visibility="Collapsed">
-                    <StackPanel>
-                        <Border x:Name="PreviewFrame" CornerRadius="10" ClipToBounds="False" Height="340"
-                                Background="{DynamicResource Color.SurfaceElevated}"
-                                SizeChanged="PreviewFrame_OnSizeChanged">
-                            <Grid>
-                                <Image x:Name="AfterImage" Source="{Binding PreviewImage}" Stretch="Uniform" />
-                                <Image x:Name="BeforeImage" Source="{Binding BeforeImage}" Stretch="Uniform" />
-                                <Canvas>
-                                    <Rectangle x:Name="SplitLine" Width="2" Fill="{DynamicResource Color.Primary}" />
-                                </Canvas>
-                                <Border HorizontalAlignment="Right" VerticalAlignment="Bottom" Margin="0,0,8,8"
-                                        CornerRadius="8" Padding="8,2" Background="{DynamicResource Brush.Glass}">
-                                    <TextBlock Text="1 / 1" FontSize="10.5" Foreground="{DynamicResource Color.Text.Secondary}" />
-                                </Border>
-                            </Grid>
-                        </Border>
-                        <Grid Margin="0,8,0,0">
-                            <Grid.ColumnDefinitions>
-                                <ColumnDefinition Width="Auto" />
-                                <ColumnDefinition Width="*" />
-                                <ColumnDefinition Width="Auto" />
-                            </Grid.ColumnDefinitions>
-                            <TextBlock Grid.Column="0" Text="{loc:Translate Workshop.Before}" FontSize="10.5"
-                                       Foreground="{DynamicResource Color.Text.Disabled}" VerticalAlignment="Center" />
-                            <Slider Grid.Column="1" Style="{StaticResource VioraSlider}" Margin="8,0" Minimum="0" Maximum="100"
-                                    Value="{Binding ComparePosition}" VerticalAlignment="Center"
-                                    ValueChanged="CompareSlider_OnValueChanged" />
-                            <TextBlock Grid.Column="2" Text="{loc:Translate Workshop.After}" FontSize="10.5"
-                                       Foreground="{DynamicResource Color.Text.Disabled}" VerticalAlignment="Center" />
+                <!-- ===== 效果预览视图(对比查看器,与风格化页一致) ===== -->
+                <Grid Grid.Row="1" x:Name="PreviewHost" Visibility="Collapsed">
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="*" />
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="Auto" />
+                    </Grid.RowDefinitions>
+                    <Border Grid.Row="0" x:Name="PreviewFrame" CornerRadius="10" ClipToBounds="False"
+                            Background="{DynamicResource Color.SurfaceElevated}"
+                            SizeChanged="PreviewFrame_OnSizeChanged"
+                            MouseLeftButtonDown="PreviewFrame_MouseDown"
+                            MouseMove="PreviewFrame_MouseMove"
+                            MouseLeftButtonUp="PreviewFrame_MouseUp"
+                            Cursor="SizeWE">
+                        <Grid>
+                            <Grid.LayoutTransform>
+                                <ScaleTransform x:Name="PreviewScale" ScaleX="1" ScaleY="1" />
+                            </Grid.LayoutTransform>
+                            <Image x:Name="AfterImage" Source="{Binding PreviewImage}" Stretch="Uniform" />
+                            <Image x:Name="BeforeImage" Source="{Binding BeforeImage}" Stretch="Uniform" />
+                            <Canvas>
+                                <Rectangle x:Name="SplitLine" Width="2" Fill="{DynamicResource Color.Primary}" />
+                                <Ellipse x:Name="SplitHandle" Width="24" Height="24"
+                                         Fill="{DynamicResource Color.SurfaceElevated}"
+                                         Stroke="{DynamicResource Color.Primary}" StrokeThickness="2" />
+                                <StackPanel x:Name="SplitHandleIcon" Orientation="Horizontal" IsHitTestVisible="False">
+                                    <TextBlock Text="‹" FontSize="11" Foreground="{DynamicResource Color.Primary}" />
+                                    <TextBlock Text="›" FontSize="11" Foreground="{DynamicResource Color.Primary}" />
+                                </StackPanel>
+                            </Canvas>
+                            <Border HorizontalAlignment="Right" VerticalAlignment="Bottom" Margin="0,0,8,8"
+                                    CornerRadius="8" Padding="8,2" Background="{DynamicResource Brush.Glass}">
+                                <TextBlock Text="1 / 1" FontSize="10.5" Foreground="{DynamicResource Color.Text.Secondary}" />
+                            </Border>
+                            <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" VerticalAlignment="Top" Margin="0,8,8,0">
+                                <Button Style="{StaticResource WsMini}" Content="+" Click="ZoomIn_OnClick" ToolTip="{loc:Translate Workshop.ZoomIn}" />
+                                <Button Style="{StaticResource WsMini}" Content="−" Margin="4,0,0,0" Click="ZoomOut_OnClick" ToolTip="{loc:Translate Workshop.ZoomOut}" />
+                                <Button Style="{StaticResource WsMini}" Content="⤢" Margin="4,0,0,0" Click="ZoomFit_OnClick" ToolTip="{loc:Translate Workshop.ZoomFit}" />
+                            </StackPanel>
                         </Grid>
-                        <StackPanel Orientation="Horizontal" Margin="0,8,0,0">
-                            <Button Style="{StaticResource WsButton}" Command="{Binding PickSampleCommand}"
-                                    Content="{loc:Translate Workshop.PickSample}" />
-                            <Button Style="{StaticResource WsButton}" Command="{Binding RunPreviewCommand}" Margin="8,0,0,0"
-                                    IsEnabled="{Binding CanRun}" Content="{loc:Translate Workshop.Run}" />
-                            <TextBlock Text="{Binding SampleInfoText}" FontSize="10.5" Margin="10,0,0,0" VerticalAlignment="Center"
-                                       Foreground="{DynamicResource Color.Text.Disabled}" />
-                        </StackPanel>
-                        <!-- 参数调节(可折叠) -->
-                        <Expander Margin="0,10,0,0" IsExpanded="True">
-                            <Expander.Header>
-                                <TextBlock Text="{loc:Translate Workshop.Params}" FontSize="12.5" FontWeight="Bold"
-                                           Foreground="{DynamicResource Color.Text.Primary}" />
-                            </Expander.Header>
-                            <ItemsControl ItemsSource="{Binding PreviewParameters}" Margin="0,6,0,0">
-                                <ItemsControl.ItemTemplate>
-                                    <DataTemplate>
-                                        <Grid Margin="0,2">
-                                            <Grid.ColumnDefinitions>
-                                                <ColumnDefinition Width="110" />
-                                                <ColumnDefinition Width="*" />
-                                                <ColumnDefinition Width="46" />
-                                            </Grid.ColumnDefinitions>
-                                            <TextBlock Grid.Column="0" Text="{Binding Label}" FontSize="11"
-                                                       Foreground="{DynamicResource Color.Text.Secondary}"
-                                                       VerticalAlignment="Center" TextTrimming="CharacterEllipsis"
-                                                       ToolTip="{Binding Label}" />
-                                            <Slider Grid.Column="1" Style="{StaticResource VioraSlider}" Margin="6,0"
-                                                    Minimum="{Binding Min}" Maximum="{Binding Max}"
-                                                    Value="{Binding Value, Mode=TwoWay}"
-                                                    TickFrequency="{Binding Step}" IsSnapToTickEnabled="True"
-                                                    VerticalAlignment="Center" ValueChanged="ParamSlider_OnValueChanged" />
-                                            <TextBlock Grid.Column="2" Text="{Binding Value, StringFormat={}{0:0.0#}}" FontSize="11"
-                                                       Foreground="{DynamicResource Color.Text.Primary}" VerticalAlignment="Center" />
-                                        </Grid>
-                                    </DataTemplate>
-                                </ItemsControl.ItemTemplate>
-                            </ItemsControl>
-                        </Expander>
+                    </Border>
+                    <Grid Grid.Row="1" Margin="0,8,0,0">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="Auto" />
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="Auto" />
+                        </Grid.ColumnDefinitions>
+                        <TextBlock Grid.Column="0" Text="{loc:Translate Workshop.Before}" FontSize="10.5"
+                                   Foreground="{DynamicResource Color.Text.Disabled}" VerticalAlignment="Center" />
+                        <Slider Grid.Column="1" Style="{StaticResource VioraSlider}" Margin="8,0" Minimum="0" Maximum="100"
+                                Value="{Binding ComparePosition}" VerticalAlignment="Center"
+                                ValueChanged="CompareSlider_OnValueChanged" />
+                        <TextBlock Grid.Column="2" Text="{loc:Translate Workshop.After}" FontSize="10.5"
+                                   Foreground="{DynamicResource Color.Text.Disabled}" VerticalAlignment="Center" />
+                    </Grid>
+                    <StackPanel Grid.Row="2" Orientation="Horizontal" Margin="0,8,0,0">
+                        <Button Style="{StaticResource WsButton}" Command="{Binding PickSampleCommand}"
+                                Content="{loc:Translate Workshop.PickSample}" />
+                        <Button Style="{StaticResource WsButton}" Command="{Binding RunPreviewCommand}" Margin="8,0,0,0"
+                                IsEnabled="{Binding CanRun}" Content="{loc:Translate Workshop.Run}" />
+                        <TextBlock Text="{Binding SampleInfoText}" FontSize="10.5" Margin="10,0,0,0" VerticalAlignment="Center"
+                                   Foreground="{DynamicResource Color.Text.Disabled}" />
                     </StackPanel>
                 </Grid>
 
                 <!-- 输出 -->
-                <Grid Grid.Row="3" Margin="0,12,0,0">
+                <Grid Grid.Row="2" Margin="0,12,0,0">
                     <Grid.ColumnDefinitions>
                         <ColumnDefinition Width="Auto" />
                         <ColumnDefinition Width="*" />
@@ -388,27 +437,10 @@
                                             Foreground="{DynamicResource Color.Success}" VerticalAlignment="Center" />
                         <TextBlock Text="{Binding ReadyText}" FontSize="11" Margin="5,0,0,0" VerticalAlignment="Center"
                                    Foreground="{DynamicResource Color.Text.Disabled}" />
-                                        <ToggleButton x:Name="OutputCollapse" Width="20" Height="20" Margin="8,0,0,0" Cursor="Hand"
-                                                      IsChecked="True" FocusVisualStyle="{x:Null}"
-                                                      Checked="OutputCollapse_OnChecked" Unchecked="OutputCollapse_OnChecked">
-                                            <ToggleButton.Template>
-                                                <ControlTemplate TargetType="ToggleButton">
-                                                    <Border Background="{DynamicResource Brush.Glass}" CornerRadius="6">
-                                                        <TextBlock x:Name="Chevron" Text="▾" FontSize="10" HorizontalAlignment="Center"
-                                                                   VerticalAlignment="Center" Foreground="{DynamicResource Color.Text.Secondary}" />
-                                                    </Border>
-                                                    <ControlTemplate.Triggers>
-                                                        <Trigger Property="IsChecked" Value="False">
-                                                            <Setter TargetName="Chevron" Property="Text" Value="▸" />
-                                                        </Trigger>
-                                                    </ControlTemplate.Triggers>
-                                                </ControlTemplate>
-                                            </ToggleButton.Template>
-                                        </ToggleButton>
-                                    </StackPanel>
-                                </Grid>
-                                <Border x:Name="OutputBorder" Grid.Row="5" CornerRadius="10" BorderBrush="{DynamicResource Color.Border}" BorderThickness="1"
-                                        Background="{DynamicResource Color.SurfaceElevated}" Margin="0,6,0,0">
+                    </StackPanel>
+                </Grid>
+                <Border Grid.Row="3" CornerRadius="10" BorderBrush="{DynamicResource Color.Border}" BorderThickness="1"
+                        Background="{DynamicResource Color.SurfaceElevated}" Margin="0,6,0,0">
                     <TextBox x:Name="OutputBox" FontFamily="Consolas" FontSize="11.5"
                              Foreground="{DynamicResource Color.Text.Secondary}" Background="Transparent" BorderThickness="0"
                              Padding="10,8" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Auto"
@@ -418,10 +450,10 @@
             </Grid>
         </Border>
 
-        <!-- ============ 右:卡片 ============ -->
+        <!-- ============ 右:打包 + 相关信息(含 registry 预览) + 参数 ============ -->
         <ScrollViewer Grid.Column="1" VerticalScrollBarVisibility="Auto">
             <StackPanel>
-                <!-- 打包 zip(信息卡上方) -->
+                <!-- 打包 zip -->
                 <Button Style="{StaticResource WsButton}" Command="{Binding PackZipCommand}" HorizontalAlignment="Stretch"
                         IsEnabled="{Binding CanRun}" Background="{DynamicResource Brush.Brand}" Foreground="White"
                         BorderThickness="0" Height="40" Margin="0,0,0,12">
@@ -431,21 +463,52 @@
                     </StackPanel>
                 </Button>
 
-                <!-- 相关信息 -->
+                <!-- 参数调节(编译后出现) -->
+                <Border Style="{StaticResource WsCard}" Margin="0,0,0,12"
+                        Visibility="{Binding HasPreviewParameters, Converter={StaticResource BoolToVisibility}}">
+                    <StackPanel>
+                        <StackPanel Orientation="Horizontal" Margin="0,0,0,2">
+                            <controls:VioraIcon Geometry="{StaticResource Icon.Sliders}" Width="13" Height="13"
+                                                Foreground="{DynamicResource Color.Primary}" VerticalAlignment="Center" />
+                            <TextBlock Text="{loc:Translate Workshop.Params}" FontSize="13.5" FontWeight="Bold" Margin="8,0,0,0"
+                                       Foreground="{DynamicResource Color.Text.Primary}" />
+                        </StackPanel>
+                        <ItemsControl ItemsSource="{Binding PreviewParameters}" Margin="0,6,0,0">
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate>
+                                    <Grid Margin="0,2">
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="110" />
+                                            <ColumnDefinition Width="*" />
+                                            <ColumnDefinition Width="46" />
+                                        </Grid.ColumnDefinitions>
+                                        <TextBlock Grid.Column="0" Text="{Binding Label}" FontSize="11"
+                                                   Foreground="{DynamicResource Color.Text.Secondary}"
+                                                   VerticalAlignment="Center" TextTrimming="CharacterEllipsis"
+                                                   ToolTip="{Binding Label}" />
+                                        <Slider Grid.Column="1" Style="{StaticResource VioraSlider}" Margin="6,0"
+                                                Minimum="{Binding Min}" Maximum="{Binding Max}"
+                                                Value="{Binding Value, Mode=TwoWay}"
+                                                TickFrequency="{Binding Step}" IsSnapToTickEnabled="True"
+                                                VerticalAlignment="Center" ValueChanged="ParamSlider_OnValueChanged" />
+                                        <TextBlock Grid.Column="2" Text="{Binding Value, StringFormat={}{0:0.0#}}" FontSize="11"
+                                                   Foreground="{DynamicResource Color.Text.Primary}" VerticalAlignment="Center" />
+                                    </Grid>
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+                    </StackPanel>
+                </Border>
+
+                <!-- 相关信息(含 registry.json 预览) -->
                 <Border Style="{StaticResource WsCard}">
                     <StackPanel>
-                        <Grid Margin="0,0,0,2">
-                            <StackPanel Orientation="Horizontal">
-                                <controls:VioraIcon Geometry="{StaticResource Icon.PuzzlePiece}" Width="13" Height="13"
-                                                    Foreground="{DynamicResource Color.Primary}" VerticalAlignment="Center" />
-                                <TextBlock Text="{loc:Translate Workshop.InfoTitle}" FontSize="13.5" FontWeight="Bold" Margin="8,0,0,0"
-                                           Foreground="{DynamicResource Color.Text.Primary}" />
-                            </StackPanel>
-                            <Button Style="{StaticResource WsMini}" Command="{Binding AddInfoCommand}" HorizontalAlignment="Right"
-                                    Content="+" IsEnabled="{Binding HasAddableLanguages}"
-                                    ToolTip="{loc:Translate Workshop.InfoAdd}" />
-                        </Grid>
-
+                        <StackPanel Orientation="Horizontal" Margin="0,0,0,2">
+                            <controls:VioraIcon Geometry="{StaticResource Icon.PuzzlePiece}" Width="13" Height="13"
+                                                Foreground="{DynamicResource Color.Primary}" VerticalAlignment="Center" />
+                            <TextBlock Text="{loc:Translate Workshop.InfoTitle}" FontSize="13.5" FontWeight="Bold" Margin="8,0,0,0"
+                                       Foreground="{DynamicResource Color.Text.Primary}" />
+                        </StackPanel>
                         <TextBlock Text="{loc:Translate Workshop.PluginId}" Style="{StaticResource WsLabel}" />
                         <TextBox Style="{StaticResource WsInput}" Text="{Binding PluginId, UpdateSourceTrigger=PropertyChanged}" />
                         <Grid>
@@ -467,7 +530,7 @@
                         <ComboBox Style="{StaticResource VioraCombo}" ItemsSource="{Binding Categories}"
                                   SelectedItem="{Binding CategoryDisplay}" />
 
-                        <!-- 语言条目:默认英语(固定),+ 增补其他语言 -->
+                        <!-- 语言条目:英语默认固定,+ 增补;每条 = 展示名 + 描述 -->
                         <ItemsControl ItemsSource="{Binding InfoEntries}" Margin="0,6,0,0">
                             <ItemsControl.ItemTemplate>
                                 <DataTemplate>
@@ -500,19 +563,11 @@
                                 </DataTemplate>
                             </ItemsControl.ItemTemplate>
                         </ItemsControl>
-                    </StackPanel>
-                </Border>
 
-                <!-- registry 条目 -->
-                <Border Style="{StaticResource WsCard}" Margin="0,12,0,0">
-                    <StackPanel>
-                        <Grid>
-                            <StackPanel Orientation="Horizontal">
-                                <controls:VioraIcon Geometry="{StaticResource Icon.TableCells}" Width="13" Height="13"
-                                                    Foreground="{DynamicResource Color.Primary}" VerticalAlignment="Center" />
-                                <TextBlock Text="{loc:Translate Workshop.Registry}" FontSize="13.5" FontWeight="Bold" Margin="8,0,0,0"
-                                           Foreground="{DynamicResource Color.Text.Primary}" />
-                            </StackPanel>
+                        <!-- registry.json 预览 -->
+                        <Grid Margin="0,14,0,0">
+                            <TextBlock Text="{loc:Translate Workshop.RegistryPreview}" FontSize="12.5" FontWeight="Bold"
+                                       Foreground="{DynamicResource Color.Text.Primary}" VerticalAlignment="Center" />
                             <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
                                 <Button Style="{StaticResource WsButton}" Command="{Binding GenerateRegistryCommand}"
                                         Padding="8,3" FontSize="11" Content="{loc:Translate Workshop.GenRegistry}" />
@@ -521,10 +576,10 @@
                             </StackPanel>
                         </Grid>
                         <Border CornerRadius="10" BorderBrush="{DynamicResource Color.Border}" BorderThickness="1"
-                                Background="{DynamicResource Color.SurfaceElevated}" Margin="0,10,0,0">
+                                Background="{DynamicResource Color.SurfaceElevated}" Margin="0,8,0,0">
                             <RichTextBox x:Name="RegistryBox" IsReadOnly="True" FontFamily="Consolas" FontSize="11"
                                          Background="Transparent" BorderThickness="0" Padding="10,8"
-                                         VerticalScrollBarVisibility="Auto" MinHeight="120" MaxHeight="260" />
+                                         VerticalScrollBarVisibility="Auto" MinHeight="120" MaxHeight="240" />
                         </Border>
                     </StackPanel>
                 </Border>

@@ -47,7 +47,42 @@
             <Setter Property="Padding" Value="18,16" />
             <Setter Property="Margin" Value="0,0,0,14" />
         </Style>
-    </UserControl.Resources>
+    
+                    <Style x:Key="WsSettingsInput" TargetType="TextBox">
+                        <Setter Property="Background" Value="{DynamicResource Color.SurfaceHigh}" />
+                        <Setter Property="Foreground" Value="{DynamicResource Color.Text.Primary}" />
+                        <Setter Property="CaretBrush" Value="{DynamicResource Color.Primary}" />
+                        <Setter Property="Padding" Value="8,5" />
+                        <Setter Property="FontSize" Value="12" />
+                        <Setter Property="Template">
+                            <Setter.Value>
+                                <ControlTemplate TargetType="TextBox">
+                                    <Border Background="{TemplateBinding Background}" CornerRadius="9"
+                                            BorderBrush="{DynamicResource Color.Border}" BorderThickness="1">
+                                        <ScrollViewer x:Name="PART_ContentHost" Margin="{TemplateBinding Padding}"
+                                                      VerticalAlignment="Center" />
+                                    </Border>
+                                </ControlTemplate>
+                            </Setter.Value>
+                        </Setter>
+                    </Style>
+                    <Style x:Key="WsSettingsBtn" TargetType="Button">
+                        <Setter Property="Background" Value="{DynamicResource Brush.Glass}" />
+                        <Setter Property="Foreground" Value="{DynamicResource Color.Text.Primary}" />
+                        <Setter Property="FontSize" Value="11" />
+                        <Setter Property="Cursor" Value="Hand" />
+                        <Setter Property="Template">
+                            <Setter.Value>
+                                <ControlTemplate TargetType="Button">
+                                    <Border Background="{TemplateBinding Background}" CornerRadius="7" Padding="{TemplateBinding Padding}">
+                                        <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center" />
+                                    </Border>
+                                </ControlTemplate>
+                            </Setter.Value>
+                        </Setter>
+                    </Style>
+                
+</UserControl.Resources>
 
     <Grid Margin="16,14,16,14">
         <Grid.ColumnDefinitions>
@@ -419,6 +454,7 @@
                         </Border>
 
                         <!-- 插件工坊 -->
+                        <!-- 插件工坊 -->
                         <Border Style="{StaticResource SettingsCard}">
                             <StackPanel>
                                 <TextBlock Text="{loc:Translate Settings.Workshop.Title}" FontSize="13" FontWeight="SemiBold"
@@ -442,6 +478,15 @@
                                                   HorizontalAlignment="Left"
                                                   ItemsSource="{Binding WorkshopMinimapOptions}"
                                                   SelectedItem="{Binding WorkshopMinimapOption}" />
+                                        <TextBlock Text="{loc:Translate Settings.Workshop.EditorPath}" FontSize="11" Margin="0,12,0,0"
+                                                   Foreground="{DynamicResource Color.Text.Secondary}" />
+                                        <Grid Margin="0,6,0,0">
+                                            <TextBox Style="{StaticResource WsSettingsInput}"
+                                                     Text="{Binding ExternalEditorPath, UpdateSourceTrigger=PropertyChanged}" />
+                                            <Button Style="{StaticResource WsSettingsBtn}" Command="{Binding BrowseExternalEditorCommand}"
+                                                    Content="{loc:Translate Common.Browse}" HorizontalAlignment="Right"
+                                                    VerticalAlignment="Center" Margin="0,0,6,0" Padding="8,2" />
+                                        </Grid>
                                     </StackPanel>
                                     <StackPanel Grid.Column="1" Margin="10,0,0,0">
                                         <TextBlock Text="{loc:Translate Settings.Workshop.Highlight}" FontSize="11"

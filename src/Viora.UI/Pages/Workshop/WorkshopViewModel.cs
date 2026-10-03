@@ -167,12 +167,51 @@ public partial class WorkshopViewModel : ObservableObject
         _minimapTimer.Tick -= OnMinimapTimerTick;
         _minimapTimer.Tick += OnMinimapTimerTick;
         _minimapTimer.Start();
+
+        _analyzeTimer ??= new System.Windows.Threading.DispatcherTimer { Interval = TimeSpan.FromMilliseconds(700) };
+        _analyzeTimer.Stop();
+        _analyzeTimer.Tick -= OnAnalyzeTimerTick;
+        _analyzeTimer.Tick += OnAnalyzeTimerTick;
+        _analyzeTimer.Start();
     }
 
     private void OnMinimapTimerTick(object? sender, EventArgs e)
     {
         if (sender is System.Windows.Threading.DispatcherTimer t) t.Stop();
         UpdateMinimap(SourceCode);
+    }
+
+    private System.Windows.Threading.DispatcherTimer? _analyzeTimer;
+
+    private async void OnAnalyzeTimerTick(object? sender, EventArgs e)
+    {
+        if (sender is System.Windows.Threading.DispatcherTimer t) t.Stop();
+        var snapshot = Files.Select(f => f.Source).ToArray();
+        var errors = await AnalyzeAsync(snapshot);
+        AnalysisCompleted?.Invoke(this, errors);
+    }
+
+    /// <summary>实时纠错结果(偏移, 长度, 消息, 是否错误);页面据此画错误标记。</summary>
+    public event EventHandler<IReadOnlyList<DiagnosticEntry>>? AnalysisCompleted;
+
+    public sealed record DiagnosticEntry(int Offset, int Length, string Message, bool IsError);
+
+    private Task<List<DiagnosticEntry>> AnalyzeAsync(string[] sources)
+    {
+        var trees = sources.Select(t => CSharpSyntaxTree.ParseText(t, new CSharpParseOptions(LanguageVersion.Latest)))
+                           .ToArray();
+        var compilation = CSharpCompilation.Create(
+            AssemblyName + ".analysis", trees, BuildReferences(),
+            new CSharpCompilationOptions(OutputKind.DynamicallyLinkedLibrary));
+        var list = new List<DiagnosticEntry>();
+        foreach (var d in compilation.GetDiagnostics()
+                     .Where(d => d.Severity >= DiagnosticSeverity.Warning).Take(40))
+        {
+            var span = d.Location.SourceSpan;
+            list.Add(new DiagnosticEntry(span.Start, Math.Max(1, span.Length),
+                d.Descriptor.MessageFormat.ToString(), d.Severity == DiagnosticSeverity.Error));
+        }
+        return Task.FromResult(list);
     }
 
     [ObservableProperty]
@@ -268,9 +307,16 @@ public partial class WorkshopViewModel : ObservableObject
 
     // ---------- Minimap ----------
 
-    /// <summary>VSCode 式 minimap(超小字号流文档)。</summary>
-    [ObservableProperty]
-    private System.Windows.Documents.FlowDocument? _minimapDocument;
+    /// <summary>VSCode 式 minimap:逐行色条(注释灰/字符串绿/代码蓝),行高 3px。</summary>
+    public System.Collections.ObjectModel.ObservableCollection<MinimapLine> MinimapLines { get; }
+        = new();
+
+    public sealed class MinimapLine
+    {
+        public double Width { get; init; }
+        public System.Windows.Thickness Indent { get; init; }
+        public string ColorKey { get; init; } = "code"; // code | comment | string
+    }
 
     [ObservableProperty]
     private bool _showMinimap = true;
@@ -278,9 +324,28 @@ public partial class WorkshopViewModel : ObservableObject
     [CommunityToolkit.Mvvm.Input.RelayCommand]
     private void ToggleMinimap() => ShowMinimap = !ShowMinimap;
 
-    /// <summary>由编辑器侧防抖调用:重建 minimap 文档。</summary>
-    public void UpdateMinimap(string source) =>
-        MinimapDocument = CSharpHighlighter.Build(source, CSharpHighlighter.TokenPalette.Instance, minimap: true);
+    /// <summary>由编辑器侧防抖调用:重建 minimap 行条。</summary>
+    public void UpdateMinimap(string source)
+    {
+        MinimapLines.Clear();
+        foreach (var raw in source.Replace("\r\n", "\n").Split('\n'))
+        {
+            var trimmed = raw.TrimStart();
+            int indent = Math.Min(24, (raw.Length - trimmed.Length) * 2);
+            double width = Math.Min(44, trimmed.Length * 1.15);
+            string key = trimmed.StartsWith("//") ? "comment"
+                : trimmed.Contains('"') ? "string"
+                : "code";
+            MinimapLines.Add(new MinimapLine
+            {
+                Width = width,
+                Indent = new System.Windows.Thickness(indent, 0, 0, 0),
+                ColorKey = key,
+            });
+        }
+        if (MinimapLines.Count == 0)
+            MinimapLines.Add(new MinimapLine { Width = 1, Indent = new System.Windows.Thickness(0), ColorKey = "code" });
+    }
 
     // ---------- 视图 Tab ----------
 
@@ -384,6 +449,28 @@ public partial class WorkshopViewModel : ObservableObject
                 Encoder = System.Text.Encodings.Web.JavaScriptEncoder.UnsafeRelaxedJsonEscaping,
             });
         Log("registry 条目已生成", "build");
+    }
+
+    [CommunityToolkit.Mvvm.Input.RelayCommand]
+    private void OpenExternal()
+    {
+        var dir = Path.Combine(Path.GetTempPath(), "viora-workshop",
+            string.IsNullOrWhiteSpace(PluginId) ? "plugin" : PluginId);
+        Directory.CreateDirectory(dir);
+        foreach (var f in Files) File.WriteAllText(Path.Combine(dir, f.Name), f.Source);
+
+        var exe = _settings.Current.Appearance.ExternalEditorPath?.Trim();
+        try
+        {
+            if (!string.IsNullOrEmpty(exe) && File.Exists(exe))
+                System.Diagnostics.Process.Start(exe, $"\"{dir}\"");
+            else
+                System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo(dir) { UseShellExecute = true });
+        }
+        catch (Exception ex)
+        {
+            _alert.Warn(Tr.Get("Workshop.OpenExternal"), ex.Message);
+        }
     }
 
     [CommunityToolkit.Mvvm.Input.RelayCommand]

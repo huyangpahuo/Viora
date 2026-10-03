@@ -353,6 +353,24 @@ public partial class SettingsViewModel : ObservableObject
 
     public string[] WorkshopMinimapOptions { get; } = ["On", "Off"];
 
+    public string ExternalEditorPath
+    {
+        get => _settings.Current.Appearance.ExternalEditorPath;
+        set
+        {
+            _settings.Update(s => s.Appearance.ExternalEditorPath = value);
+            OnPropertyChanged(nameof(ExternalEditorPath));
+        }
+    }
+
+    [CommunityToolkit.Mvvm.Input.RelayCommand]
+    private void BrowseExternalEditor()
+    {
+        var dialog = new Microsoft.Win32.OpenFileDialog { Filter = "Executable|*.exe" };
+        if (dialog.ShowDialog() != true) return;
+        ExternalEditorPath = dialog.FileName;
+    }
+
     /// <summary>小地图默认开关(On / Off)。</summary>
     public string WorkshopMinimapOption
     {
