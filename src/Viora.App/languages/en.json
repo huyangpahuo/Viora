@@ -631,5 +631,8 @@
   "Workshop.Sdk.Redline": "Red lines",
   "Workshop.Sdk.Rule1": "No network",
   "Workshop.Sdk.Rule2": "Id immutable",
-  "Workshop.Sdk.Rule3": "No host DLLs"
+  "Workshop.Sdk.Rule3": "No host DLLs",
+  "Workshop.DescBox": "Description",
+  "Workshop.DescHint": "English required, others optional",
+  "Workshop.AddFile": "New file"
 }

@@ -34,7 +34,7 @@ public static partial class CSharpHighlighter
         var lines = source.Replace("\r\n", "\n").Split('\n');
         foreach (var lineText in lines)
         {
-            var paragraph = new Paragraph { Margin = new Thickness(0) };
+            var paragraph = new Paragraph { Margin = new Thickness(0), LineHeight = 17, LineStackingStrategy = System.Windows.LineStackingStrategy.BlockLineHeight };
             if (lineText.Length == 0)
             {
                 paragraph.Inlines.Add(new Run(" "));

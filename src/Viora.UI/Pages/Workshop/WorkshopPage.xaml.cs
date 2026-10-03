@@ -8,14 +8,14 @@ namespace Viora.UI.Pages.Workshop;
 
 /// <summary>
 /// 插件工坊 code-behind:
-/// - 双层编辑器(透明输入层 + 高亮只读层),编辑层内部 ScrollViewer 滚动镜像到高亮层
-///   (RichTextBox 自带内部滚动,必须镜像到它的内部 ScrollViewer,而非外层包装);
-/// - 源码/效果预览 视图切换;编译状态徽章;
-/// - Before/After 对比:预览框圆角裁剪 + 分割线裁左半原图;
-/// - Minimap / registry 高亮文档赋值(RichTextBox.Document 非依赖属性,不能 XAML 绑定)。
+/// - 编辑器 = 高亮只读层(RichTextBox,内滚)+ 输入层(TextBox,NoWrap);两层行高/列宽严格一致,
+///   输入层内部 ScrollViewer 的偏移实时镜像到高亮层内部 ScrollViewer,横纵皆可滚动;
+/// - 高亮/minimap/registry 三份流文档均由 VM 生成,这里赋给对应 RichTextBox(Document 非依赖属性);
+/// - 文件列表 / minimap 折叠切换;编译状态徽章;Before/After 圆角与分割裁剪;输出 Tab。
 /// </summary>
 public partial class WorkshopPage : UserControl
 {
+    private const double CodeLineHeight = 17;
     private bool _syncing;
 
     public WorkshopPage(WorkshopViewModel vm)
@@ -24,11 +24,16 @@ public partial class WorkshopPage : UserControl
         InitializeComponent();
         Loaded += OnLoaded;
 
+        // 输入层行高与高亮层段落行高强制一致(像素级对齐的前提)
+        System.Windows.Controls.TextBlock.SetLineHeight(EditorBox, CodeLineHeight);
+        System.Windows.Controls.TextBlock.SetLineStackingStrategy(EditorBox, System.Windows.LineStackingStrategy.BlockLineHeight);
+
         // RichTextBox.Document 非依赖属性:手动赋值并跟随 VM 更新
         vm.HighlightDocument = CSharpHighlighter.Build(vm.SourceCode, CSharpHighlighter.TokenPalette.Instance);
         vm.MinimapDocument = CSharpHighlighter.Build(vm.SourceCode, CSharpHighlighter.TokenPalette.Instance, minimap: true);
         HighlightBox.Document = vm.HighlightDocument;
         MinimapBox.Document = vm.MinimapDocument;
+        if (vm.RegistryDocument is not null) RegistryBox.Document = vm.RegistryDocument;
         vm.PropertyChanged += (_, e) =>
         {
             switch (e.PropertyName)
@@ -42,13 +47,21 @@ public partial class WorkshopPage : UserControl
                 case nameof(WorkshopViewModel.MinimapDocument) when vm.MinimapDocument is not null:
                     MinimapBox.Document = vm.MinimapDocument;
                     break;
+                case nameof(WorkshopViewModel.RegistryDocument):
+                    RegistryBox.Document = vm.RegistryDocument
+                        ?? CSharpHighlighter.Build("", CSharpHighlighter.TokenPalette.Instance);
+                    break;
                 case nameof(WorkshopViewModel.ActiveTab):
                     bool preview = vm.ActiveTab == "preview";
                     SourceHost.Visibility = preview ? Visibility.Collapsed : Visibility.Visible;
                     PreviewHost.Visibility = preview ? Visibility.Visible : Visibility.Collapsed;
+                    if (!preview) Dispatcher.BeginInvoke(ApplyRoundedClips);
                     break;
                 case nameof(WorkshopViewModel.ShowMinimap):
-                    MinimapToggle.Content = vm.ShowMinimap ? "" : "";
+                    ApplyCollapseState(vm);
+                    break;
+                case nameof(WorkshopViewModel.ShowFileList):
+                    ApplyCollapseState(vm);
                     break;
             }
         };
@@ -57,7 +70,7 @@ public partial class WorkshopPage : UserControl
 
     private void OnLoaded(object sender, RoutedEventArgs e)
     {
-        // 编辑层的内部 ScrollViewer:滚动时镜像到高亮层 RichTextBox 的内部 ScrollViewer
+        // 输入层内部 ScrollViewer 滚动 → 镜像到高亮层内部 ScrollViewer(横纵)
         var editorScroll = FindScrollViewer(EditorBox);
         var highlightScroll = FindScrollViewer(HighlightBox);
         if (editorScroll is not null && highlightScroll is not null)
@@ -72,8 +85,16 @@ public partial class WorkshopPage : UserControl
                 }
                 finally { _syncing = false; }
             };
+
+        // 高亮文档不换行:页宽放大(与输入层 NoWrap 对齐)
+        if (HighlightBox.Document is { } doc) doc.PageWidth = 5000;
+
         ApplyRoundedClips();
-        if (DataContext is WorkshopViewModel vm) ApplyCompareClip(vm.ComparePosition);
+        if (DataContext is WorkshopViewModel vm)
+        {
+            ApplyCollapseState(vm);
+            ApplyCompareClip(vm.ComparePosition);
+        }
     }
 
     private static System.Windows.Controls.ScrollViewer? FindScrollViewer(System.Windows.DependencyObject root)
@@ -89,7 +110,19 @@ public partial class WorkshopPage : UserControl
         return null;
     }
 
-    // ---------- 编辑层:Tab 缩进 + 高亮重建 ----------
+    // ---------- 折叠状态:文件列表 / minimap ----------
+
+    private void ApplyCollapseState(WorkshopViewModel vm)
+    {
+        FileListColumn.Width = vm.ShowFileList ? new GridLength(170) : new GridLength(34);
+        FileListExpand.Visibility = vm.ShowFileList ? Visibility.Collapsed : Visibility.Visible;
+
+        MinimapColumn.Width = vm.ShowMinimap ? new GridLength(72) : new GridLength(34);
+        MinimapHost.Visibility = vm.ShowMinimap ? Visibility.Visible : Visibility.Collapsed;
+        MinimapExpand.Visibility = vm.ShowMinimap ? Visibility.Collapsed : Visibility.Visible;
+    }
+
+    // ---------- 编辑层:Tab 缩进 + 防抖高亮由 VM 驱动 ----------
 
     private void Editor_OnTextChanged(object sender, TextChangedEventArgs e)
     {
@@ -103,18 +136,20 @@ public partial class WorkshopPage : UserControl
             box.Text = box.Text.Remove(caret - 1, 1).Insert(caret - 1, "    ");
             box.SelectionStart = caret + 3;
         }
+    }
 
-        if (DataContext is WorkshopViewModel vm)
+    // ---------- 文件名:Enter 提交 ----------
+
+    private void FileName_OnKeyDown(object sender, KeyEventArgs e)
+    {
+        if (e.Key is Key.Enter or Key.Return && sender is TextBox box)
         {
-            _syncing = true;
-            try
-            {
-                vm.HighlightDocument = CSharpHighlighter.Build(box.Text, CSharpHighlighter.TokenPalette.Instance);
-                vm.MinimapDocument = CSharpHighlighter.Build(box.Text, CSharpHighlighter.TokenPalette.Instance, minimap: true);
-            }
-            finally { _syncing = false; }
+            box.MoveFocus(new TraversalRequest(FocusNavigationDirection.Next));
+            e.Handled = true;
         }
     }
+
+    private void FileName_OnLostFocus(object sender, RoutedEventArgs e) { /* 绑定即提交 */ }
 
     // ---------- 编译状态徽章 ----------
 
@@ -142,7 +177,7 @@ public partial class WorkshopPage : UserControl
         vm.SetOutputTab(TabBuild.IsChecked == true ? "build" : "run");
     }
 
-    // ---------- 视图切换:切换到效果预览后重算布局裁剪 ----------
+    // ---------- 视图切换 ----------
 
     private void ViewTab_OnChanged(object sender, RoutedEventArgs e)
     {

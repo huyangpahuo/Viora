@@ -30,20 +30,79 @@ public partial class WorkshopViewModel : ObservableObject
     private IImageBuffer? _sampleBuffer;
     private AssemblyLoadContext? _lastAlc;
 
+    private readonly Viora.Core.Localization.ILocalizationService _localization;
+
     public WorkshopViewModel(IImageConversionEngine engine, IImportServiceProxy import,
-        IUiAlert alert, ILogger<WorkshopViewModel> logger)
+        IUiAlert alert, ILogger<WorkshopViewModel> logger,
+        Viora.Core.Localization.ILocalizationService localization)
     {
         _engine = engine;
         _import = import;
         _alert = alert;
         _logger = logger;
+        _localization = localization;
         Files.Add(new WorkshopFile { Name = "main.cs", Source = DefaultTemplate });
         ActiveFile = Files[0];
         SourceCode = DefaultTemplate;
         RebuildCategories();
         LocalizationSource.Current.PropertyChanged += (_, _) => RebuildCategories();
+        // 描述条目:英语必填起步,其余语言按宿主已加载语言用 + 号增补
+        DescriptionEntries.Add(new DescriptionEntry("en", "English"));
         CreateSyntheticSample();
     }
+
+    /// <summary>可增补的语言(宿主已加载语言 - 已添加的)。</summary>
+    public IEnumerable<string> AddableLanguages =>
+        _localization.AvailableLanguages
+            .Where(l => DescriptionEntries.All(d => d.LangCode != l))
+            .Select(DisplayLang);
+
+    public static string DisplayLang(string code) => code switch
+    {
+        "en" => "English",
+        "zh-Hans" => "简体中文",
+        _ => code,
+    };
+
+    /// <summary>语言码 → registry 键(zh-Hans → zh)。</summary>
+    public static string RegistryLang(string code) => code == "zh-Hans" ? "zh" : code;
+
+    /// <summary>描述多语言条目(英语固定在首位,不可删除)。</summary>
+    public System.Collections.ObjectModel.ObservableCollection<DescriptionEntry> DescriptionEntries { get; }
+        = new();
+
+    public sealed class DescriptionEntry
+    {
+        public string LangCode { get; }
+        public string LangDisplay { get; }
+        public string Text { get; set; } = "";
+        public bool IsFixed { get; }
+        public DescriptionEntry(string code, string display, bool fixedEntry = false)
+            => (LangCode, LangDisplay, IsFixed) = (code, display, fixedEntry);
+    }
+
+    [ObservableProperty]
+    private string _newDescriptionLang = "";
+
+    [CommunityToolkit.Mvvm.Input.RelayCommand]
+    private void AddDescription()
+    {
+        var candidate = AddableLanguages.FirstOrDefault();
+        if (candidate is null) return;
+        int insert = DescriptionEntries.Count;
+        DescriptionEntries.Insert(insert, new DescriptionEntry(candidate, DisplayLang(candidate)));
+        NewDescriptionLang = "";
+    }
+
+    [CommunityToolkit.Mvvm.Input.RelayCommand]
+    private void RemoveDescription(DescriptionEntry entry)
+    {
+        if (entry.IsFixed) return;
+        DescriptionEntries.Remove(entry);
+    }
+
+    /// <summary>是否还有可增补的语言(驱动 + 号可用态)。</summary>
+    public bool HasAddableLanguages => AddableLanguages.Any();
 
     /// <summary>分类显示名列表(当前语言);显示名 ↔ 键 双向映射随语言重建。</summary>
     public System.Collections.ObjectModel.ObservableCollection<string> Categories { get; } = new();
@@ -102,20 +161,75 @@ public partial class WorkshopViewModel : ObservableObject
         finally { _switchingFile = false; }
     }
 
+    private System.Windows.Threading.DispatcherTimer? _highlightTimer;
+
     partial void OnSourceCodeChanged(string value)
     {
         if (!_switchingFile && ActiveFile is not null)
             ActiveFile.Source = value;
-        HighlightDocument = CSharpHighlighter.Build(value, CSharpHighlighter.TokenPalette.Instance);
-        MinimapDocument = CSharpHighlighter.Build(value, CSharpHighlighter.TokenPalette.Instance, minimap: true);
+
+        // 防抖 150ms 重建高亮/minimap:避免每次按键全量重建导致卡顿
+        _highlightTimer ??= new System.Windows.Threading.DispatcherTimer
+        {
+            Interval = TimeSpan.FromMilliseconds(150),
+        };
+        _highlightTimer.Stop();
+        _highlightTimer.Start();
+        _highlightTimer.Tick -= OnHighlightTimerTick;
+        _highlightTimer.Tick += OnHighlightTimerTick;
     }
 
-    public sealed class WorkshopFile
+    private void OnHighlightTimerTick(object? sender, EventArgs e)
     {
-        public string Name { get; init; } = "file.cs";
-        public string Source { get; set; } = "";
-        public override string ToString() => Name;
+        if (sender is System.Windows.Threading.DispatcherTimer t) t.Stop();
+        HighlightDocument = CSharpHighlighter.Build(SourceCode, CSharpHighlighter.TokenPalette.Instance);
+        MinimapDocument = CSharpHighlighter.Build(SourceCode, CSharpHighlighter.TokenPalette.Instance, minimap: true);
     }
+
+    public sealed class WorkshopFile : CommunityToolkit.Mvvm.ComponentModel.ObservableObject
+    {
+        private string _name = "file.cs";
+        public string Name
+        {
+            get => _name;
+            set
+            {
+                value = SanitizeName(value);
+                if (SetProperty(ref _name, value)) Renamed?.Invoke(this, EventArgs.Empty);
+            }
+        }
+
+        private string _source = "";
+        public string Source { get => _source; set => SetProperty(ref _source, value); }
+
+        public event EventHandler? Renamed;
+
+        public override string ToString() => Name;
+
+        public static string SanitizeName(string raw)
+        {
+            var name = raw.Trim().Replace("\\", "/");
+            if (name.EndsWith(".cs", StringComparison.OrdinalIgnoreCase)) name = name[..^3];
+            name = new string(name.Where(char.IsLetterOrDigit).ToArray());
+            return name.Length == 0 ? "file" : name + ".cs";
+        }
+    }
+
+    [CommunityToolkit.Mvvm.Input.RelayCommand]
+    private void DeleteFile(WorkshopFile file)
+    {
+        if (Files.Count <= 1) return;
+        int idx = Files.IndexOf(file);
+        Files.Remove(file);
+        if (ActiveFile == file)
+            ActiveFile = Files[Math.Clamp(idx, 0, Files.Count - 1)];
+    }
+
+    [ObservableProperty]
+    private bool _showFileList = true;
+
+    [CommunityToolkit.Mvvm.Input.RelayCommand]
+    private void ToggleFileList() => ShowFileList = !ShowFileList;
 
     [CommunityToolkit.Mvvm.Input.RelayCommand]
     private void SwitchTab(string tab)
@@ -444,22 +558,26 @@ public partial class WorkshopViewModel : ObservableObject
         string presetId = PluginId.StartsWith("builtin.viora.", StringComparison.Ordinal)
             ? "builtin." + PluginId["builtin.viora.".Length..]
             : PluginId;
+        // name/description 多语言:en 必填;其他语言按描述盒子里添加的条目输出
+        var nameDict = new Dictionary<string, string> { ["en"] = DisplayName };
+        if (!string.IsNullOrWhiteSpace(NameZh)) nameDict[RegistryLang("zh-Hans")] = NameZh;
+        var descDict = DescriptionEntries
+            .Where(d => !string.IsNullOrWhiteSpace(d.Text) || d.IsFixed)
+            .ToDictionary(d => RegistryLang(d.LangCode), d => d.Text);
+        descDict["en"] = Description;
+
         var entry = new
         {
             pluginId = PluginId,
             presetId,
-            name = new { zh = string.IsNullOrWhiteSpace(NameZh) ? DisplayName : NameZh, en = DisplayName },
+            name = nameDict,
             author = string.IsNullOrWhiteSpace(Author) ? "unknown" : Author,
             category = CategoryKey,
             version = Version,
             package = $"packages/{PluginId}.zip",
             repository = "",
             tags = Array.Empty<string>(),
-            description = new
-            {
-                zh = string.IsNullOrWhiteSpace(DescriptionZh) ? Description : DescriptionZh,
-                en = Description,
-            },
+            description = descDict,
         };
         RegistryText = System.Text.Json.JsonSerializer.Serialize(entry,
             new System.Text.Json.JsonSerializerOptions { WriteIndented = true, Encoder = System.Text.Encodings.Web.JavaScriptEncoder.UnsafeRelaxedJsonEscaping });
