@@ -20,15 +20,13 @@ public sealed partial class JsonLocalizationService : ILocalizationService
     public JsonLocalizationService(ILogger<JsonLocalizationService> logger)
     {
         _logger = logger;
-        LoadEmbeddedPacks();
         LoadExternalPacks();
         LogPacksLoaded(_logger, _packs.Count, string.Join(",", _packs.Keys));
     }
 
     /// <summary>
-    /// 外置语言包(方案 C):扫描 exe 旁 languages\*.json,按文件名识别语言码(如 fr.json → fr),
-    /// 与内置包按键合并(外置键覆盖内置键,缺键回落英文)。小众语言创作者无需重新编译客户端,
-    /// 复制翻译文件到该文件夹重启即可;也可以 PR 进官方仓库随版本内置。
+    /// 语言包全部外置(exe 旁 languages\*.json,含内置的 zh-Hans / English,与第三方语言包
+    /// 同一机制):按文件名识别语言码(如 fr.json → fr),`Language.DisplayName` 键决定下拉显示名。
     /// </summary>
     private void LoadExternalPacks()
     {
@@ -184,42 +182,6 @@ public sealed partial class JsonLocalizationService : ILocalizationService
             _packs[pack.Code] = pack;
         LanguageChanged?.Invoke(this, EventArgs.Empty);
     }
-
-    private void LoadEmbeddedPacks()
-    {
-        var assembly = typeof(JsonLocalizationService).Assembly;
-        foreach (var name in assembly.GetManifestResourceNames())
-        {
-            if (!name.EndsWith(".json", StringComparison.OrdinalIgnoreCase)) continue;
-
-            using var stream = assembly.GetManifestResourceStream(name);
-            if (stream is null) continue;
-
-            using var reader = new StreamReader(stream);
-            var json = reader.ReadToEnd();
-
-            // Resource names: "Viora.Localization.Assets.<lang>.json" — language is the
-            // segment after "Assets", not the file stem (manifest names keep full dots).
-            var stem = Path.GetFileNameWithoutExtension(name);
-            var code = stem[(stem.LastIndexOf('.') + 1)..];
-            try
-            {
-                var pack = LanguagePack.FromJson(code, DisplayNameFor(code), json);
-                _packs[pack.Code] = pack;
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Failed to parse embedded language pack {Resource}", name);
-            }
-        }
-    }
-
-    internal static string DisplayNameFor(string code) => code switch
-    {
-        "en" => "English",
-        "zh-Hans" => "简体中文",
-        _ => code,
-    };
 
     internal static bool DevModeMarker { get; set; }
 

@@ -70,6 +70,7 @@ public sealed class OfficialPluginService
 
     public string NameOf((string NameZh, string NameEn) names) => LocalizationSource.Current.Language == "en" ? names.NameEn : names.NameZh;
 
+    /// <summary>加载编译进程序的目录快照(离线兜底);在线目录由 RefreshFromGitHubAsync 刷新。</summary>
     private void LoadBundledRegistry()
     {
         try
@@ -83,19 +84,7 @@ public sealed class OfficialPluginService
         }
         catch
         {
-            // 快照缺失:走文件系统回退
-        }
-
-        if (_items.Count == 0)
-        {
-            // 回退:本地镜像的 registry.json(开发环境直接可用)
-            foreach (var mirror in MirrorRoots())
-            {
-                var reg = Path.Combine(mirror, "registry.json");
-                if (!File.Exists(reg)) continue;
-                try { ParseRegistry(File.ReadAllText(reg)); break; }
-                catch { /* 尝试下一个 */ }
-            }
+            // 快照缺失:目录为空,联网刷新后恢复
         }
     }
 
@@ -178,8 +167,7 @@ public sealed class OfficialPluginService
     }
 
     /// <summary>
-    /// 定位插件包:GitHub raw → jsDelivr CDN → 本地镜像 packages/(离线开发兜底)。
-    /// 返回 null = 全部不可用。
+    /// 定位插件包:GitHub raw → jsDelivr CDN,下载到临时文件。全部不可用返回 null。
     /// </summary>
     public async Task<string?> PreparePackageAsync(string packageFile)
     {
@@ -198,56 +186,32 @@ public sealed class OfficialPluginService
             }
         }
 
-        foreach (var mirror in MirrorRoots())
-        {
-            var local = Path.Combine(mirror, packageFile.Replace('/', Path.DirectorySeparatorChar));
-            if (File.Exists(local)) return local;
-        }
-
         return null;
     }
 
     /// <summary>
-    /// 插件包的展示元数据(大小 / 更新时间):本地镜像文件优先(离线可用),
-    /// 否则向 GitHub raw 发起流式 GET,读取 Content-Length 与 Last-Modified 响应头。
-    /// 失败返回 (null, null),UI 显示占位符。
+    /// 插件包的展示元数据(大小 / 更新时间):向下载源发起流式 GET,
+    /// 读取 Content-Length 与 Last-Modified 响应头。失败返回 (null, null),UI 显示占位符。
     /// </summary>
     public async Task<(long? SizeBytes, DateTime? UpdatedUtc)> GetPackageInfoAsync(string packageFile)
     {
-        foreach (var mirror in MirrorRoots())
+        foreach (var url in RemoteUrls(packageFile))
         {
-            var local = new FileInfo(Path.Combine(mirror, packageFile.Replace('/', Path.DirectorySeparatorChar)));
-            if (local.Exists)
-                return (local.Length, local.LastWriteTimeUtc);
+            try
+            {
+                using var response = await Http.GetAsync(url, HttpCompletionOption.ResponseHeadersRead);
+                if (!response.IsSuccessStatusCode) continue;
+                long? size = response.Content.Headers.ContentLength;
+                DateTime? updated = response.Content.Headers.LastModified?.UtcDateTime;
+                return (size, updated);
+            }
+            catch
+            {
+                // 尝试下一个源
+            }
         }
 
-        try
-        {
-            string url = $"https://raw.githubusercontent.com/{RepoOwner}/{RepoName}/{RepoBranch}/{packageFile}";
-            using var response = await Http.GetAsync(url, HttpCompletionOption.ResponseHeadersRead);
-            if (!response.IsSuccessStatusCode) return (null, null);
-            long? size = response.Content.Headers.ContentLength;
-            DateTime? updated = response.Content.Headers.LastModified?.UtcDateTime;
-            return (size, updated);
-        }
-        catch
-        {
-            return (null, null);
-        }
-    }
-
-    /// <summary>镜像根目录候选:exe 向上六层内的 Viora-plugins(开发态)与 %LOCALAPPDATA% 镜像。</summary>
-    public static IEnumerable<string> MirrorRoots()
-    {
-        var baseDir = AppContext.BaseDirectory;
-        var dir = Path.TrimEndingDirectorySeparator(Path.GetFullPath(baseDir));
-        for (int i = 0; i < 6 && dir is not null; i++)
-        {
-            yield return Path.Combine(dir, RepoName);
-            dir = Path.GetDirectoryName(dir);
-        }
-        yield return Path.Combine(
-            Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "Viora", "official_repo");
+        return (null, null);
     }
 
     private void RaiseChanged() => Changed?.Invoke(this, EventArgs.Empty);

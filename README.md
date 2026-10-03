@@ -1,4 +1,4 @@
-# Viora
+﻿# Viora
 
 **Give every picture a new style.**
 
@@ -17,10 +17,10 @@ Viora is a **local-first** photo stylization app for Windows (WPF / .NET 8). Imp
 ## Features
 
 - **Stylize** — 55 art styles (all via the plugin market), live preview while tweaking sliders, batch queue, split before/after compare, history, retry on failure; previews render at the preview resolution and exports automatically re-run the pipeline at full export resolution — everything runs locally.
-- **Plugin market** — browse / search (name · author · tags · description) / category filter / one-click install, uninstall and **update** (the button switches to *Update* when a plugin ships a newer version, upgrading in place by version). Downloads try GitHub raw first with a jsDelivr CDN fallback, then a local mirror; installing unzips into the `plugins` folder next to the app, uninstalling deletes it — adding or removing folders in Explorer works exactly the same.
+- **Plugin market** — browse / search (name · author · tags · description) / category filter / one-click install, uninstall and **update** (the button switches to *Update* when a plugin ships a newer version, upgrading in place by version). Downloads try GitHub raw first with a jsDelivr CDN fallback; installing unzips into the `plugins` folder next to the app, uninstalling deletes it — adding or removing folders in Explorer works exactly the same.
 - **My Works** — grid & list views, favorites, inline rename, regenerate, duplicate, export (6 formats: PNG / JPEG / BMP / TIFF / GIF / WebP).
 - **Settings** — general (startup, UI language, import size cap, custom log folder), appearance (10 color schemes + custom theme editor + UI scale 80%–120%), performance (preview quality, size caps, export format & JPEG quality), plugin management (master switch + per-plugin toggle), keyboard shortcuts (visual recording; defaults: Ctrl+Enter run, Ctrl+O import, Ctrl+1~4 switch pages), check for updates (compares against GitHub Releases).
-- **Bilingual + extensible language packs** — Simplified Chinese / English built in; drop a translated JSON into the `languages` folder and restart to add a new language (see [Settings & Localization](docs/05-设置与本地化.md)); PRs into the main repo are welcome too.
+- **Bilingual + extensible language packs** — every language pack, Simplified Chinese and English included, lives in the `languages` folder next to the app; third-party packs use the exact same mechanism: drop a translated JSON in and restart (see [Settings & Localization](docs/05-设置与本地化.md)); PRs into the main repo are welcome too.
 - **Privacy first** — no accounts, no uploads, no telemetry by default; file paths are redacted in logs.
 
 ## Getting started

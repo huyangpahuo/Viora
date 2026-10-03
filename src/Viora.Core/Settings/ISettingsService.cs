@@ -1,4 +1,4 @@
-using Viora.Core.Plugins;
+﻿using Viora.Core.Plugins;
 
 namespace Viora.Core.Settings;
 
@@ -20,7 +20,7 @@ public sealed class GeneralSettings
 
 public sealed class AppearanceSettings
 {
-    public string Theme { get; set; } = "dark";
+    public string Theme { get; set; } = "sunset";
 
     public double UiScale { get; set; } = 1.0;
 }
