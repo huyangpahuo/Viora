@@ -605,5 +605,13 @@
   "Workshop.NeedEntry": "No class implementing IVioraPlugin found (see MyStylePlugin in the default template).",
   "Workshop.BadId": "Plugin ID contains invalid characters.",
   "Workshop.PackDone": "Exported: {0}",
-  "Common.Copy": "Copy"
+  "Common.Copy": "Copy",
+  "Workshop.PluginInfo": "Plugin info",
+  "Workshop.NameZh": "Display name (Chinese)",
+  "Workshop.DescriptionZh": "Description (Chinese)",
+  "Workshop.Before": "Original",
+  "Workshop.After": "Result",
+  "Workshop.Badge.Ok": "Compiled",
+  "Workshop.Badge.Failed": "Failed",
+  "Workshop.ImportFailed": "Import failed"
 }

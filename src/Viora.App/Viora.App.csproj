@@ -50,17 +50,17 @@
       <WorkshopSdk Include="$(OutDir)Microsoft.Extensions.Logging.Abstractions.dll" />
       <WorkshopSdk Include="$(OutDir)System.*.dll" />
     </ItemGroup>
-    <Copy SourceFiles="@(WorkshopSdk)" DestinationFolder="$(OutDir)sdk" SkipUnchangedFiles="true" />
+    <Copy SourceFiles="@(WorkshopSdk)" DestinationFolder="$(OutDir)sdk" SkipUnchangedFiles="true" ContinueOnError="true" />
   </Target>
   <Target Name="CollectWorkshopSdkPublish" AfterTargets="Publish">
     <ItemGroup>
       <WorkshopSdk Include="$(MSBuildThisFileDirectory)../../assets/sdk/*.dll" />
-      <WorkshopSdk Include="$(PublishDir)Viora.Core.dll" />
-      <WorkshopSdk Include="$(PublishDir)Viora.PluginSdk.dll" />
-      <WorkshopSdk Include="$(PublishDir)Microsoft.Extensions.Logging.Abstractions.dll" />
+      <WorkshopSdk Include="$(OutDir)Viora.Core.dll" />
+      <WorkshopSdk Include="$(OutDir)Viora.PluginSdk.dll" />
+      <WorkshopSdk Include="$(OutDir)Microsoft.Extensions.Logging.Abstractions.dll" />
       <WorkshopSdk Include="$(PublishDir)System.*.dll" />
     </ItemGroup>
-    <Copy SourceFiles="@(WorkshopSdk)" DestinationFolder="$(PublishDir)sdk" SkipUnchangedFiles="true" />
+    <Copy SourceFiles="@(WorkshopSdk)" DestinationFolder="$(PublishDir)sdk" SkipUnchangedFiles="true" ContinueOnError="true" />
   </Target>
 
 </Project>

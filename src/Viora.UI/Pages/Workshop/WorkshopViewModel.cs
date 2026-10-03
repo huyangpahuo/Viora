@@ -51,6 +51,10 @@ public partial class WorkshopViewModel : ObservableObject
     [ObservableProperty]
     private string _sourceCode;
 
+    /// <summary>语法高亮只读层(RichTextBox 流文档),编辑层为透明 TextBox 叠加其上。</summary>
+    [ObservableProperty]
+    private System.Windows.Documents.FlowDocument? _highlightDocument;
+
     [ObservableProperty]
     private string _pluginId = "builtin.viora.my-style";
 
@@ -83,6 +87,32 @@ public partial class WorkshopViewModel : ObservableObject
 
     [ObservableProperty]
     private bool _isBusy;
+
+    /// <summary>对比模式开启时,预览图显示为 原图|结果 分割视图。</summary>
+    [ObservableProperty]
+    private bool _showCompare = true;
+
+    /// <summary>分割位置 0~100(%),驱动 Before/After 滑杆。</summary>
+    [ObservableProperty]
+    private double _comparePosition = 50;
+
+    /// <summary>编译状态:0 = 未编译,1 = 成功,2 = 失败(驱动状态徽章)。</summary>
+    [ObservableProperty]
+    private int _compileState;
+
+    /// <summary>registry 条目的中文名/描述(上架条目要求双语)。</summary>
+    [ObservableProperty]
+    private string _nameZh = "";
+
+    [ObservableProperty]
+    private string _descriptionZh = "";
+
+    /// <summary>原图结果缓冲(对比视图左半)。</summary>
+    public ImageSource? BeforeImage => _sampleBuffer is null ? null : _import.ToImageSource(_sampleBuffer);
+
+    public bool CanRun => !IsBusy && _sampleBuffer is not null;
+
+    partial void OnIsBusyChanged(bool value) => OnPropertyChanged(nameof(CanRun));
 
     public string ApiHelpText => ApiHelp;
 
@@ -157,6 +187,7 @@ public partial class WorkshopViewModel : ObservableObject
         Log(string.IsNullOrWhiteSpace(diagnostics) ? "(无警告)" : diagnostics.TrimEnd());
         if (pe is null)
         {
+            CompileState = 2;
             Log(Tr.Get("Workshop.CompileFailed"));
             return null;
         }
@@ -203,10 +234,12 @@ public partial class WorkshopViewModel : ObservableObject
                         Log($"  {s.StageName} {s.StageFraction:P0}");
                 }), cancellationToken: ct);
             PreviewImage = _import.ToImageSource(result.Result);
+            CompileState = 1;
             Log($"完成({result.Duration.TotalMilliseconds:F0} ms)");
         }
         catch (Exception ex)
         {
+            CompileState = 2;
             Log($"运行失败: {ex.Message}");
             _logger.LogError(ex, "Workshop preview failed");
         }
@@ -313,14 +346,18 @@ public partial class WorkshopViewModel : ObservableObject
         {
             pluginId = PluginId,
             presetId,
-            name = new { zh = DisplayName, en = DisplayName },
+            name = new { zh = string.IsNullOrWhiteSpace(NameZh) ? DisplayName : NameZh, en = DisplayName },
             author = string.IsNullOrWhiteSpace(Author) ? "unknown" : Author,
             category = CategoryKey,
             version = Version,
             package = $"packages/{PluginId}.zip",
             repository = "",
             tags = Array.Empty<string>(),
-            description = new { zh = Description, en = Description },
+            description = new
+            {
+                zh = string.IsNullOrWhiteSpace(DescriptionZh) ? Description : DescriptionZh,
+                en = Description,
+            },
         };
         RegistryText = System.Text.Json.JsonSerializer.Serialize(entry,
             new System.Text.Json.JsonSerializerOptions { WriteIndented = true, Encoder = System.Text.Encodings.Web.JavaScriptEncoder.UnsafeRelaxedJsonEscaping });
@@ -345,13 +382,17 @@ public partial class WorkshopViewModel : ObservableObject
         if (dialog.ShowDialog() != true) return;
         try
         {
-            _sampleBuffer = await _import.LoadFromFileAsync(dialog.FileName,
-                1024); // 预览上限,与风格化页一致
+            Log($"—— 导入样张: {System.IO.Path.GetFileName(dialog.FileName)} ——");
+            _sampleBuffer = await _import.LoadFromFileAsync(dialog.FileName, 1024); // 预览上限,与风格化页一致
             SampleInfoText = System.IO.Path.GetFileName(dialog.FileName);
-            Log($"样张: {SampleInfoText}");
+            OnPropertyChanged(nameof(BeforeImage));
+            Log($"成功: {_sampleBuffer.Width}×{_sampleBuffer.Height}");
         }
         catch (Exception ex)
         {
+            // 完整异常进日志区,便于定位(代理异常会带错误码)
+            Log($"导入失败: {ex.Message}");
+            if (ex.InnerException is not null) Log($"  内层: {ex.InnerException.Message}");
             _alert.Warn(Tr.Get("Workshop.PickSample"), ex.Message);
         }
     }
@@ -361,6 +402,7 @@ public partial class WorkshopViewModel : ObservableObject
     {
         CreateSyntheticSample();
         SampleInfoText = Tr.Get("Workshop.Sample.BuiltIn");
+        OnPropertyChanged(nameof(BeforeImage));
     }
 
     [CommunityToolkit.Mvvm.Input.RelayCommand]

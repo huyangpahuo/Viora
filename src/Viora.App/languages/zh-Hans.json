@@ -605,5 +605,13 @@
   "Workshop.NeedEntry": "未找到实现 IVioraPlugin 的入口类(参考默认模板的 MyStylePlugin)。",
   "Workshop.BadId": "插件 ID 含非法字符。",
   "Workshop.PackDone": "已导出:{0}",
-  "Common.Copy": "复制"
+  "Common.Copy": "复制",
+  "Workshop.PluginInfo": "插件信息",
+  "Workshop.NameZh": "显示名(中文)",
+  "Workshop.DescriptionZh": "描述(中文)",
+  "Workshop.Before": "原图",
+  "Workshop.After": "效果",
+  "Workshop.Badge.Ok": "已编译",
+  "Workshop.Badge.Failed": "编译失败",
+  "Workshop.ImportFailed": "导入失败"
 }

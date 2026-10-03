@@ -4,6 +4,13 @@
              xmlns:loc="clr-namespace:Viora.UI.Localization"
              xmlns:controls="clr-namespace:Viora.UI.Controls">
     <UserControl.Resources>
+        <Style x:Key="WsCard" TargetType="Border">
+            <Setter Property="Background" Value="{DynamicResource Color.Surface}" />
+            <Setter Property="BorderBrush" Value="{DynamicResource Color.Border}" />
+            <Setter Property="BorderThickness" Value="1" />
+            <Setter Property="CornerRadius" Value="14" />
+            <Setter Property="Padding" Value="14" />
+        </Style>
         <Style x:Key="WsLabel" TargetType="TextBlock">
             <Setter Property="FontSize" Value="12" />
             <Setter Property="Foreground" Value="{DynamicResource Color.Text.Secondary}" />
@@ -35,25 +42,36 @@
             <ColumnDefinition Width="430" />
         </Grid.ColumnDefinitions>
 
-        <!-- ============ 左:C# 源码编辑器 ============ -->
-        <Border Grid.Column="0" Margin="0,0,14,0" CornerRadius="14" Padding="14"
-                Background="{DynamicResource Color.Surface}" BorderBrush="{DynamicResource Color.Border}" BorderThickness="1">
+        <!-- ============ 左:源码 + 输出 ============ -->
+        <Border Grid.Column="0" Margin="0,0,14,0" Style="{StaticResource WsCard}">
             <Grid>
                 <Grid.RowDefinitions>
                     <RowDefinition Height="Auto" />
                     <RowDefinition Height="Auto" />
                     <RowDefinition Height="*" />
                     <RowDefinition Height="Auto" />
-                    <RowDefinition Height="160" />
+                    <RowDefinition Height="150" />
                 </Grid.RowDefinitions>
 
+                <!-- 标题行:图标 + 标题 + 编译状态徽章 -->
                 <StackPanel Grid.Row="0" Orientation="Horizontal" Margin="0,0,0,10">
                     <controls:VioraIcon Geometry="{StaticResource Icon.PenToSquare}" Width="16" Height="16"
                                         Foreground="{DynamicResource Color.Primary}" VerticalAlignment="Center" />
-                    <TextBlock Text="{loc:Translate Workshop.SourceLabel}" FontSize="15" FontWeight="Bold" Margin="8,0,0,0"
+                    <TextBlock Text="{loc:Translate Workshop.SourceLabel}" FontSize="15" FontWeight="Bold" Margin="8,0,10,0"
                                Foreground="{DynamicResource Color.Text.Primary}" VerticalAlignment="Center" />
+                    <Border x:Name="CompileBadge" CornerRadius="8" Padding="8,2" Background="{DynamicResource Brush.Glass}"
+                            BorderBrush="{DynamicResource Color.Border}" BorderThickness="1" Visibility="Collapsed">
+                        <StackPanel Orientation="Horizontal">
+                            <controls:VioraIcon x:Name="BadgeIcon" Width="11" Height="11" VerticalAlignment="Center"
+                                                Geometry="{StaticResource Icon.CircleCheck}"
+                                                Foreground="{DynamicResource Color.Success}" />
+                            <TextBlock x:Name="BadgeText" Text="OK" FontSize="11" Margin="5,0,0,0" VerticalAlignment="Center"
+                                       Foreground="{DynamicResource Color.Text.Secondary}" />
+                        </StackPanel>
+                    </Border>
                 </StackPanel>
 
+                <!-- 工具行 -->
                 <StackPanel Grid.Row="1" Orientation="Horizontal" Margin="0,0,0,8">
                     <Button Style="{StaticResource WsButton}" Command="{Binding RunPreviewCommand}"
                             IsEnabled="{Binding CanRun}" Background="{DynamicResource Brush.Brand}" Foreground="White" BorderThickness="0">
@@ -77,14 +95,24 @@
                             Content="{loc:Translate Workshop.ResetSample}" />
                 </StackPanel>
 
+                <!-- 高亮层(只读 RichTextBox)+ 透明编辑层叠加;滚动同步在 code-behind -->
                 <Border Grid.Row="2" CornerRadius="10" BorderBrush="{DynamicResource Color.Border}" BorderThickness="1"
-                        Background="{DynamicResource Color.SurfaceElevated}">
-                    <TextBox Text="{Binding SourceCode, UpdateSourceTrigger=PropertyChanged}"
-                             AcceptsReturn="True" AcceptsTab="True" FontFamily="Consolas" FontSize="12.5"
-                             Foreground="{DynamicResource Color.Text.Primary}" CaretBrush="{DynamicResource Color.Primary}"
-                             Background="Transparent" BorderThickness="0" Padding="10,8"
-                             VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Auto"
-                             TextChanged="Editor_OnTextChanged" />
+                        Background="{DynamicResource Color.SurfaceElevated}" ClipToBounds="True">
+                    <Grid>
+                        <ScrollViewer x:Name="HighlightScroller" VerticalScrollBarVisibility="Disabled"
+                                      HorizontalScrollBarVisibility="Disabled">
+                            <RichTextBox x:Name="HighlightBox" IsReadOnly="True" Background="Transparent" BorderThickness="0"
+                                         IsHitTestVisible="False" FontFamily="Consolas" FontSize="12.5"
+                                         />
+                        </ScrollViewer>
+                        <TextBox x:Name="EditorBox" Text="{Binding SourceCode, UpdateSourceTrigger=PropertyChanged}"
+                                 AcceptsReturn="True" AcceptsTab="True" FontFamily="Consolas" FontSize="12.5"
+                                 Foreground="Transparent" CaretBrush="{DynamicResource Color.Primary}"
+                                 Background="Transparent" BorderThickness="0" Padding="12,8,4,8"
+                                 VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Auto"
+                                 SelectionBrush="{DynamicResource Color.Primary}"
+                                 TextChanged="Editor_OnTextChanged" />
+                    </Grid>
                 </Border>
 
                 <TextBlock Grid.Row="3" Text="{loc:Translate Workshop.Output}" Style="{StaticResource WsLabel}" />
@@ -98,20 +126,16 @@
             </Grid>
         </Border>
 
-        <!-- ============ 右:元数据 / 预览 / registry / API ============ -->
-        <Border Grid.Column="1" CornerRadius="14" Padding="14"
-                Background="{DynamicResource Color.Surface}" BorderBrush="{DynamicResource Color.Border}" BorderThickness="1">
+        <!-- ============ 右:插件信息 / 样张预览 / registry / SDK ============ -->
+        <Border Grid.Column="1" Style="{StaticResource WsCard}">
             <ScrollViewer VerticalScrollBarVisibility="Auto">
                 <StackPanel>
-                    <TextBlock Text="{loc:Translate Nav.Workshop}" FontSize="17" FontWeight="Bold"
+                    <TextBlock Text="{loc:Translate Workshop.PluginInfo}" FontSize="15" FontWeight="Bold"
                                Foreground="{DynamicResource Color.Text.Primary}" />
-                    <TextBlock Text="{loc:Translate Nav.Workshop.Sub}" FontSize="11.5" Margin="0,4,0,0"
-                               Foreground="{DynamicResource Color.Text.Secondary}" />
-
                     <TextBlock Text="{loc:Translate Workshop.PluginId}" Style="{StaticResource WsLabel}" />
                     <TextBox Style="{StaticResource WsInput}" Text="{Binding PluginId, UpdateSourceTrigger=PropertyChanged}" />
 
-                    <Grid Margin="0,0,0,0">
+                    <Grid>
                         <Grid.ColumnDefinitions>
                             <ColumnDefinition Width="*" />
                             <ColumnDefinition Width="10" />
@@ -130,20 +154,46 @@
                     <TextBlock Text="{loc:Translate Workshop.Author}" Style="{StaticResource WsLabel}" />
                     <TextBox Style="{StaticResource WsInput}" Text="{Binding Author, UpdateSourceTrigger=PropertyChanged}" />
 
-                    <TextBlock Text="{loc:Translate Workshop.Description}" Style="{StaticResource WsLabel}" />
-                    <TextBox Style="{StaticResource WsInput}" Text="{Binding Description, UpdateSourceTrigger=PropertyChanged}" />
-
                     <TextBlock Text="{loc:Translate Workshop.Category}" Style="{StaticResource WsLabel}" />
                     <ComboBox ItemsSource="{Binding Categories}" SelectedValue="{Binding CategoryKey}"
                               SelectedValuePath="Key" DisplayMemberPath="Display"
                               Background="{DynamicResource Color.SurfaceHigh}" />
 
+                    <TextBlock Text="{loc:Translate Workshop.Description}" Style="{StaticResource WsLabel}" />
+                    <TextBox Style="{StaticResource WsInput}" Text="{Binding Description, UpdateSourceTrigger=PropertyChanged}" />
+
+                    <TextBlock Text="{loc:Translate Workshop.NameZh}" Style="{StaticResource WsLabel}" />
+                    <TextBox Style="{StaticResource WsInput}" Text="{Binding NameZh, UpdateSourceTrigger=PropertyChanged}" />
+                    <TextBlock Text="{loc:Translate Workshop.DescriptionZh}" Style="{StaticResource WsLabel}" />
+                    <TextBox Style="{StaticResource WsInput}" Text="{Binding DescriptionZh, UpdateSourceTrigger=PropertyChanged}" />
+
+                    <!-- 样张预览:Before/After 滑杆对比 -->
                     <TextBlock Text="{loc:Translate Workshop.Preview}" Style="{StaticResource WsLabel}" />
                     <Border CornerRadius="10" BorderBrush="{DynamicResource Color.Border}" BorderThickness="1"
-                            Background="{DynamicResource Color.SurfaceElevated}" Height="170" ClipToBounds="True">
-                        <Image Source="{Binding PreviewImage}" Stretch="Uniform" />
+                            Background="{DynamicResource Color.SurfaceElevated}" ClipToBounds="True" SizeChanged="PreviewBorder_OnSizeChanged">
+                        <Grid MinHeight="180">
+                            <Image Source="{Binding PreviewImage}" Stretch="Uniform" />
+                            <Image x:Name="BeforeImage" Source="{Binding BeforeImage}" Stretch="Uniform" />
+                            <Canvas>
+                                <Rectangle x:Name="SplitLine" Width="2" Fill="{DynamicResource Color.Primary}" Height="180" />
+                            </Canvas>
+                        </Grid>
                     </Border>
-                    <TextBlock Text="{Binding SampleInfoText}" FontSize="10.5" Margin="0,4,0,0"
+                    <Grid Margin="0,6,0,0">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="Auto" />
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="Auto" />
+                        </Grid.ColumnDefinitions>
+                        <TextBlock Grid.Column="0" Text="{loc:Translate Workshop.Before}" FontSize="10.5"
+                                   Foreground="{DynamicResource Color.Text.Disabled}" />
+                        <Slider Grid.Column="1" Margin="8,0" Minimum="0" Maximum="100"
+                                Value="{Binding ComparePosition}" IsSnapToTickEnabled="False"
+                                VerticalAlignment="Center" ValueChanged="CompareSlider_OnValueChanged" />
+                        <TextBlock Grid.Column="2" Text="{loc:Translate Workshop.After}" FontSize="10.5"
+                                   Foreground="{DynamicResource Color.Text.Disabled}" />
+                    </Grid>
+                    <TextBlock Text="{Binding SampleInfoText}" FontSize="10.5" Margin="0,2,0,0"
                                Foreground="{DynamicResource Color.Text.Disabled}" />
 
                     <TextBlock Text="{loc:Translate Workshop.Registry}" Style="{StaticResource WsLabel}" />
