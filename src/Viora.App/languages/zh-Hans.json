@@ -639,5 +639,10 @@
   "Workshop.InfoName": "展示名",
   "Workshop.InfoDesc": "描述",
   "Workshop.InfoAdd": "添加语言",
-  "Workshop.InfoFixedHint": "默认语言,不可删除"
+  "Workshop.InfoFixedHint": "默认语言,不可删除",
+  "Settings.Workshop.Title": "插件工坊",
+  "Settings.Workshop.FontSize": "代码字号",
+  "Settings.Workshop.Highlight": "高亮风格",
+  "Settings.Workshop.Minimap": "小地图(默认)",
+  "Workshop.Params": "参数"
 }

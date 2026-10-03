@@ -16,6 +16,34 @@ public partial class PluginMarketPage : UserControl
         InitializeComponent();
     }
 
+    private int _dragDepth;
+
+    private void ShowDropOverlay(bool show)
+    {
+        DropOverlay.Visibility = show ? Visibility.Visible : Visibility.Collapsed;
+        // 对蒙层以外的根子元素加模糊(蒙层自身不能被糊掉)
+        int n = System.Windows.Media.VisualTreeHelper.GetChildrenCount(PageRoot);
+        for (int i = 0; i < n; i++)
+        {
+            if (System.Windows.Media.VisualTreeHelper.GetChild(PageRoot, i) is UIElement child && child != DropOverlay)
+                child.Effect = show ? new System.Windows.Media.Effects.BlurEffect { Radius = 10 } : null;
+        }
+        if (!show) _dragDepth = 0;
+    }
+
+    private void Page_OnDragEnter(object sender, DragEventArgs e)
+    {
+        if (!e.Data.GetDataPresent(DataFormats.FileDrop)) return;
+        _dragDepth++;
+        ShowDropOverlay(true);
+    }
+
+    private void Page_OnDragLeave(object sender, DragEventArgs e)
+    {
+        _dragDepth = Math.Max(0, _dragDepth - 1);
+        if (_dragDepth == 0) ShowDropOverlay(false);
+    }
+
     private void Page_OnDragOver(object sender, DragEventArgs e)
     {
         e.Effects = e.Data.GetDataPresent(DataFormats.FileDrop) ? DragDropEffects.Copy : DragDropEffects.None;
@@ -24,6 +52,7 @@ public partial class PluginMarketPage : UserControl
 
     private async void Page_OnDrop(object sender, DragEventArgs e)
     {
+        ShowDropOverlay(false);
         if (e.Data.GetData(DataFormats.FileDrop) is not string[] files || files.Length == 0) return;
         e.Handled = true;
         if (DataContext is PluginMarketViewModel vm)

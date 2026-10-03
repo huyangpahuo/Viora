@@ -1,4 +1,4 @@
-using System.Collections.ObjectModel;
+﻿using System.Collections.ObjectModel;
 using System.Diagnostics;
 using System.IO;
 using System.Reflection;
@@ -302,6 +302,67 @@ public partial class SettingsViewModel : ObservableObject
 
     /// <summary>缩放预设档位(选择块)。</summary>
     public double[] UiScaleOptions { get; } = [0.8, 0.9, 1.0, 1.1, 1.2];
+
+    // ----- 插件工坊 -----
+
+    public double WorkshopFontSize
+    {
+        get => _settings.Current.Appearance.WorkshopFontSize;
+        set
+        {
+            var v = Math.Clamp(value, 9, 24);
+            _settings.Update(s => s.Appearance.WorkshopFontSize = v);
+            OnPropertyChanged(nameof(WorkshopFontSize));
+        }
+    }
+
+    public double[] WorkshopFontSizeOptions { get; } = [11, 12, 12.5, 14, 16];
+
+    public bool WorkshopJetBrainsHighlight
+    {
+        get => _settings.Current.Appearance.WorkshopJetBrainsHighlight;
+        set
+        {
+            _settings.Update(s => s.Appearance.WorkshopJetBrainsHighlight = value);
+            OnPropertyChanged(nameof(WorkshopJetBrainsHighlight));
+        }
+    }
+
+    public bool WorkshopShowMinimap
+    {
+        get => _settings.Current.Appearance.WorkshopShowMinimap;
+        set
+        {
+            _settings.Update(s => s.Appearance.WorkshopShowMinimap = value);
+            OnPropertyChanged(nameof(WorkshopShowMinimap));
+        }
+    }
+
+    public string[] WorkshopHighlightOptions { get; } = ["JetBrains", "Viora"];
+
+    /// <summary>高亮风格选项(JetBrains / Viora)。</summary>
+    public string WorkshopHighlightOption
+    {
+        get => _settings.Current.Appearance.WorkshopJetBrainsHighlight ? "JetBrains" : "Viora";
+        set
+        {
+            _settings.Update(s => s.Appearance.WorkshopJetBrainsHighlight = value == "JetBrains");
+            OnPropertyChanged(nameof(WorkshopHighlightOption));
+        }
+    }
+
+    public string[] WorkshopMinimapOptions { get; } = ["On", "Off"];
+
+    /// <summary>小地图默认开关(On / Off)。</summary>
+    public string WorkshopMinimapOption
+    {
+        get => _settings.Current.Appearance.WorkshopShowMinimap ? "On" : "Off";
+        set
+        {
+            _settings.Update(s => s.Appearance.WorkshopShowMinimap = value == "On");
+            OnPropertyChanged(nameof(WorkshopMinimapOption));
+        }
+    }
 
     // ---------- 隐私 ----------
 

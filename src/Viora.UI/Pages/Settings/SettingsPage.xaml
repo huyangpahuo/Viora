@@ -1,4 +1,4 @@
-<UserControl
+﻿<UserControl
     x:Class="Viora.UI.Pages.Settings.SettingsPage"
     xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
@@ -412,6 +412,51 @@
                                                     <TextBlock Text="{Binding StringFormat={}{0:0%}}" FontSize="11.5" />
                                                 </DataTemplate>
                                             </ListBox.ItemTemplate>
+                                        </ListBox>
+                                    </StackPanel>
+                                </Grid>
+                            </StackPanel>
+                        </Border>
+
+                        <!-- 插件工坊 -->
+                        <Border Style="{StaticResource SettingsCard}">
+                            <StackPanel>
+                                <TextBlock Text="{loc:Translate Settings.Workshop.Title}" FontSize="13" FontWeight="SemiBold"
+                                           Foreground="{DynamicResource Color.Text.Primary}" />
+                                <Separator Margin="0,10,0,12" Background="{DynamicResource Color.Divider}" />
+                                <Grid>
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="*" />
+                                        <ColumnDefinition Width="*" />
+                                    </Grid.ColumnDefinitions>
+                                    <StackPanel Grid.Column="0" Margin="0,0,10,0">
+                                        <TextBlock Text="{loc:Translate Settings.Workshop.FontSize}" FontSize="11"
+                                                   Foreground="{DynamicResource Color.Text.Secondary}" />
+                                        <ComboBox Style="{StaticResource VioraCombo}" Margin="0,6,0,0" MinWidth="110"
+                                                  HorizontalAlignment="Left"
+                                                  ItemsSource="{Binding WorkshopFontSizeOptions}"
+                                                  SelectedItem="{Binding WorkshopFontSize}" />
+                                        <TextBlock Text="{loc:Translate Settings.Workshop.Minimap}" FontSize="11" Margin="0,12,0,0"
+                                                   Foreground="{DynamicResource Color.Text.Secondary}" />
+                                        <ComboBox Style="{StaticResource VioraCombo}" Margin="0,6,0,0" MinWidth="110"
+                                                  HorizontalAlignment="Left"
+                                                  ItemsSource="{Binding WorkshopMinimapOptions}"
+                                                  SelectedItem="{Binding WorkshopMinimapOption}" />
+                                    </StackPanel>
+                                    <StackPanel Grid.Column="1" Margin="10,0,0,0">
+                                        <TextBlock Text="{loc:Translate Settings.Workshop.Highlight}" FontSize="11"
+                                                   Foreground="{DynamicResource Color.Text.Secondary}" />
+                                        <ListBox BorderThickness="0" Background="Transparent" Padding="0" Margin="0,6,0,0"
+                                                 ItemsSource="{Binding WorkshopHighlightOptions}"
+                                                 SelectedItem="{Binding WorkshopHighlightOption}"
+                                                 ItemContainerStyle="{StaticResource ChipPillItem}"
+                                                 ScrollViewer.VerticalScrollBarVisibility="Disabled"
+                                                 ScrollViewer.HorizontalScrollBarVisibility="Hidden">
+                                            <ListBox.ItemsPanel>
+                                                <ItemsPanelTemplate>
+                                                    <StackPanel Orientation="Horizontal" />
+                                                </ItemsPanelTemplate>
+                                            </ListBox.ItemsPanel>
                                         </ListBox>
                                     </StackPanel>
                                 </Grid>

@@ -120,11 +120,27 @@
         </Style>
     </UserControl.Resources>
 
-    <Grid Margin="16,14,16,14" AllowDrop="True" Drop="Page_OnDrop" DragOver="Page_OnDragOver">
+    <Grid x:Name="PageRoot" Margin="16,14,16,14" AllowDrop="True" Drop="Page_OnDrop"
+          DragOver="Page_OnDragOver" DragEnter="Page_OnDragEnter" DragLeave="Page_OnDragLeave">
         <Grid.ColumnDefinitions>
             <ColumnDefinition Width="*" />
             <ColumnDefinition Width="420" />
         </Grid.ColumnDefinitions>
+        <!-- 拖入安装蒙层:拖拽进入时整页模糊 + 大号提示 -->
+        <Border x:Name="DropOverlay" Grid.Row="0" Grid.ColumnSpan="2" CornerRadius="14"
+                Background="#660D0806" Visibility="Collapsed" IsHitTestVisible="False" Panel.ZIndex="99">
+            <Grid Margin="40">
+                <Rectangle Stroke="{DynamicResource Color.Primary}" StrokeThickness="2"
+                           StrokeDashArray="6 4" RadiusX="14" RadiusY="14" Fill="#22000000" />
+                <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center">
+                    <controls:VioraIcon Geometry="{StaticResource Icon.CloudArrowDown}" Width="64" Height="64"
+                                        Foreground="{DynamicResource Color.Primary}" HorizontalAlignment="Center" />
+                    <TextBlock Text="{loc:Translate Market.DropZone.Hint}" FontSize="24" FontWeight="Bold"
+                               Foreground="White" HorizontalAlignment="Center" Margin="0,16,0,0"
+                               TextWrapping="Wrap" TextAlignment="Center" />
+                </StackPanel>
+            </Grid>
+        </Border>
 
         <!-- ==================== 市场(左) ==================== -->
         <Border Grid.Column="0" Margin="0,0,14,0" CornerRadius="14" Padding="16,14"
@@ -355,18 +371,6 @@
                 </Grid>
             </Grid>
         </Border>
-
-            <!-- 插件安装拖拽提示条 -->
-            <Border Grid.Row="3" Margin="0,12,0,0" CornerRadius="10" Padding="10,8"
-                    Background="{DynamicResource Brush.Glass}" BorderBrush="{DynamicResource Color.Border}"
-                    BorderThickness="1" Opacity="0.85" IsHitTestVisible="False">
-                <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
-                    <controls:VioraIcon Geometry="{StaticResource Icon.CloudArrowDown}" Width="13" Height="13"
-                                        Foreground="{DynamicResource Color.Text.Disabled}" VerticalAlignment="Center" />
-                    <TextBlock Text="{loc:Translate Market.DropZone.Hint}" FontSize="11.5" Margin="8,0,0,0"
-                               Foreground="{DynamicResource Color.Text.Disabled}" VerticalAlignment="Center" />
-                </StackPanel>
-            </Border>
 
         <!-- ==================== 插件详情 / 全部插件(右) ==================== -->
         <Border Grid.Column="1" CornerRadius="14" Padding="16,14" Background="{DynamicResource Color.Surface}"

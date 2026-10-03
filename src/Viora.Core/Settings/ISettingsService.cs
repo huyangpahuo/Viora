@@ -23,6 +23,13 @@ public sealed class AppearanceSettings
     public string Theme { get; set; } = "sunset";
 
     public double UiScale { get; set; } = 1.0;
+
+    // 插件工坊编辑器
+    public double WorkshopFontSize { get; set; } = 12.5;
+
+    public bool WorkshopJetBrainsHighlight { get; set; } = true;
+
+    public bool WorkshopShowMinimap { get; set; } = true;
 }
 
 public sealed class LanguageSettings

@@ -8,20 +8,24 @@ using Viora.UI.Localization;
 namespace Viora.UI.Pages.Workshop;
 
 /// <summary>
-/// 插件工坊 code-behind:AvalonEdit 编辑器(自带滚动/光标/C# 高亮),
-/// registry 条目 JSON 高亮展示,编译状态徽章,Before/After 圆角与分割裁剪,折叠状态。
+/// 插件工坊 code-behind:AvalonEdit 编辑器(C# 高亮 + Ctrl 滚轮字号 + JetBrains/Viora 配色),
+/// minimap 交互(点击跳转 / 滚轮滚动),折叠状态,编译徽章,Before/After 对比裁剪,输出 Tab。
 /// </summary>
 public partial class WorkshopPage : UserControl
 {
+    private System.Windows.Controls.ScrollViewer? _editorScroll;
+
     public WorkshopPage(WorkshopViewModel vm)
     {
         DataContext = vm;
         InitializeComponent();
 
-        // AvalonEdit:C# 高亮 + 制表符转空格
+        // AvalonEdit:C# 高亮 + 制表符转空格 + 初始字号
         Editor.SyntaxHighlighting = HighlightingManager.Instance.GetDefinitionByExtension(".cs");
         Editor.Options.ConvertTabsToSpaces = true;
         Editor.Options.IndentationSize = 4;
+        Editor.FontSize = vm.EditorFontSize;
+        ApplyHighlightPalette(vm.JetBrainsHighlight);
         Editor.Text = vm.SourceCode;
 
         if (vm.MinimapDocument is not null) MinimapBox.Document = vm.MinimapDocument;
@@ -35,6 +39,9 @@ public partial class WorkshopPage : UserControl
                     break;
                 case nameof(WorkshopViewModel.SourceCode):
                     if (Editor.Text != vm.SourceCode) Editor.Text = vm.SourceCode;
+                    break;
+                case nameof(WorkshopViewModel.EditorFontSize):
+                    Editor.FontSize = vm.EditorFontSize;
                     break;
                 case nameof(WorkshopViewModel.MinimapDocument) when vm.MinimapDocument is not null:
                     MinimapBox.Document = vm.MinimapDocument;
@@ -65,34 +72,150 @@ public partial class WorkshopPage : UserControl
             }
         };
         UpdateBadge(vm.CompileState);
+        Loaded += (_, _) =>
+        {
+            ApplyHighlightPalette(vm.JetBrainsHighlight);
+            // minimap 视口指示随编辑器滚动更新
+            _editorScroll = FindScrollViewer(Editor);
+            if (_editorScroll is not null)
+                _editorScroll.ScrollChanged += (_, _) => UpdateMinimapViewport();
+            UpdateMinimapViewport();
+        };
     }
 
-    // ---------- 编辑器:文本回写 VM + minimap 防抖 ----------
+    // ---------- JetBrains / Viora 高亮配色 ----------
 
-    private System.Windows.Threading.DispatcherTimer? _minimapTimer;
+    /// <summary>对 AvalonEdit 内置 C# 定义按命名色重上色(JetBrains Dark 或 Viora 调色板)。</summary>
+    public void ApplyHighlightPalette(bool jetbrains)
+    {
+        if (Editor.SyntaxHighlighting is null) return;
+        foreach (var c in Editor.SyntaxHighlighting.NamedHighlightingColors)
+        {
+            var n = (c.Name ?? string.Empty).ToLowerInvariant();
+            Color? color = null;
+            if (n.Contains("comment")) color = FromHex(jetbrains ? "#808080" : "#8A9179");
+            else if (n.Contains("string")) color = FromHex(jetbrains ? "#6A8759" : "#E8A2A2");
+            else if (n.Contains("digit")) color = FromHex(jetbrains ? "#6897BB" : "#D8B27C");
+            else if (n.Contains("keyword") || n.Contains("visibility") || n.Contains("preprocessor"))
+                color = FromHex(jetbrains ? "#CC7832" : "#C58FFF");
+            if (color is not null)
+                c.Foreground = new SimpleHighlightingBrush(color.Value);
+        }
+    }
+
+    private static Color FromHex(string hex) =>
+        (Color)(ColorConverter.ConvertFromString(hex) ?? Colors.Gray);
+
+    // ---------- Ctrl+滚轮字号 ----------
+
+    private void Editor_PreviewMouseWheel(object sender, MouseWheelEventArgs e)
+    {
+        if (DataContext is not WorkshopViewModel vm) return;
+        if (!Keyboard.Modifiers.HasFlag(ModifierKeys.Control)) return;
+        vm.EditorFontSize = Math.Clamp(vm.EditorFontSize + (e.Delta > 0 ? 1 : -1), 9, 24);
+        e.Handled = true;
+    }
+
+    // ---------- Minimap 交互:点击跳转 / 滚轮滚动 ----------
+
+    private void Minimap_MouseDown(object sender, MouseButtonEventArgs e)
+    {
+        JumpEditorToMinimap(e.GetPosition(MinimapBox).Y);
+        e.Handled = true;
+    }
+
+    private void Minimap_MouseWheel(object sender, MouseWheelEventArgs e)
+    {
+        _editorScroll ??= FindScrollViewer(Editor);
+        if (_editorScroll is null) return;
+        _editorScroll.ScrollToVerticalOffset(_editorScroll.VerticalOffset - e.Delta);
+        e.Handled = true;
+    }
+
+    private void JumpEditorToMinimap(double yInMinimap)
+    {
+        _editorScroll ??= FindScrollViewer(Editor);
+        var miniScroll = FindScrollViewer(MinimapBox);
+        if (_editorScroll is null || miniScroll is null) return;
+        if (miniScroll.ExtentHeight <= 0) return;
+        double ratio = yInMinimap / miniScroll.ExtentHeight;
+        _editorScroll.ScrollToVerticalOffset(ratio * _editorScroll.ExtentHeight - _editorScroll.ViewportHeight / 2);
+    }
+
+    private static T? FindDescendant<T>(System.Windows.DependencyObject? root) where T : class
+    {
+        if (root is null) return null;
+        int n = System.Windows.Media.VisualTreeHelper.GetChildrenCount(root);
+        for (int i = 0; i < n; i++)
+        {
+            var child = System.Windows.Media.VisualTreeHelper.GetChild(root, i);
+            if (child is T hit) return hit;
+            var found = FindDescendant<T>(child);
+            if (found is not null) return found;
+        }
+        return null;
+    }
+
+    private System.Windows.Controls.ScrollViewer? FindScrollViewer(System.Windows.DependencyObject root)
+    {
+        int n = System.Windows.Media.VisualTreeHelper.GetChildrenCount(root);
+        for (int i = 0; i < n; i++)
+        {
+            var child = System.Windows.Media.VisualTreeHelper.GetChild(root, i);
+            if (child is System.Windows.Controls.ScrollViewer sv) return sv;
+            var found = FindScrollViewer(child);
+            if (found is not null) return found;
+        }
+        return null;
+    }
+
+    // ---------- 编辑器:文本回写 VM ----------
 
     private void Editor_OnTextChanged(object sender, EventArgs e)
     {
         if (DataContext is not WorkshopViewModel vm) return;
         if (string.Equals(Editor.Text, vm.SourceCode, StringComparison.Ordinal)) return;
-
         vm.SourceCode = Editor.Text;
-
-        // minimap 防抖 200ms
-        _minimapTimer ??= new System.Windows.Threading.DispatcherTimer { Interval = TimeSpan.FromMilliseconds(200) };
-        _minimapTimer.Stop();
-        _minimapTimer.Tick -= OnMinimapTimerTick;
-        _minimapTimer.Tick += OnMinimapTimerTick;
-        _minimapTimer.Start();
     }
 
-    private void OnMinimapTimerTick(object? sender, EventArgs e)
+    // ---------- 文件重命名:双击名字进入编辑,Enter 提交 / Esc 取消 / 失焦提交 ----------
+
+    private void FileName_OnDoubleClick(object sender, MouseButtonEventArgs e)
     {
-        if (sender is System.Windows.Threading.DispatcherTimer t) t.Stop();
-        if (DataContext is WorkshopViewModel vm) vm.UpdateMinimap(Editor.Text);
+        if ((sender as FrameworkElement)?.DataContext is WorkshopViewModel.WorkshopFile file)
+        {
+            file.BeginRename();
+            Dispatcher.BeginInvoke(() =>
+            {
+                var container = FileList.ItemContainerGenerator.ContainerFromItem(file) as ContentPresenter;
+                FindDescendant<TextBox>(container)?.Focus();
+            }, System.Windows.Threading.DispatcherPriority.Input);
+        }
     }
 
-    // ---------- 文件重命名:Enter 提交 / Esc 取消 / 失焦提交 ----------
+    private void Rename_OnClick(object sender, RoutedEventArgs e)
+    {
+        if ((sender as FrameworkElement)?.DataContext is WorkshopViewModel.WorkshopFile file)
+        {
+            file.BeginRename();
+            Dispatcher.BeginInvoke(() =>
+            {
+                var container = FileList.ItemContainerGenerator.ContainerFromItem(file) as ContentPresenter;
+                FindDescendant<TextBox>(container)?.Focus();
+            }, System.Windows.Threading.DispatcherPriority.Input);
+        }
+    }
+
+    // ---------- 预览参数调节 ----------
+
+    private void ParamSlider_OnValueChanged(object sender, RoutedPropertyChangedEventArgs<double> e)
+    {
+        if (DataContext is not WorkshopViewModel vm) return;
+        if ((sender as FrameworkElement)?.DataContext is WorkshopViewModel.PreviewParam p)
+            vm.SetPreviewParam(p.Key, e.NewValue);
+    }
+
+    // ---------- 文件重命名提交(Enter/失焦) ----------
 
     private void RenameBox_OnKeyDown(object sender, KeyEventArgs e)
     {
@@ -116,37 +239,32 @@ public partial class WorkshopPage : UserControl
             file.CommitRename();
     }
 
-    private void Rename_OnClick(object sender, RoutedEventArgs e)
-    {
-        if ((sender as FrameworkElement)?.DataContext is WorkshopViewModel.WorkshopFile file)
-        {
-            file.BeginRename();
-            // 聚焦刚出现的重命名框
-            Dispatcher.BeginInvoke(() =>
-            {
-                if ((sender as FrameworkElement)?.DataContext is not WorkshopViewModel.WorkshopFile f) return;
-                var container = FileList.ItemContainerGenerator.ContainerFromItem(f) as ContentPresenter;
-                var box = FindDescendant<TextBox>(container);
-                box?.Focus();
-            }, System.Windows.Threading.DispatcherPriority.Input);
-        }
-    }
-
-    private static T? FindDescendant<T>(System.Windows.DependencyObject? root) where T : class
-    {
-        if (root is null) return null;
-        int n = System.Windows.Media.VisualTreeHelper.GetChildrenCount(root);
-        for (int i = 0; i < n; i++)
-        {
-            var child = System.Windows.Media.VisualTreeHelper.GetChild(root, i);
-            if (child is T hit) return hit;
-            var found = FindDescendant<T>(child);
-            if (found is not null) return found;
-        }
-        return null;
-    }
-
     // ---------- 编译状态徽章 ----------
+
+    /// <summary>minimap 视口指示:半透明矩形标出编辑器可见区域(按滚动比例)。</summary>
+    private void UpdateMinimapViewport()
+    {
+        var miniScroll = FindScrollViewer(MinimapBox);
+        if (_editorScroll is null || miniScroll is null) return;
+        if (_editorScroll.ExtentHeight <= 0 || miniScroll.ExtentHeight <= 0) return;
+
+        double miniH = MinimapBox.ActualHeight;
+        if (miniH <= 0) return;
+        double top = Math.Clamp(_editorScroll.VerticalOffset / _editorScroll.ExtentHeight * miniScroll.ExtentHeight,
+            0, miniScroll.ExtentHeight);
+        MinimapViewport.Width = MinimapBox.ActualWidth;
+        MinimapViewport.Height = Math.Max(4,
+            Math.Min(1.0, _editorScroll.ViewportHeight / _editorScroll.ExtentHeight) * miniScroll.ExtentHeight);
+        System.Windows.Controls.Canvas.SetLeft(MinimapViewport, 0);
+        System.Windows.Controls.Canvas.SetTop(MinimapViewport, top);
+    }
+
+    // ---------- 输出折叠 ----------
+
+    private void OutputCollapse_OnChecked(object sender, RoutedEventArgs e)
+    {
+        OutputBorder.Visibility = OutputCollapse.IsChecked == true ? Visibility.Visible : Visibility.Collapsed;
+    }
 
     private void UpdateBadge(int state)
     {
@@ -176,6 +294,9 @@ public partial class WorkshopPage : UserControl
 
     private void ViewTab_OnChanged(object sender, RoutedEventArgs e)
     {
+        var tab = (sender as RadioButton)?.Tag?.ToString() ?? "code";
+        if (DataContext is WorkshopViewModel vm)
+            vm.SwitchTabCommand.Execute(tab);
         Dispatcher.BeginInvoke(() =>
         {
             ApplyRoundedClips();

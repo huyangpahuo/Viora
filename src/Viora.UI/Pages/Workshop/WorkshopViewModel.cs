@@ -31,15 +31,21 @@ public partial class WorkshopViewModel : ObservableObject
     private IImageBuffer? _sampleBuffer;
     private AssemblyLoadContext? _lastAlc;
 
+    private readonly Viora.Core.Settings.ISettingsService _settings;
+
     public WorkshopViewModel(IImageConversionEngine engine, IImportServiceProxy import,
         IUiAlert alert, ILogger<WorkshopViewModel> logger,
-        Viora.Core.Localization.ILocalizationService localization)
+        Viora.Core.Localization.ILocalizationService localization,
+        Viora.Core.Settings.ISettingsService settings)
     {
         _engine = engine;
         _import = import;
         _alert = alert;
         _logger = logger;
         _localization = localization;
+        _settings = settings;
+        _editorFontSize = Math.Clamp(_settings.Current.Appearance.WorkshopFontSize, 9, 24);
+        _showMinimap = _settings.Current.Appearance.WorkshopShowMinimap;
 
         Files.Add(new WorkshopFile("main.cs", DefaultTemplate));
         ActiveFile = Files[0];
@@ -146,8 +152,27 @@ public partial class WorkshopViewModel : ObservableObject
         finally { _switchingFile = false; }
     }
 
+    partial void OnSourceCodeChanged(string value)
+    {
+        // 编辑内容写回当前文件(切换文件时不回写)
+        if (!_switchingFile && ActiveFile is not null)
+            ActiveFile.Source = value;
+    }
+
     [ObservableProperty]
     private string _sourceCode;
+
+    /// <summary>编辑器字号(Ctrl+滚轮缩放,持久化到设置)。</summary>
+    [ObservableProperty]
+    private double _editorFontSize;
+
+    partial void OnEditorFontSizeChanged(double value)
+    {
+        _settings.Update(s => s.Appearance.WorkshopFontSize = value);
+    }
+
+    /// <summary>高亮风格:JetBrains | Viora(设置页可改)。</summary>
+    public bool JetBrainsHighlight => _settings.Current.Appearance.WorkshopJetBrainsHighlight;
 
     [ObservableProperty]
     private bool _showFileList = true;
@@ -161,7 +186,7 @@ public partial class WorkshopViewModel : ObservableObject
         int n = Files.Count + 1;
         string name = WorkshopFile.SanitizeName($"file{n}");
         while (Files.Any(f => f.Name == name)) { n++; name = WorkshopFile.SanitizeName($"file{n}"); }
-        var file = new WorkshopFile(name, "// 新文件:可放额外的阶段类或入口类" + Environment.NewLine);
+        var file = new WorkshopFile(name, "// Extra file: additional stage or entry classes" + Environment.NewLine);
         Files.Add(file);
         ActiveFile = file;
     }
@@ -441,6 +466,70 @@ public partial class WorkshopViewModel : ObservableObject
         }
     }
 
+    // ---------- 预览参数 ----------
+
+    public System.Collections.ObjectModel.ObservableCollection<PreviewParam> PreviewParameters { get; } = new();
+
+    private System.Windows.Threading.DispatcherTimer? _paramTimer;
+
+    public void SetPreviewParam(string key, double value)
+    {
+        var p = PreviewParameters.FirstOrDefault(x => x.Key == key);
+        if (p is null) return;
+        p.Value = value;
+        _paramTimer ??= new System.Windows.Threading.DispatcherTimer { Interval = TimeSpan.FromMilliseconds(400) };
+        _paramTimer.Stop();
+        _paramTimer.Tick -= OnParamTimerTick;
+        _paramTimer.Tick += OnParamTimerTick;
+        _paramTimer.Start();
+    }
+
+    private void OnParamTimerTick(object? sender, EventArgs e)
+    {
+        if (sender is System.Windows.Threading.DispatcherTimer t) t.Stop();
+        if (ActiveTab != "preview" || IsBusy || CompileState != 1) return;
+        _ = RunPreviewWithCurrentParamsAsync();
+    }
+
+    private async Task RunPreviewWithCurrentParamsAsync()
+    {
+        if (IsBusy || _sampleBuffer is null || _lastPreset is null) return;
+        IsBusy = true;
+        try
+        {
+            var parameters = PreviewParameters.ToDictionary(p => p.Key, p => (object)p.Value);
+            var result = await _engine.ExecuteAsync(
+                _lastPreset.BuildPipeline(parameters), _sampleBuffer.Clone(), parameters,
+                previewQuality: true, progress: null, cancellationToken: CancellationToken.None);
+            PreviewImage = _import.ToImageSource(result.Result);
+        }
+        catch (Exception ex)
+        {
+            Log($"运行失败: {ex.Message}");
+        }
+        finally { IsBusy = false; }
+    }
+
+    private IStylePreset? _lastPreset;
+
+    public sealed class PreviewParam : ObservableObject
+    {
+        public string Key { get; }
+        public string Label { get; }
+        public double Min { get; }
+        public double Max { get; }
+        public double Step { get; }
+
+        private double _value;
+        public double Value { get => _value; set => SetProperty(ref _value, value); }
+
+        public PreviewParam(string key, string label, double value, double min, double max, double step)
+        {
+            Key = key; Label = label; Min = min; Max = max; Step = step;
+            _value = value;
+        }
+    }
+
     // ---------- 编译 ----------
 
     private List<MetadataReference> BuildReferences()
@@ -532,6 +621,7 @@ public partial class WorkshopViewModel : ObservableObject
         }
         var preset = (IStylePreset)(Activator.CreateInstance(presetType)
             ?? throw new InvalidOperationException("Preset constructor returned null."));
+        _lastPreset = preset;
         Log($"Preset: {preset.Id} ({preset.Parameters.Count} 个参数)", "build");
         return preset;
     }
@@ -548,8 +638,20 @@ public partial class WorkshopViewModel : ObservableObject
             var preset = await CompilePresetAsync(ct);
             if (preset is null) return;
 
+            // 收集参数(保留已调值)
+            var existingValues = PreviewParameters.ToDictionary(p => p.Key, p => p.Value);
+            PreviewParameters.Clear();
+            foreach (var pp in preset.Parameters)
+            {
+                double v = Math.Clamp(
+                    existingValues.TryGetValue(pp.Key, out var ev) ? ev : Convert.ToDouble(pp.DefaultValue),
+                    Convert.ToDouble(pp.MinValue), Convert.ToDouble(pp.MaxValue));
+                PreviewParameters.Add(new PreviewParam(pp.Key, Tr.Get(pp.DisplayNameKey), v,
+                    Convert.ToDouble(pp.MinValue), Convert.ToDouble(pp.MaxValue), Convert.ToDouble(pp.Step)));
+            }
+
             Log("—— 渲染 ——", "run");
-            var parameters = preset.Parameters.ToDictionary(p => p.Key, p => p.DefaultValue);
+            var parameters = PreviewParameters.ToDictionary(p => p.Key, p => (object)p.Value);
             var result = await _engine.ExecuteAsync(
                 preset.BuildPipeline(parameters), _sampleBuffer.Clone(), parameters,
                 previewQuality: true, progress: null, cancellationToken: ct);
@@ -685,8 +787,8 @@ public partial class WorkshopViewModel : ObservableObject
 
     public const string DefaultTemplate =
 """
-// Viora 风格插件 —— 一个文件即一个完整插件(打包时编译为 DLL)
-// 必须包含:1) 一个实现 IStylePreset 的风格类;2) 一个实现 IVioraPlugin 的入口类。
+// Viora style plugin - one file is one complete plugin (compiled to DLL on pack).
+// Must contain: 1) a style class implementing IStylePreset; 2) an entry class implementing IVioraPlugin.
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -703,13 +805,13 @@ namespace WorkshopPlugin;
 public sealed class MyStylePreset : IStylePreset
 {
     public string Id => "builtin.viora.my-style";
-    public string DisplayNameKey => "Preset.MyStyle.Name";   // 建议在 InitializeAsync 里自携带文案
+    public string DisplayNameKey => "Preset.MyStyle.Name";   // prefer self-registering strings in InitializeAsync
     public string DescriptionKey => "Preset.MyStyle.Description";
     public string? IconGlyph => null;
 
     public IReadOnlyList<IPresetParameter> Parameters { get; } = new IPresetParameter[]
     {
-        // 键名、文案键、默认值、最小、最大、步长
+        // key, string key, default, min, max, step
         new PresetParameter("intensity", "Param.Saturation", 0.6, 0.0, 1.0, 0.05),
         new PresetParameter("levels",    "Param.Colors",     6,   2,   16,  1),
     };
@@ -718,7 +820,7 @@ public sealed class MyStylePreset : IStylePreset
         new IImageProcessingStage[] { new SepiaStage(), new PosterizeStage() };
 }
 
-// ---- 阶段:逐个处理 context.Working!.Pixels(BGRA,索引 = y*Stride + x*4) ----
+// ---- Stages: process context.Working!.Pixels (BGRA, index = y*Stride + x*4) ----
 public abstract class StageBase : IImageProcessingStage
 {
     public abstract string Name { get; }
@@ -781,7 +883,7 @@ public sealed class PosterizeStage : StageBase
     }
 }
 
-// ---- 入口类:宿主通过 plugin.json 的 typeName 创建它 ----
+// ---- Entry class: the host creates it via plugin.json typeName ----
 public sealed class MyStylePlugin : VioraPluginBase
 {
     private static readonly PluginMetadata Meta = new(
@@ -799,7 +901,7 @@ public sealed class MyStylePlugin : VioraPluginBase
 
     public override Task InitializeAsync(IPluginContext context, CancellationToken ct)
     {
-        // 自携带界面文案:手动导入也能正确显示名称(不依赖宿主语言包)
+        // Self-carried strings: manual imports display correctly on any host
         context.RegisterStrings(new Dictionary<string, string>
         {
             ["zh-Hans::Preset.MyStyle.Name"] = "我的风格",

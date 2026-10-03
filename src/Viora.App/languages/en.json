@@ -639,5 +639,10 @@
   "Workshop.InfoName": "Display name",
   "Workshop.InfoDesc": "Description",
   "Workshop.InfoAdd": "Add language",
-  "Workshop.InfoFixedHint": "default, not removable"
+  "Workshop.InfoFixedHint": "default, not removable",
+  "Settings.Workshop.Title": "Plugin workshop",
+  "Settings.Workshop.FontSize": "Code font size",
+  "Settings.Workshop.Highlight": "Highlight style",
+  "Settings.Workshop.Minimap": "Minimap (default)",
+  "Workshop.Params": "Parameters"
 }
