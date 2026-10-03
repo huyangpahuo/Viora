@@ -634,5 +634,10 @@
   "Workshop.Sdk.Rule3": "不打包宿主 DLL",
   "Workshop.DescBox": "描述",
   "Workshop.DescHint": "英语必填,其他选填",
-  "Workshop.AddFile": "新建文件"
+  "Workshop.AddFile": "新建文件",
+  "Workshop.InfoTitle": "相关信息",
+  "Workshop.InfoName": "展示名",
+  "Workshop.InfoDesc": "描述",
+  "Workshop.InfoAdd": "添加语言",
+  "Workshop.InfoFixedHint": "默认语言,不可删除"
 }

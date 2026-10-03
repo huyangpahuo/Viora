@@ -2,7 +2,8 @@
              xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:loc="clr-namespace:Viora.UI.Localization"
-             xmlns:controls="clr-namespace:Viora.UI.Controls">
+             xmlns:controls="clr-namespace:Viora.UI.Controls"
+             xmlns:avalon="clr-namespace:ICSharpCode.AvalonEdit;assembly=ICSharpCode.AvalonEdit">
     <UserControl.Resources>
         <Style x:Key="WsCard" TargetType="Border">
             <Setter Property="Background" Value="{DynamicResource Color.Surface}" />
@@ -39,6 +40,13 @@
                     </ControlTemplate>
                 </Setter.Value>
             </Setter>
+        </Style>
+        <Style x:Key="WsInputMultiline" TargetType="TextBox" BasedOn="{StaticResource WsInput}">
+            <Setter Property="TextWrapping" Value="Wrap" />
+            <Setter Property="VerticalContentAlignment" Value="Top" />
+            <Setter Property="MinHeight" Value="56" />
+            <Setter Property="AcceptsReturn" Value="True" />
+            <Setter Property="ScrollViewer.VerticalScrollBarVisibility" Value="Auto" />
         </Style>
         <Style x:Key="WsButton" TargetType="Button">
             <Setter Property="Background" Value="{DynamicResource Brush.Glass}" />
@@ -112,26 +120,18 @@
                 </Setter.Value>
             </Setter>
         </Style>
-        <Style x:Key="WsChip" TargetType="Border">
-            <Setter Property="Background" Value="{DynamicResource Color.SurfaceElevated}" />
-            <Setter Property="BorderBrush" Value="{DynamicResource Color.Border}" />
-            <Setter Property="BorderThickness" Value="1" />
-            <Setter Property="CornerRadius" Value="8" />
-            <Setter Property="Padding" Value="8,5" />
-            <Setter Property="Margin" Value="0,0,6,6" />
-        </Style>
         <Style x:Key="WsMini" TargetType="Button">
             <Setter Property="Background" Value="{DynamicResource Brush.Glass}" />
             <Setter Property="Foreground" Value="{DynamicResource Color.Text.Secondary}" />
             <Setter Property="BorderThickness" Value="0" />
-            <Setter Property="FontSize" Value="13" />
-            <Setter Property="Width" Value="22" />
-            <Setter Property="Height" Value="22" />
+            <Setter Property="FontSize" Value="12" />
+            <Setter Property="Width" Value="20" />
+            <Setter Property="Height" Value="20" />
             <Setter Property="Cursor" Value="Hand" />
             <Setter Property="Template">
                 <Setter.Value>
                     <ControlTemplate TargetType="Button">
-                        <Border Background="{TemplateBinding Background}" CornerRadius="7">
+                        <Border Background="{TemplateBinding Background}" CornerRadius="6">
                             <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center" />
                         </Border>
                         <ControlTemplate.Triggers>
@@ -145,6 +145,13 @@
                     </ControlTemplate>
                 </Setter.Value>
             </Setter>
+        </Style>
+        <Style x:Key="WsLangChip" TargetType="Border">
+            <Setter Property="Background" Value="{DynamicResource Brush.Glass}" />
+            <Setter Property="CornerRadius" Value="8" />
+            <Setter Property="Padding" Value="8,0" />
+            <Setter Property="VerticalAlignment" Value="Center" />
+            <Setter Property="Height" Value="34" />
         </Style>
     </UserControl.Resources>
 
@@ -186,10 +193,10 @@
                     <StackPanel Orientation="Horizontal">
                         <RadioButton x:Name="TabSource" Style="{StaticResource WsSeg}" GroupName="WsView"
                                      IsChecked="True" Content="{loc:Translate Workshop.TabCode}"
-                                     Checked="ViewTab_OnChanged" />
+                                     Checked="ViewTab_OnChanged" Tag="code" />
                         <RadioButton Style="{StaticResource WsSeg}" GroupName="WsView"
                                      Content="{loc:Translate Workshop.TabPreview}" Margin="6,0,0,0"
-                                     Checked="ViewTab_OnChanged" />
+                                     Checked="ViewTab_OnChanged" Tag="preview" />
                     </StackPanel>
                     <Button Style="{StaticResource WsButton}" Command="{Binding PackZipCommand}" HorizontalAlignment="Right"
                             IsEnabled="{Binding CanRun}">
@@ -200,34 +207,31 @@
                     </Button>
                 </Grid>
 
-                <!-- ===== 源码视图:文件列表(左) | 编辑器 | minimap ===== -->
+                <!-- ===== 源码视图:文件列表(左,可折叠) | AvalonEdit | minimap ===== -->
                 <Grid Grid.Row="2" x:Name="SourceHost">
                     <Grid.ColumnDefinitions>
-                        <ColumnDefinition x:Name="FileListColumn" Width="170" />
-                        <ColumnDefinition Width="10" />
+                        <ColumnDefinition x:Name="FileListColumn" Width="150" />
+                        <ColumnDefinition Width="8" />
                         <ColumnDefinition Width="*" />
-                        <ColumnDefinition Width="10" />
-                        <ColumnDefinition x:Name="MinimapColumn" Width="72" />
+                        <ColumnDefinition Width="8" />
+                        <ColumnDefinition x:Name="MinimapColumn" Width="56" />
                     </Grid.ColumnDefinitions>
 
                     <!-- 文件列表 -->
-                    <Border Grid.Column="0" CornerRadius="10" Background="{DynamicResource Color.SurfaceElevated}"
+                    <Border Grid.Column="0" x:Name="FileListHost" CornerRadius="10"
+                            Background="{DynamicResource Color.SurfaceElevated}"
                             BorderBrush="{DynamicResource Color.Border}" BorderThickness="1">
                         <Grid>
                             <Grid.RowDefinitions>
                                 <RowDefinition Height="Auto" />
                                 <RowDefinition Height="*" />
                             </Grid.RowDefinitions>
-                            <Border Grid.Row="0" Padding="8,6" BorderBrush="{DynamicResource Color.Border}" BorderThickness="0,0,0,1">
+                            <Border Grid.Row="0" Padding="8,5" BorderBrush="{DynamicResource Color.Border}" BorderThickness="0,0,0,1">
                                 <Grid>
                                     <TextBlock Text="{loc:Translate Workshop.Files}" FontSize="10.5" FontWeight="SemiBold"
                                                Foreground="{DynamicResource Color.Text.Disabled}" VerticalAlignment="Center" />
-                                    <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
-                                        <Button Style="{StaticResource WsMini}" Command="{Binding AddFileCommand}"
-                                                Content="+" ToolTip="{loc:Translate Workshop.AddFile}" />
-                                        <Button Style="{StaticResource WsMini}" Command="{Binding ToggleFileListCommand}"
-                                                Margin="4,0,0,0" Content="‹" />
-                                    </StackPanel>
+                                    <Button Style="{StaticResource WsMini}" Command="{Binding AddFileCommand}"
+                                            HorizontalAlignment="Right" Content="+" ToolTip="{loc:Translate Workshop.AddFile}" />
                                 </Grid>
                             </Border>
                             <ListBox Grid.Row="1" x:Name="FileList" ItemsSource="{Binding Files}"
@@ -237,95 +241,73 @@
                                 <ListBox.ItemTemplate>
                                     <DataTemplate>
                                         <Grid Margin="0,1">
-                                            <Grid.ColumnDefinitions>
-                                                <ColumnDefinition Width="*" />
-                                                <ColumnDefinition Width="Auto" />
-                                            </Grid.ColumnDefinitions>
-                                            <TextBox Grid.Column="0" Text="{Binding Name, UpdateSourceTrigger=LostFocus}"
-                                                     FontSize="11" Background="Transparent" BorderThickness="0"
-                                                     Foreground="{DynamicResource Color.Text.Secondary}"
-                                                     CaretBrush="{DynamicResource Color.Primary}"
-                                                     ToolTip="{Binding Name}"
-                                                     KeyDown="FileName_OnKeyDown" LostFocus="FileName_OnLostFocus" />
-                                            <Button Grid.Column="1" Style="{StaticResource WsMini}" Width="18" Height="18"
-                                                    Command="{Binding DataContext.DeleteFileCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
-                                                    CommandParameter="{Binding}" Content="✕" FontSize="10" />
+                                            <!-- 编辑态:重命名输入框 -->
+                                            <TextBox x:Name="RenameBox" FontSize="11"
+                                                     Background="{DynamicResource Color.SurfaceHigh}"
+                                                     Foreground="{DynamicResource Color.Text.Primary}"
+                                                     CaretBrush="{DynamicResource Color.Primary}" Padding="3,1"
+                                                     Visibility="{Binding IsEditing, Converter={StaticResource BoolToVisibility}}"
+                                                     Text="{Binding EditName, UpdateSourceTrigger=PropertyChanged}"
+                                                     KeyDown="RenameBox_OnKeyDown" LostFocus="RenameBox_OnLostFocus" />
+                                            <!-- 常态:名字 + 重命名/删除 -->
+                                            <StackPanel Orientation="Horizontal"
+                                                        Visibility="{Binding IsEditing, Converter={StaticResource InverseBoolToVisibility}}">
+                                                <TextBlock Text="{Binding Name}" FontSize="11" Margin="2,2,0,2"
+                                                           Foreground="{DynamicResource Color.Text.Secondary}"
+                                                           VerticalAlignment="Center" ToolTip="{Binding Name}" />
+                                                <Button Style="{StaticResource WsMini}" Width="16" Height="16" Margin="4,0,0,0"
+                                                        FontSize="10" Content="✎" Click="Rename_OnClick" />
+                                                <Button Style="{StaticResource WsMini}" Width="16" Height="16" Margin="2,0,0,0"
+                                                        FontSize="10" Content="✕"
+                                                        Command="{Binding DataContext.DeleteFileCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
+                                                        CommandParameter="{Binding}" />
+                                            </StackPanel>
                                         </Grid>
                                     </DataTemplate>
                                 </ListBox.ItemTemplate>
                             </ListBox>
                         </Grid>
                     </Border>
-                    <ToggleButton x:Name="FileListExpand" Grid.Column="0" Width="26" Height="46" VerticalAlignment="Top"
-                                  Visibility="Collapsed" Cursor="Hand" Command="{Binding ToggleFileListCommand}"
-                                  FocusVisualStyle="{x:Null}">
-                        <ToggleButton.Template>
-                            <ControlTemplate TargetType="ToggleButton">
-                                <Border Background="{DynamicResource Color.SurfaceElevated}" CornerRadius="8"
-                                        BorderBrush="{DynamicResource Color.Border}" BorderThickness="1">
-                                    <TextBlock Text="›" FontSize="12" HorizontalAlignment="Center" VerticalAlignment="Center"
-                                               Foreground="{DynamicResource Color.Text.Secondary}" />
-                                </Border>
-                            </ControlTemplate>
-                        </ToggleButton.Template>
-                    </ToggleButton>
+                    <!-- 折叠钮(列表头) + 折叠态展开钮 -->
+                    <Button Grid.Column="0" Style="{StaticResource WsMini}" Command="{Binding ToggleFileListCommand}"
+                            VerticalAlignment="Top" HorizontalAlignment="Left" Margin="4,4,0,0"
+                            Visibility="{Binding ShowFileList, Converter={StaticResource InverseBoolToVisibility}}"
+                            Content="›" x:Name="FileListExpand" Panel.ZIndex="2" />
 
-                    <!-- 编辑器:高亮层 + 输入层(行高/列宽严格对齐,不换行) -->
+                    <!-- AvalonEdit 编辑器 -->
                     <Border Grid.Column="2" CornerRadius="10" BorderBrush="{DynamicResource Color.Border}" BorderThickness="1"
                             Background="{DynamicResource Color.SurfaceElevated}" ClipToBounds="True">
-                        <Grid>
-                            <RichTextBox x:Name="HighlightBox" IsReadOnly="True" Background="Transparent" BorderThickness="0"
-                                         IsHitTestVisible="False" FontFamily="Consolas" FontSize="12.5"
-                                         VerticalScrollBarVisibility="Hidden" HorizontalScrollBarVisibility="Hidden"
-                                         Padding="12,8,4,8" />
-                            <TextBox x:Name="EditorBox" Text="{Binding SourceCode, UpdateSourceTrigger=PropertyChanged}"
-                                     AcceptsReturn="True" AcceptsTab="True" FontFamily="Consolas" FontSize="12.5"
-                                     TextWrapping="NoWrap"
-                                     Foreground="{DynamicResource Color.Text.Primary}" CaretBrush="{DynamicResource Color.Primary}"
-                                     Background="Transparent" BorderThickness="0" Padding="12,8,4,8"
-                                     VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Auto"
-                                     SelectionBrush="{DynamicResource Color.Primary}"
-                                     TextChanged="Editor_OnTextChanged" />
-                        </Grid>
+                        <avalon:TextEditor x:Name="Editor"
+                                           FontFamily="Consolas" FontSize="12.5"
+                                           Background="{DynamicResource Color.SurfaceElevated}"
+                                           Foreground="{DynamicResource Color.Text.Primary}"
+                                           WordWrap="False"
+                                           HorizontalScrollBarVisibility="Auto"
+                                           VerticalScrollBarVisibility="Auto"
+                                           ShowLineNumbers="True"
+                                           TextChanged="Editor_OnTextChanged" />
                     </Border>
 
-                    <!-- Minimap -->
-                    <Grid Grid.Column="4" x:Name="MinimapHost">
-                        <Border CornerRadius="10" Background="{DynamicResource Color.SurfaceElevated}"
-                                BorderBrush="{DynamicResource Color.Border}" BorderThickness="1" ClipToBounds="True">
+                    <!-- Minimap(窄条,点击标题区域折叠/展开) -->
+                    <Border Grid.Column="4" x:Name="MinimapHost" CornerRadius="10"
+                            Background="{DynamicResource Color.SurfaceElevated}"
+                            BorderBrush="{DynamicResource Color.Border}" BorderThickness="1" ClipToBounds="True">
+                        <Grid>
                             <RichTextBox x:Name="MinimapBox" IsReadOnly="True" Background="Transparent" BorderThickness="0"
                                          IsHitTestVisible="False" FontFamily="Consolas"
                                          VerticalScrollBarVisibility="Hidden" HorizontalScrollBarVisibility="Hidden" />
-                        </Border>
-                        <ToggleButton Width="18" Height="18" HorizontalAlignment="Right"
-                                      VerticalAlignment="Top" Margin="0,4,4,0" Cursor="Hand"
-                                      Command="{Binding ToggleMinimapCommand}" FocusVisualStyle="{x:Null}">
-                            <ToggleButton.Template>
-                                <ControlTemplate TargetType="ToggleButton">
-                                    <Border Background="{DynamicResource Brush.Glass}" CornerRadius="6">
-                                        <TextBlock Text="›" FontSize="9" HorizontalAlignment="Center"
-                                                   VerticalAlignment="Center" Foreground="{DynamicResource Color.Text.Secondary}" />
-                                    </Border>
-                                </ControlTemplate>
-                            </ToggleButton.Template>
-                        </ToggleButton>
-                    </Grid>
-                    <ToggleButton x:Name="MinimapExpand" Grid.Column="4" Width="26" Height="46" VerticalAlignment="Top"
-                                  Visibility="Collapsed" Cursor="Hand" Command="{Binding ToggleMinimapCommand}"
-                                  FocusVisualStyle="{x:Null}">
-                        <ToggleButton.Template>
-                            <ControlTemplate TargetType="ToggleButton">
-                                <Border Background="{DynamicResource Color.SurfaceElevated}" CornerRadius="8"
-                                        BorderBrush="{DynamicResource Color.Border}" BorderThickness="1">
-                                    <TextBlock Text="‹" FontSize="12" HorizontalAlignment="Center" VerticalAlignment="Center"
-                                               Foreground="{DynamicResource Color.Text.Secondary}" />
-                                </Border>
-                            </ControlTemplate>
-                        </ToggleButton.Template>
-                    </ToggleButton>
+                            <Button Style="{StaticResource WsMini}" Command="{Binding ToggleMinimapCommand}"
+                                    Width="16" Height="16" HorizontalAlignment="Right" VerticalAlignment="Top"
+                                    Margin="0,3,3,0" Content="‹" Background="Transparent" />
+                        </Grid>
+                    </Border>
+                    <!-- minimap 折叠后的展开钮 -->
+                    <Button Grid.Column="4" x:Name="MinimapExpand" Style="{StaticResource WsMini}" Width="26" Height="40"
+                            Command="{Binding ToggleMinimapCommand}" Content="›"
+                            Visibility="{Binding ShowMinimap, Converter={StaticResource InverseBoolToVisibility}}" />
                 </Grid>
 
-                <!-- ===== 效果预览 ===== -->
+                <!-- ===== 效果预览视图 ===== -->
                 <Grid Grid.Row="2" x:Name="PreviewHost" Visibility="Collapsed">
                     <StackPanel>
                         <Border x:Name="PreviewFrame" CornerRadius="10" ClipToBounds="False" Height="340"
@@ -402,15 +384,21 @@
         <!-- ============ 右:卡片 ============ -->
         <ScrollViewer Grid.Column="1" VerticalScrollBarVisibility="Auto">
             <StackPanel>
-                <!-- 插件信息 -->
+                <!-- 相关信息 -->
                 <Border Style="{StaticResource WsCard}">
                     <StackPanel>
-                        <StackPanel Orientation="Horizontal" Margin="0,0,0,2">
-                            <controls:VioraIcon Geometry="{StaticResource Icon.PuzzlePiece}" Width="13" Height="13"
-                                                Foreground="{DynamicResource Color.Primary}" VerticalAlignment="Center" />
-                            <TextBlock Text="{loc:Translate Workshop.PluginInfo}" FontSize="13.5" FontWeight="Bold" Margin="8,0,0,0"
-                                       Foreground="{DynamicResource Color.Text.Primary}" />
-                        </StackPanel>
+                        <Grid Margin="0,0,0,2">
+                            <StackPanel Orientation="Horizontal">
+                                <controls:VioraIcon Geometry="{StaticResource Icon.PuzzlePiece}" Width="13" Height="13"
+                                                    Foreground="{DynamicResource Color.Primary}" VerticalAlignment="Center" />
+                                <TextBlock Text="{loc:Translate Workshop.InfoTitle}" FontSize="13.5" FontWeight="Bold" Margin="8,0,0,0"
+                                           Foreground="{DynamicResource Color.Text.Primary}" />
+                            </StackPanel>
+                            <Button Style="{StaticResource WsMini}" Command="{Binding AddInfoCommand}" HorizontalAlignment="Right"
+                                    Content="+" IsEnabled="{Binding HasAddableLanguages}"
+                                    ToolTip="{loc:Translate Workshop.InfoAdd}" />
+                        </Grid>
+
                         <TextBlock Text="{loc:Translate Workshop.PluginId}" Style="{StaticResource WsLabel}" />
                         <TextBox Style="{StaticResource WsInput}" Text="{Binding PluginId, UpdateSourceTrigger=PropertyChanged}" />
                         <Grid>
@@ -431,53 +419,40 @@
                         <TextBlock Text="{loc:Translate Workshop.Category}" Style="{StaticResource WsLabel}" />
                         <ComboBox Style="{StaticResource VioraCombo}" ItemsSource="{Binding Categories}"
                                   SelectedItem="{Binding CategoryDisplay}" />
-                        <TextBlock Text="{loc:Translate Workshop.DisplayName}" Style="{StaticResource WsLabel}" />
-                        <TextBox Style="{StaticResource WsInput}" Text="{Binding DisplayName, UpdateSourceTrigger=PropertyChanged}" />
-                        <TextBlock Text="{loc:Translate Workshop.NameZh}" Style="{StaticResource WsLabel}" />
-                        <TextBox Style="{StaticResource WsInput}" Text="{Binding NameZh, UpdateSourceTrigger=PropertyChanged}" />
 
-                        <!-- 描述:虚线盒 + 多语言 +/- -->
-                        <Grid Margin="0,14,0,0">
-                            <Rectangle Stroke="{DynamicResource Color.Border}" StrokeThickness="1"
-                                       StrokeDashArray="4 3" RadiusX="12" RadiusY="12"
-                                       Fill="{DynamicResource Color.SurfaceHigh}" />
-                            <StackPanel Margin="12,10,12,12">
-                                <Grid>
-                                    <StackPanel Orientation="Horizontal">
-                                        <TextBlock Text="{loc:Translate Workshop.DescBox}" FontSize="12.5" FontWeight="Bold"
-                                                   Foreground="{DynamicResource Color.Text.Primary}" VerticalAlignment="Center" />
-                                        <TextBlock Text="{loc:Translate Workshop.DescHint}" FontSize="10.5" Margin="8,0,0,0"
-                                                   Foreground="{DynamicResource Color.Text.Disabled}" VerticalAlignment="Center" />
-                                    </StackPanel>
-                                    <Button Style="{StaticResource WsMini}" Command="{Binding AddDescriptionCommand}"
-                                            IsEnabled="{Binding HasAddableLanguages}" HorizontalAlignment="Right" Content="+" />
-                                </Grid>
-                                <ItemsControl ItemsSource="{Binding DescriptionEntries}" Margin="0,8,0,0">
-                                    <ItemsControl.ItemTemplate>
-                                        <DataTemplate>
-                                            <Grid Margin="0,0,0,6">
-                                                <Grid.ColumnDefinitions>
-                                                    <ColumnDefinition Width="Auto" />
-                                                    <ColumnDefinition Width="*" />
-                                                    <ColumnDefinition Width="Auto" />
-                                                </Grid.ColumnDefinitions>
-                                                <Border Grid.Column="0" CornerRadius="7" Padding="7,0" Margin="0,0,6,0"
-                                                        Background="{DynamicResource Brush.Glass}" VerticalAlignment="Center" Height="32">
-                                                    <TextBlock Text="{Binding LangDisplay}" FontSize="11"
-                                                               Foreground="{DynamicResource Color.Text.Secondary}" VerticalAlignment="Center" />
-                                                </Border>
-                                                <TextBox Grid.Column="1" Style="{StaticResource WsInput}"
-                                                         Text="{Binding Text, UpdateSourceTrigger=PropertyChanged}" />
-                                                <Button Grid.Column="2" Style="{StaticResource WsMini}" Margin="6,0,0,0"
-                                                        Command="{Binding DataContext.RemoveDescriptionCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
+                        <!-- 语言条目:默认英语(固定),+ 增补其他语言 -->
+                        <ItemsControl ItemsSource="{Binding InfoEntries}" Margin="0,6,0,0">
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate>
+                                    <Border CornerRadius="10" Padding="10,8" Margin="0,8,0,0"
+                                            Background="{DynamicResource Color.SurfaceElevated}"
+                                            BorderBrush="{DynamicResource Color.Border}" BorderThickness="1">
+                                        <StackPanel>
+                                            <Grid>
+                                                <StackPanel Orientation="Horizontal">
+                                                    <Border Style="{StaticResource WsLangChip}">
+                                                        <TextBlock Text="{Binding LangDisplay}" FontSize="11"
+                                                                   Foreground="{DynamicResource Color.Text.Secondary}" />
+                                                    </Border>
+                                                    <TextBlock Text="{loc:Translate Workshop.InfoFixedHint}" FontSize="10" Margin="8,0,0,0"
+                                                               Foreground="{DynamicResource Color.Text.Disabled}" VerticalAlignment="Center"
+                                                               Visibility="{Binding IsFixed, Converter={StaticResource BoolToVisibility}}" />
+                                                </StackPanel>
+                                                <Button Style="{StaticResource WsMini}" HorizontalAlignment="Right"
+                                                        Command="{Binding DataContext.RemoveInfoCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
                                                         CommandParameter="{Binding}" Content="−"
                                                         IsEnabled="{Binding IsFixed, Converter={StaticResource InverseBool}}" />
                                             </Grid>
-                                        </DataTemplate>
-                                    </ItemsControl.ItemTemplate>
-                                </ItemsControl>
-                            </StackPanel>
-                        </Grid>
+                                            <TextBlock Text="{loc:Translate Workshop.InfoName}" Style="{StaticResource WsLabel}" />
+                                            <TextBox Style="{StaticResource WsInput}" Text="{Binding Name, UpdateSourceTrigger=PropertyChanged}" />
+                                            <TextBlock Text="{loc:Translate Workshop.InfoDesc}" Style="{StaticResource WsLabel}" />
+                                            <TextBox Style="{StaticResource WsInputMultiline}"
+                                                     Text="{Binding Description, UpdateSourceTrigger=PropertyChanged}" />
+                                        </StackPanel>
+                                    </Border>
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
                     </StackPanel>
                 </Border>
 
@@ -504,88 +479,6 @@
                                          Background="Transparent" BorderThickness="0" Padding="10,8"
                                          VerticalScrollBarVisibility="Auto" MinHeight="120" MaxHeight="260" />
                         </Border>
-                    </StackPanel>
-                </Border>
-
-                <!-- SDK 速查 -->
-                <Border Style="{StaticResource WsCard}" Margin="0,12,0,0">
-                    <StackPanel>
-                        <StackPanel Orientation="Horizontal" Margin="0,0,0,2">
-                            <controls:VioraIcon Geometry="{StaticResource Icon.Sliders}" Width="13" Height="13"
-                                                Foreground="{DynamicResource Color.Primary}" VerticalAlignment="Center" />
-                            <TextBlock Text="{loc:Translate Workshop.ApiHelp}" FontSize="13.5" FontWeight="Bold" Margin="8,0,0,0"
-                                       Foreground="{DynamicResource Color.Text.Primary}" />
-                        </StackPanel>
-                        <TextBlock Text="{loc:Translate Workshop.Sdk.Pipeline}" Style="{StaticResource WsLabel}" />
-                        <StackPanel Orientation="Horizontal">
-                            <Border Style="{StaticResource WsChip}">
-                                <StackPanel>
-                                    <TextBlock Text="IStylePreset" FontFamily="Consolas" FontSize="11"
-                                               Foreground="{DynamicResource Color.Primary}" />
-                                    <TextBlock Text="{loc:Translate Workshop.Sdk.PresetDesc}" FontSize="10"
-                                               Foreground="{DynamicResource Color.Text.Secondary}" />
-                                </StackPanel>
-                            </Border>
-                            <TextBlock Text="→" Margin="0,0,6,6" VerticalAlignment="Center"
-                                       Foreground="{DynamicResource Color.Text.Disabled}" />
-                            <Border Style="{StaticResource WsChip}">
-                                <StackPanel>
-                                    <TextBlock Text="Stage ×N" FontFamily="Consolas" FontSize="11"
-                                               Foreground="{DynamicResource Color.Primary}" />
-                                    <TextBlock Text="{loc:Translate Workshop.Sdk.StageDesc}" FontSize="10"
-                                               Foreground="{DynamicResource Color.Text.Secondary}" />
-                                </StackPanel>
-                            </Border>
-                        </StackPanel>
-                        <TextBlock Text="{loc:Translate Workshop.Sdk.Params}" Style="{StaticResource WsLabel}" />
-                        <Border Style="{StaticResource WsChip}">
-                            <StackPanel>
-                                <TextBlock FontFamily="Consolas" FontSize="11" Foreground="{DynamicResource Color.Text.Primary}">
-                                    <Run>PresetParameter(</Run><Run Foreground="{DynamicResource Color.Text.Secondary}">key, key, def, min, max, step</Run><Run>)</Run>
-                                </TextBlock>
-                                <TextBlock Text="{loc:Translate Workshop.Sdk.ParamsDesc}" FontSize="10"
-                                           Foreground="{DynamicResource Color.Text.Secondary}" />
-                            </StackPanel>
-                        </Border>
-                        <TextBlock Text="{loc:Translate Workshop.Sdk.StageHow}" Style="{StaticResource WsLabel}" />
-                        <Border Style="{StaticResource WsChip}">
-                            <StackPanel>
-                                <TextBlock FontFamily="Consolas" FontSize="11" Foreground="{DynamicResource Color.Text.Primary}"
-                                           Text="context.Working!.Pixels" />
-                                <TextBlock Text="{loc:Translate Workshop.Sdk.StageHowDesc}" FontSize="10" TextWrapping="Wrap"
-                                           Foreground="{DynamicResource Color.Text.Secondary}" />
-                            </StackPanel>
-                        </Border>
-                        <TextBlock Text="{loc:Translate Workshop.Sdk.Entry}" Style="{StaticResource WsLabel}" />
-                        <Border Style="{StaticResource WsChip}">
-                            <StackPanel>
-                                <TextBlock Text="VioraPluginBase → InitializeAsync" FontFamily="Consolas" FontSize="11"
-                                           Foreground="{DynamicResource Color.Primary}" />
-                                <TextBlock Text="{loc:Translate Workshop.Sdk.EntryDesc}" FontSize="10"
-                                           Foreground="{DynamicResource Color.Text.Secondary}" />
-                            </StackPanel>
-                        </Border>
-                        <TextBlock Text="{loc:Translate Workshop.Sdk.Redline}" Style="{StaticResource WsLabel}" />
-                        <StackPanel Orientation="Horizontal">
-                            <Border CornerRadius="8" Padding="8,5" Margin="0,0,6,6"
-                                    Background="{DynamicResource Color.SurfaceElevated}"
-                                    BorderBrush="{DynamicResource Color.Danger}" BorderThickness="1">
-                                <TextBlock Text="{loc:Translate Workshop.Sdk.Rule1}" FontSize="10.5"
-                                           Foreground="{DynamicResource Color.Danger}" />
-                            </Border>
-                            <Border CornerRadius="8" Padding="8,5" Margin="0,0,6,6"
-                                    Background="{DynamicResource Color.SurfaceElevated}"
-                                    BorderBrush="{DynamicResource Color.Danger}" BorderThickness="1">
-                                <TextBlock Text="{loc:Translate Workshop.Sdk.Rule2}" FontSize="10.5"
-                                           Foreground="{DynamicResource Color.Danger}" />
-                            </Border>
-                            <Border CornerRadius="8" Padding="8,5" Margin="0,0,6,6"
-                                    Background="{DynamicResource Color.SurfaceElevated}"
-                                    BorderBrush="{DynamicResource Color.Danger}" BorderThickness="1">
-                                <TextBlock Text="{loc:Translate Workshop.Sdk.Rule3}" FontSize="10.5"
-                                           Foreground="{DynamicResource Color.Danger}" />
-                            </Border>
-                        </StackPanel>
                     </StackPanel>
                 </Border>
             </StackPanel>

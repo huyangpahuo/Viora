@@ -4,20 +4,20 @@ using System.Text;
 using System.Windows.Media;
 using CommunityToolkit.Mvvm.ComponentModel;
 using Microsoft.Extensions.Logging;
-using Viora.UI.Services;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Viora.Core.Imaging;
 using Viora.Core.Pipeline;
 using Viora.PluginSdk;
 using Viora.UI.Localization;
+using Viora.UI.Services;
 
 namespace Viora.UI.Pages.Workshop;
 
 /// <summary>
-/// 插件工坊:在应用内编写 C# 风格插件源码,内存编译(Roslyn)后实时预览,
-/// 一键打包 zip 并生成 registry.json 条目。编译基于程序旁 sdk\ 参考程序集,
-/// 单文件发布同样可用;这层"源码 → 预览 → 包"的管线即为后续 AI/MCP 接入的入口。
+/// 插件工坊:在应用内编写 C# 风格插件源码(AvalonEdit 编辑器),内存编译(Roslyn)后实时预览,
+/// 一键打包 zip 并生成 registry.json 条目。编译基于程序旁 sdk\ 参考程序集,单文件发布同样可用;
+/// 这层"源码 → 预览 → 包"的管线即为后续 AI/MCP 接入的入口。
 /// </summary>
 public partial class WorkshopViewModel : ObservableObject
 {
@@ -27,10 +27,9 @@ public partial class WorkshopViewModel : ObservableObject
     private readonly IImportServiceProxy _import;
     private readonly IUiAlert _alert;
     private readonly ILogger<WorkshopViewModel> _logger;
+    private readonly Viora.Core.Localization.ILocalizationService _localization;
     private IImageBuffer? _sampleBuffer;
     private AssemblyLoadContext? _lastAlc;
-
-    private readonly Viora.Core.Localization.ILocalizationService _localization;
 
     public WorkshopViewModel(IImageConversionEngine engine, IImportServiceProxy import,
         IUiAlert alert, ILogger<WorkshopViewModel> logger,
@@ -41,70 +40,73 @@ public partial class WorkshopViewModel : ObservableObject
         _alert = alert;
         _logger = logger;
         _localization = localization;
-        Files.Add(new WorkshopFile { Name = "main.cs", Source = DefaultTemplate });
+
+        Files.Add(new WorkshopFile("main.cs", DefaultTemplate));
         ActiveFile = Files[0];
-        SourceCode = DefaultTemplate;
+
+        // 相关信息:英语为默认(固定不可删),其余语言用 + 增补
+        InfoEntries.Add(new InfoEntry("en", InfoEntry.DisplayOf("en"), isFixed: true));
+
         RebuildCategories();
         LocalizationSource.Current.PropertyChanged += (_, _) => RebuildCategories();
-        // 描述条目:英语必填起步,其余语言按宿主已加载语言用 + 号增补
-        DescriptionEntries.Add(new DescriptionEntry("en", "English"));
         CreateSyntheticSample();
     }
 
-    /// <summary>可增补的语言(宿主已加载语言 - 已添加的)。</summary>
+    // ---------- 相关信息(展示名 + 描述,按语言) ----------
+
+    /// <summary>按语言聚合的 展示名 + 描述;英语条目固定不可删,其余可增删。</summary>
+    public System.Collections.ObjectModel.ObservableCollection<InfoEntry> InfoEntries { get; } = new();
+
     public IEnumerable<string> AddableLanguages =>
         _localization.AvailableLanguages
-            .Where(l => DescriptionEntries.All(d => d.LangCode != l))
-            .Select(DisplayLang);
+            .Where(l => InfoEntries.All(d => d.LangCode != l));
 
-    public static string DisplayLang(string code) => code switch
+    public bool HasAddableLanguages => AddableLanguages.Any();
+
+    [CommunityToolkit.Mvvm.Input.RelayCommand]
+    private void AddInfo()
     {
-        "en" => "English",
-        "zh-Hans" => "简体中文",
-        _ => code,
-    };
+        var code = AddableLanguages.FirstOrDefault();
+        if (code is null) return;
+        InfoEntries.Add(new InfoEntry(code, InfoEntry.DisplayOf(code)));
+        OnPropertyChanged(nameof(HasAddableLanguages));
+    }
 
-    /// <summary>语言码 → registry 键(zh-Hans → zh)。</summary>
-    public static string RegistryLang(string code) => code == "zh-Hans" ? "zh" : code;
+    [CommunityToolkit.Mvvm.Input.RelayCommand]
+    private void RemoveInfo(InfoEntry entry)
+    {
+        if (entry.IsFixed) return;
+        InfoEntries.Remove(entry);
+        OnPropertyChanged(nameof(HasAddableLanguages));
+    }
 
-    /// <summary>描述多语言条目(英语固定在首位,不可删除)。</summary>
-    public System.Collections.ObjectModel.ObservableCollection<DescriptionEntry> DescriptionEntries { get; }
-        = new();
-
-    public sealed class DescriptionEntry
+    public sealed class InfoEntry : ObservableObject
     {
         public string LangCode { get; }
         public string LangDisplay { get; }
-        public string Text { get; set; } = "";
         public bool IsFixed { get; }
-        public DescriptionEntry(string code, string display, bool fixedEntry = false)
-            => (LangCode, LangDisplay, IsFixed) = (code, display, fixedEntry);
+
+        private string _name = "";
+        public string Name { get => _name; set => SetProperty(ref _name, value); }
+
+        private string _description = "";
+        public string Description { get => _description; set => SetProperty(ref _description, value); }
+
+        public InfoEntry(string code, string display, bool isFixed = false)
+            => (LangCode, LangDisplay, IsFixed) = (code, display, isFixed);
+
+        public static string DisplayOf(string code) => code switch
+        {
+            "en" => "English",
+            "zh-Hans" => "简体中文",
+            _ => code,
+        };
+
+        public static string RegistryLang(string code) => code == "zh-Hans" ? "zh" : code;
     }
 
-    [ObservableProperty]
-    private string _newDescriptionLang = "";
+    // ---------- 分类 ----------
 
-    [CommunityToolkit.Mvvm.Input.RelayCommand]
-    private void AddDescription()
-    {
-        var candidate = AddableLanguages.FirstOrDefault();
-        if (candidate is null) return;
-        int insert = DescriptionEntries.Count;
-        DescriptionEntries.Insert(insert, new DescriptionEntry(candidate, DisplayLang(candidate)));
-        NewDescriptionLang = "";
-    }
-
-    [CommunityToolkit.Mvvm.Input.RelayCommand]
-    private void RemoveDescription(DescriptionEntry entry)
-    {
-        if (entry.IsFixed) return;
-        DescriptionEntries.Remove(entry);
-    }
-
-    /// <summary>是否还有可增补的语言(驱动 + 号可用态)。</summary>
-    public bool HasAddableLanguages => AddableLanguages.Any();
-
-    /// <summary>分类显示名列表(当前语言);显示名 ↔ 键 双向映射随语言重建。</summary>
     public System.Collections.ObjectModel.ObservableCollection<string> Categories { get; } = new();
 
     private Dictionary<string, string> _keyByDisplay = new();
@@ -127,25 +129,8 @@ public partial class WorkshopViewModel : ObservableObject
                           ?? Categories.FirstOrDefault() ?? "";
     }
 
-    [ObservableProperty]
-    private string _sourceCode;
+    // ---------- 源码文件 ----------
 
-    /// <summary>语法高亮只读层(RichTextBox 流文档),编辑层为透明 TextBox 叠加其上。</summary>
-    [ObservableProperty]
-    private System.Windows.Documents.FlowDocument? _highlightDocument;
-
-    /// <summary>VSCode 式 minimap(超小字号文档,可折叠)。</summary>
-    [ObservableProperty]
-    private System.Windows.Documents.FlowDocument? _minimapDocument;
-
-    [ObservableProperty]
-    private bool _showMinimap = true;
-
-    /// <summary>左栏视图:"code" | "preview"。</summary>
-    [ObservableProperty]
-    private string _activeTab = "code";
-
-    /// <summary>源码文件列表(main.cs 默认;可多文件,编译时全部纳入)。</summary>
     public System.Collections.ObjectModel.ObservableCollection<WorkshopFile> Files { get; } = new();
 
     [ObservableProperty]
@@ -161,58 +146,24 @@ public partial class WorkshopViewModel : ObservableObject
         finally { _switchingFile = false; }
     }
 
-    private System.Windows.Threading.DispatcherTimer? _highlightTimer;
+    [ObservableProperty]
+    private string _sourceCode;
 
-    partial void OnSourceCodeChanged(string value)
+    [ObservableProperty]
+    private bool _showFileList = true;
+
+    [CommunityToolkit.Mvvm.Input.RelayCommand]
+    private void ToggleFileList() => ShowFileList = !ShowFileList;
+
+    [CommunityToolkit.Mvvm.Input.RelayCommand]
+    private void AddFile()
     {
-        if (!_switchingFile && ActiveFile is not null)
-            ActiveFile.Source = value;
-
-        // 防抖 150ms 重建高亮/minimap:避免每次按键全量重建导致卡顿
-        _highlightTimer ??= new System.Windows.Threading.DispatcherTimer
-        {
-            Interval = TimeSpan.FromMilliseconds(150),
-        };
-        _highlightTimer.Stop();
-        _highlightTimer.Start();
-        _highlightTimer.Tick -= OnHighlightTimerTick;
-        _highlightTimer.Tick += OnHighlightTimerTick;
-    }
-
-    private void OnHighlightTimerTick(object? sender, EventArgs e)
-    {
-        if (sender is System.Windows.Threading.DispatcherTimer t) t.Stop();
-        HighlightDocument = CSharpHighlighter.Build(SourceCode, CSharpHighlighter.TokenPalette.Instance);
-        MinimapDocument = CSharpHighlighter.Build(SourceCode, CSharpHighlighter.TokenPalette.Instance, minimap: true);
-    }
-
-    public sealed class WorkshopFile : CommunityToolkit.Mvvm.ComponentModel.ObservableObject
-    {
-        private string _name = "file.cs";
-        public string Name
-        {
-            get => _name;
-            set
-            {
-                value = SanitizeName(value);
-                if (SetProperty(ref _name, value)) Renamed?.Invoke(this, EventArgs.Empty);
-            }
-        }
-
-        private string _source = "";
-        public string Source { get => _source; set => SetProperty(ref _source, value); }
-
-        public event EventHandler? Renamed;
-
-        public override string ToString() => Name;
-
-        public static string SanitizeName(string raw)
-        {
-            var name = raw.Trim().Replace("\\", "/");
-            if (name.EndsWith(".cs", StringComparison.OrdinalIgnoreCase)) name = name[..^3];
-            name = new string(name.Where(char.IsLetterOrDigit).ToArray());
-            return name.Length == 0 ? "file" : name + ".cs";
-        }
+        int n = Files.Count + 1;
+        string name = WorkshopFile.SanitizeName($"file{n}");
+        while (Files.Any(f => f.Name == name)) { n++; name = WorkshopFile.SanitizeName($"file{n}"); }
+        var file = new WorkshopFile(name, "// 新文件:可放额外的阶段类或入口类" + Environment.NewLine);
+        Files.Add(file);
+        ActiveFile = file;
     }
 
     [CommunityToolkit.Mvvm.Input.RelayCommand]
@@ -225,11 +176,76 @@ public partial class WorkshopViewModel : ObservableObject
             ActiveFile = Files[Math.Clamp(idx, 0, Files.Count - 1)];
     }
 
+    public sealed class WorkshopFile : ObservableObject
+    {
+        private string _name;
+        public string Name
+        {
+            get => _name;
+            set => SetProperty(ref _name, SanitizeName(value));
+        }
+
+        private string _source;
+        public string Source { get => _source; set => SetProperty(ref _source, value); }
+
+        private bool _isEditing;
+        /// <summary>重命名编辑态(✎ 触发,Enter/失焦提交)。</summary>
+        public bool IsEditing
+        {
+            get => _isEditing;
+            set => SetProperty(ref _isEditing, value);
+        }
+
+        private string _editName = "";
+        public string EditName { get => _editName; set => SetProperty(ref _editName, value); }
+
+        public WorkshopFile(string name, string source)
+        {
+            _name = SanitizeName(name);
+            _source = source;
+        }
+
+        public void BeginRename() { EditName = Name; IsEditing = true; }
+        public void CommitRename()
+        {
+            if (!IsEditing) return;
+            if (!string.IsNullOrWhiteSpace(EditName)) Name = EditName;
+            IsEditing = false;
+        }
+        public void CancelRename() => IsEditing = false;
+
+        public override string ToString() => Name;
+
+        public static string SanitizeName(string raw)
+        {
+            var name = raw.Trim().Replace("\\", "/");
+            if (name.EndsWith(".cs", StringComparison.OrdinalIgnoreCase)) name = name[..^3];
+            name = new string(name.Where(char.IsLetterOrDigit).ToArray());
+            return name.Length == 0 ? "file.cs" : name + ".cs";
+        }
+    }
+
+    // ---------- Minimap ----------
+
+    /// <summary>VSCode 式 minimap(超小字号流文档)。</summary>
     [ObservableProperty]
-    private bool _showFileList = true;
+    private System.Windows.Documents.FlowDocument? _minimapDocument;
+
+    [ObservableProperty]
+    private bool _showMinimap = true;
 
     [CommunityToolkit.Mvvm.Input.RelayCommand]
-    private void ToggleFileList() => ShowFileList = !ShowFileList;
+    private void ToggleMinimap() => ShowMinimap = !ShowMinimap;
+
+    /// <summary>由编辑器侧防抖调用:重建 minimap 文档。</summary>
+    public void UpdateMinimap(string source) =>
+        MinimapDocument = CSharpHighlighter.Build(source, CSharpHighlighter.TokenPalette.Instance, minimap: true);
+
+    // ---------- 视图 Tab ----------
+
+    /// <summary>左栏视图:"code" | "preview"。</summary>
+    [ObservableProperty]
+    private string _activeTab = "code";
 
     [CommunityToolkit.Mvvm.Input.RelayCommand]
     private void SwitchTab(string tab)
@@ -239,24 +255,10 @@ public partial class WorkshopViewModel : ObservableObject
             _ = RunPreviewAsync(CancellationToken.None);   // 切到效果预览即自动运行
     }
 
-    [CommunityToolkit.Mvvm.Input.RelayCommand]
-    private void AddFile()
-    {
-        int n = Files.Count + 1;
-        string name = $"file{n}.cs";
-        while (Files.Any(f => f.Name == name)) { n++; name = $"file{n}.cs"; }
-        Files.Add(new WorkshopFile { Name = name, Source = "// 新文件:可放额外的阶段类或入口类" + Environment.NewLine });
-        ActiveFile = Files[^1];
-    }
-
-    [CommunityToolkit.Mvvm.Input.RelayCommand]
-    private void ToggleMinimap() => ShowMinimap = !ShowMinimap;
+    // ---------- 元数据 ----------
 
     [ObservableProperty]
     private string _pluginId = "builtin.viora.my-style";
-
-    [ObservableProperty]
-    private string _displayName = "My Style";
 
     [ObservableProperty]
     private string _version = "1.0.0";
@@ -265,25 +267,7 @@ public partial class WorkshopViewModel : ObservableObject
     private string _author = "";
 
     [ObservableProperty]
-    private string _description = "";
-
-    [ObservableProperty]
     private string _categoryKey = "Style.Cat.Experimental";
-
-    [ObservableProperty]
-    private string _outputLog = "";
-
-    [ObservableProperty]
-    private string _registryText = "";
-
-    /// <summary>registry 条目的高亮只读文档(JsonHighlighter)。</summary>
-    [ObservableProperty]
-    private System.Windows.Documents.FlowDocument? _registryDocument;
-
-    partial void OnRegistryTextChanged(string value)
-    {
-        RegistryDocument = string.IsNullOrEmpty(value) ? null : JsonHighlighter.Build(value);
-    }
 
     [ObservableProperty]
     private ImageSource? _previewImage;
@@ -293,10 +277,6 @@ public partial class WorkshopViewModel : ObservableObject
 
     [ObservableProperty]
     private bool _isBusy;
-
-    /// <summary>对比模式开启时,预览图显示为 原图|结果 分割视图。</summary>
-    [ObservableProperty]
-    private bool _showCompare = true;
 
     /// <summary>分割位置 0~100(%),驱动 Before/After 滑杆。</summary>
     [ObservableProperty]
@@ -310,17 +290,10 @@ public partial class WorkshopViewModel : ObservableObject
     [ObservableProperty]
     private string _readyText = "Ready";
 
-    /// <summary>registry 条目的中文名/描述(上架条目要求双语)。</summary>
-    [ObservableProperty]
-    private string _nameZh = "";
-
-    [ObservableProperty]
-    private string _descriptionZh = "";
-
-    /// <summary>原图结果缓冲(对比视图左半)。</summary>
-    public ImageSource? BeforeImage => _sampleBuffer is null ? null : _import.ToImageSource(_sampleBuffer);
-
     public bool CanRun => !IsBusy && _sampleBuffer is not null;
+
+    /// <summary>原图缓冲(对比视图左半)。</summary>
+    public ImageSource? BeforeImage => _sampleBuffer is null ? null : _import.ToImageSource(_sampleBuffer);
 
     partial void OnIsBusyChanged(bool value)
     {
@@ -328,229 +301,10 @@ public partial class WorkshopViewModel : ObservableObject
         ReadyText = value ? "Working…" : "Ready";
     }
 
-    public string ApiHelpText => ApiHelp;
+    // ---------- registry ----------
 
-    // ---------- 编译 ----------
-
-    private List<MetadataReference> BuildReferences()
-    {
-        // sdk\ 目录 = 发布时随包附带的参考程序集(netstandard + System.* + Core/PluginSdk/Logging)
-        // 缺目录时回退到当前运行环境(开发态目录布局)。
-        string sdkDir = Path.Combine(AppContext.BaseDirectory, "sdk");
-        var references = new List<MetadataReference>();
-        if (Directory.Exists(sdkDir))
-        {
-            // 精选集:netstandard + System.Runtime + 转发常用的 System.* 门面 + 契约程序集,
-            // 避免门面与实现程序集混用造成的类型身份冲突
-            string[] names =
-            {
-                "netstandard.dll", "System.Runtime.dll", "System.Collections.dll", "System.Linq.dll",
-                "System.Threading.dll", "System.Threading.Tasks.dll", "System.Threading.Tasks.Parallel.dll",
-                "System.IO.dll", "System.Runtime.Extensions.dll", "System.ObjectModel.dll",
-                "Viora.Core.dll", "Viora.PluginSdk.dll", "Microsoft.Extensions.Logging.Abstractions.dll",
-            };
-            foreach (var name in names)
-            {
-                string path = Path.Combine(sdkDir, name);
-                if (File.Exists(path)) references.Add(MetadataReference.CreateFromFile(path));
-            }
-        }
-        else
-        {
-            references.Add(MetadataReference.CreateFromFile(typeof(object).Assembly.Location));
-            foreach (var name in new[] { "Viora.Core.dll", "Viora.PluginSdk.dll" })
-            {
-                string path = Path.Combine(AppContext.BaseDirectory, name);
-                if (File.Exists(path)) references.Add(MetadataReference.CreateFromFile(path));
-            }
-        }
-        return references;
-    }
-
-    private async Task<(byte[]? Pe, string Diagnostics)> CompileAsync(string source, CancellationToken ct)
-    {
-        // 全部源码文件纳入同一次编译(单文件时等价于该文件)
-        var sources = Files.Count > 0 ? Files.Select(f => f.Source).ToArray() : new[] { source };
-        var trees = sources.Select(t => CSharpSyntaxTree.ParseText(t, new CSharpParseOptions(LanguageVersion.Latest)));
-        var compilation = CSharpCompilation.Create(
-            AssemblyName,
-            trees,
-            BuildReferences(),
-            new CSharpCompilationOptions(OutputKind.DynamicallyLinkedLibrary)
-                .WithOptimizationLevel(OptimizationLevel.Release)
-                .WithWarningLevel(1));
-
-        await using var ms = new MemoryStream();
-        var result = compilation.Emit(ms, cancellationToken: ct);
-        var log = new StringBuilder();
-        foreach (var d in result.Diagnostics.Where(d => d.Severity >= DiagnosticSeverity.Warning).Take(20))
-            log.AppendLine(d.ToString());
-        if (!result.Success)
-        {
-            foreach (var d in result.Diagnostics.Where(d => d.Severity == DiagnosticSeverity.Error).Take(30))
-                log.AppendLine(d.ToString());
-            return (null, log.ToString());
-        }
-        ms.Position = 0;
-        return (ms.ToArray(), log.ToString());
-    }
-
-    /// <summary>编译并加载工坊程序集,返回实现 IStylePreset 的实例。</summary>
-    private async Task<IStylePreset?> CompilePresetAsync(CancellationToken ct)
-    {
-        Log("—— 编译 ——");
-        var (pe, diagnostics) = await CompileAsync(SourceCode, ct);
-        Log(string.IsNullOrWhiteSpace(diagnostics) ? "(无警告)" : diagnostics.TrimEnd());
-        if (pe is null)
-        {
-            CompileState = 2;
-            Log(Tr.Get("Workshop.CompileFailed"), "build");
-            return null;
-        }
-
-        try { _lastAlc?.Unload(); } catch { /* 上一份仍在使用时放弃卸载 */ }
-
-        var alc = new AssemblyLoadContext($"workshop-{Guid.NewGuid():N}", isCollectible: true);
-        using var ms = new MemoryStream(pe);
-        var assembly = alc.LoadFromStream(ms);
-        _lastAlc = alc;
-
-        var presetType = assembly.GetTypes()
-            .FirstOrDefault(t => typeof(IStylePreset).IsAssignableFrom(t) && t is { IsAbstract: false, IsInterface: false });
-        if (presetType is null)
-        {
-            Log(Tr.Get("Workshop.NoPreset"), "build");
-            return null;
-        }
-        var preset = (IStylePreset)(Activator.CreateInstance(presetType)
-            ?? throw new InvalidOperationException("Preset constructor returned null."));
-        Log($"Preset: {preset.Id} ({preset.Parameters.Count} 个参数)", "build");
-        return preset;
-    }
-
-    // ---------- 命令 ----------
-
-    [CommunityToolkit.Mvvm.Input.RelayCommand]
-    private async Task RunPreviewAsync(CancellationToken ct)
-    {
-        if (IsBusy || _sampleBuffer is null) return;
-        IsBusy = true;
-        try
-        {
-            var preset = await CompilePresetAsync(ct);
-            if (preset is null) return;
-
-            Log("—— 渲染 ——", "run");
-            var parameters = preset.Parameters.ToDictionary(p => p.Key, p => p.DefaultValue);
-            var result = await _engine.ExecuteAsync(
-                preset.BuildPipeline(parameters), _sampleBuffer.Clone(), parameters,
-                previewQuality: true, progress: new Progress<PipelineProgress>(p =>
-                {
-                    if (p.CurrentStage is { } s)
-                        Log($"  {s.StageName} {s.StageFraction:P0}");
-                }), cancellationToken: ct);
-            PreviewImage = _import.ToImageSource(result.Result);
-            CompileState = 1;
-            Log($"完成({result.Duration.TotalMilliseconds:F0} ms)");
-        }
-        catch (Exception ex)
-        {
-            CompileState = 2;
-            Log($"运行失败: {ex.Message}");
-            _logger.LogError(ex, "Workshop preview failed");
-        }
-        finally
-        {
-            IsBusy = false;
-        }
-    }
-
-    [CommunityToolkit.Mvvm.Input.RelayCommand]
-    private async Task PackZipAsync(CancellationToken ct)
-    {
-        if (IsBusy) return;
-        if (string.IsNullOrWhiteSpace(PluginId) || PluginId.Contains("..") || PluginId.Contains('/'))
-        {
-            _alert.Warn(Tr.Get("Workshop.Pack"), Tr.Get("Workshop.BadId"));
-            return;
-        }
-        IsBusy = true;
-        try
-        {
-            var (pe, _) = await CompileAsync(SourceCode, ct);
-            if (pe is null)
-            {
-                Log(Tr.Get("Workshop.CompileFailed"));
-                return;
-            }
-
-            var dialog = new Microsoft.Win32.SaveFileDialog
-            {
-                Filter = "Plugin package (*.zip)|*.zip",
-                FileName = PluginId + ".zip",
-            };
-            if (dialog.ShowDialog() != true) return;
-
-            var manifest = new Dictionary<string, object>
-            {
-                ["id"] = PluginId,
-                ["displayName"] = DisplayName,
-                ["version"] = Version,
-                ["author"] = string.IsNullOrWhiteSpace(Author) ? "unknown" : Author,
-                ["description"] = Description,
-                ["requiredHostVersion"] = "*",
-                ["entryAssembly"] = AssemblyName + ".dll",
-                ["typeName"] = "",
-                ["capabilities"] = new[] { "convert.preset", "localization.strings" },
-                ["dependencies"] = Array.Empty<object>(),
-            };
-            // typeName 从编译结果里解析:工坊源码必须包含一个实现 IVioraPlugin 的入口类(默认模板已带)
-            var alc = new System.Runtime.Loader.AssemblyLoadContext("workshop-pack", isCollectible: true);
-            try
-            {
-                using var ms = new MemoryStream(pe);
-                var assembly = alc.LoadFromStream(ms);
-                var entryType = assembly.GetTypes()
-                    .FirstOrDefault(t => typeof(IVioraPlugin).IsAssignableFrom(t) && t is { IsAbstract: false, IsInterface: false });
-                if (entryType is null)
-                {
-                    _alert.Warn(Tr.Get("Workshop.Pack"), Tr.Get("Workshop.NeedEntry"));
-                    Log(Tr.Get("Workshop.NeedEntry"), "build");
-                    return;
-                }
-                manifest["typeName"] = entryType.FullName ?? entryType.Name;
-            }
-            finally
-            {
-                try { alc.Unload(); } catch { }
-            }
-
-            using (var fs = new FileStream(dialog.FileName, FileMode.Create))
-            using (var zip = new System.IO.Compression.ZipArchive(fs, System.IO.Compression.ZipArchiveMode.Create))
-            {
-                var manifestEntry = zip.CreateEntry("plugin.json");
-                using (var w = new StreamWriter(manifestEntry.Open()))
-                    w.Write(System.Text.Json.JsonSerializer.Serialize(manifest,
-                        new System.Text.Json.JsonSerializerOptions { WriteIndented = true }));
-
-                var dllEntry = zip.CreateEntry(AssemblyName + ".dll");
-                using (var w = dllEntry.Open())
-                    w.Write(pe, 0, pe.Length);
-            }
-
-            Log($"已导出: {dialog.FileName}");
-            _alert.Info(string.Format(Tr.Get("Workshop.PackDone"), dialog.FileName));
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Workshop pack failed");
-            Log($"打包失败: {ex.Message}");
-        }
-        finally
-        {
-            IsBusy = false;
-        }
-    }
+    [ObservableProperty]
+    private string _registryText = "";
 
     [CommunityToolkit.Mvvm.Input.RelayCommand]
     private void GenerateRegistry()
@@ -558,13 +312,16 @@ public partial class WorkshopViewModel : ObservableObject
         string presetId = PluginId.StartsWith("builtin.viora.", StringComparison.Ordinal)
             ? "builtin." + PluginId["builtin.viora.".Length..]
             : PluginId;
-        // name/description 多语言:en 必填;其他语言按描述盒子里添加的条目输出
-        var nameDict = new Dictionary<string, string> { ["en"] = DisplayName };
-        if (!string.IsNullOrWhiteSpace(NameZh)) nameDict[RegistryLang("zh-Hans")] = NameZh;
-        var descDict = DescriptionEntries
-            .Where(d => !string.IsNullOrWhiteSpace(d.Text) || d.IsFixed)
-            .ToDictionary(d => RegistryLang(d.LangCode), d => d.Text);
-        descDict["en"] = Description;
+
+        var en = InfoEntries.First(e => e.LangCode == "en");
+        var nameDict = new Dictionary<string, string> { ["en"] = en.Name };
+        var descDict = new Dictionary<string, string> { ["en"] = en.Description };
+        foreach (var e in InfoEntries.Where(e => !e.IsFixed))
+        {
+            var key = InfoEntry.RegistryLang(e.LangCode);
+            if (!string.IsNullOrWhiteSpace(e.Name)) nameDict[key] = e.Name;
+            if (!string.IsNullOrWhiteSpace(e.Description)) descDict[key] = e.Description;
+        }
 
         var entry = new
         {
@@ -580,17 +337,22 @@ public partial class WorkshopViewModel : ObservableObject
             description = descDict,
         };
         RegistryText = System.Text.Json.JsonSerializer.Serialize(entry,
-            new System.Text.Json.JsonSerializerOptions { WriteIndented = true, Encoder = System.Text.Encodings.Web.JavaScriptEncoder.UnsafeRelaxedJsonEscaping });
-        try
-        {
-            System.Windows.Clipboard.SetText(RegistryText);
-            Log("registry 条目已生成并复制到剪贴板");
-        }
-        catch
-        {
-            Log("registry 条目已生成(剪贴板不可用,请在文本框复制)");
-        }
+            new System.Text.Json.JsonSerializerOptions
+            {
+                WriteIndented = true,
+                Encoder = System.Text.Encodings.Web.JavaScriptEncoder.UnsafeRelaxedJsonEscaping,
+            });
+        Log("registry 条目已生成", "build");
     }
+
+    [CommunityToolkit.Mvvm.Input.RelayCommand]
+    private void CopyRegistry()
+    {
+        if (string.IsNullOrEmpty(RegistryText)) return;
+        try { System.Windows.Clipboard.SetText(RegistryText); } catch { }
+    }
+
+    // ---------- 样张 ----------
 
     [CommunityToolkit.Mvvm.Input.RelayCommand]
     private async Task PickSampleAsync()
@@ -602,7 +364,7 @@ public partial class WorkshopViewModel : ObservableObject
         if (dialog.ShowDialog() != true) return;
         try
         {
-            Log($"—— 导入样张: {System.IO.Path.GetFileName(dialog.FileName)} ——");
+            Log($"—— 导入样图: {System.IO.Path.GetFileName(dialog.FileName)} ——");
             _sampleBuffer = await _import.LoadFromFileAsync(dialog.FileName, 1024); // 预览上限,与风格化页一致
             SampleInfoText = System.IO.Path.GetFileName(dialog.FileName);
             OnPropertyChanged(nameof(BeforeImage));
@@ -610,29 +372,11 @@ public partial class WorkshopViewModel : ObservableObject
         }
         catch (Exception ex)
         {
-            // 完整异常进日志区,便于定位(代理异常会带错误码)
             Log($"导入失败: {ex.Message}");
             if (ex.InnerException is not null) Log($"  内层: {ex.InnerException.Message}");
             _alert.Warn(Tr.Get("Workshop.PickSample"), ex.Message);
         }
     }
-
-    [CommunityToolkit.Mvvm.Input.RelayCommand]
-    private void ResetSample()
-    {
-        CreateSyntheticSample();
-        SampleInfoText = Tr.Get("Workshop.Sample.BuiltIn");
-        OnPropertyChanged(nameof(BeforeImage));
-    }
-
-    [CommunityToolkit.Mvvm.Input.RelayCommand]
-    private void CopyRegistry()
-    {
-        if (string.IsNullOrEmpty(RegistryText)) return;
-        try { System.Windows.Clipboard.SetText(RegistryText); } catch { }
-    }
-
-    // ---------- 样张 / 日志 ----------
 
     private void CreateSyntheticSample()
     {
@@ -652,9 +396,7 @@ public partial class WorkshopViewModel : ObservableObject
                 px[i + 3] = 255;
             }
         }
-        // 太阳
         FillCircle(px, buffer.Stride, w, h, w * 0.72, h * 0.28, 34, (60, 150, 250));
-        // 双层山
         FillTriangle(px, buffer.Stride, w, h, w * 0.10, h, w * 0.42, h * 0.34, w * 0.74, h, (52, 96, 88));
         FillTriangle(px, buffer.Stride, w, h, w * 0.38, h, w * 0.72, h * 0.5, w * 1.05, h, (36, 70, 66));
         _sampleBuffer = buffer;
@@ -699,21 +441,234 @@ public partial class WorkshopViewModel : ObservableObject
         }
     }
 
+    // ---------- 编译 ----------
+
+    private List<MetadataReference> BuildReferences()
+    {
+        // sdk\ 目录 = 发布时随包附带的参考程序集;缺目录时回退当前运行环境(开发态)
+        string sdkDir = Path.Combine(AppContext.BaseDirectory, "sdk");
+        var references = new List<MetadataReference>();
+        if (Directory.Exists(sdkDir))
+        {
+            string[] names =
+            {
+                "netstandard.dll", "System.Runtime.dll", "System.Collections.dll", "System.Linq.dll",
+                "System.Threading.dll", "System.Threading.Tasks.dll", "System.Threading.Tasks.Parallel.dll",
+                "System.IO.dll", "System.Runtime.Extensions.dll", "System.ObjectModel.dll",
+                "Viora.Core.dll", "Viora.PluginSdk.dll", "Microsoft.Extensions.Logging.Abstractions.dll",
+            };
+            foreach (var name in names)
+            {
+                string path = Path.Combine(sdkDir, name);
+                if (File.Exists(path)) references.Add(MetadataReference.CreateFromFile(path));
+            }
+        }
+        else
+        {
+            references.Add(MetadataReference.CreateFromFile(typeof(object).Assembly.Location));
+            foreach (var name in new[] { "Viora.Core.dll", "Viora.PluginSdk.dll" })
+            {
+                string path = Path.Combine(AppContext.BaseDirectory, name);
+                if (File.Exists(path)) references.Add(MetadataReference.CreateFromFile(path));
+            }
+        }
+        return references;
+    }
+
+    private async Task<(byte[]? Pe, string Diagnostics)> CompileAsync(CancellationToken ct)
+    {
+        var sources = Files.Count > 0 ? Files.Select(f => f.Source).ToArray() : new[] { SourceCode };
+        var trees = sources.Select(t => CSharpSyntaxTree.ParseText(t, new CSharpParseOptions(LanguageVersion.Latest)));
+        var compilation = CSharpCompilation.Create(
+            AssemblyName,
+            trees,
+            BuildReferences(),
+            new CSharpCompilationOptions(OutputKind.DynamicallyLinkedLibrary)
+                .WithOptimizationLevel(OptimizationLevel.Release)
+                .WithWarningLevel(1));
+
+        await using var ms = new MemoryStream();
+        var result = compilation.Emit(ms, cancellationToken: ct);
+        var log = new StringBuilder();
+        foreach (var d in result.Diagnostics.Where(d => d.Severity >= DiagnosticSeverity.Warning).Take(20))
+            log.AppendLine(d.ToString());
+        if (!result.Success)
+        {
+            foreach (var d in result.Diagnostics.Where(d => d.Severity == DiagnosticSeverity.Error).Take(30))
+                log.AppendLine(d.ToString());
+            return (null, log.ToString());
+        }
+        ms.Position = 0;
+        return (ms.ToArray(), log.ToString());
+    }
+
+    /// <summary>编译并加载工坊程序集,返回实现 IStylePreset 的实例。</summary>
+    private async Task<IStylePreset?> CompilePresetAsync(CancellationToken ct)
+    {
+        Log("—— 编译 ——", "build");
+        var (pe, diagnostics) = await CompileAsync(ct);
+        Log(string.IsNullOrWhiteSpace(diagnostics) ? "(无警告)" : diagnostics.TrimEnd(), "build");
+        if (pe is null)
+        {
+            CompileState = 2;
+            Log(Tr.Get("Workshop.CompileFailed"), "build");
+            return null;
+        }
+
+        try { _lastAlc?.Unload(); } catch { /* 上一份仍在使用时放弃卸载 */ }
+
+        var alc = new AssemblyLoadContext($"workshop-{Guid.NewGuid():N}", isCollectible: true);
+        using var ms = new MemoryStream(pe);
+        var assembly = alc.LoadFromStream(ms);
+        _lastAlc = alc;
+
+        var presetType = assembly.GetTypes()
+            .FirstOrDefault(t => typeof(IStylePreset).IsAssignableFrom(t) && t is { IsAbstract: false, IsInterface: false });
+        if (presetType is null)
+        {
+            CompileState = 2;
+            Log(Tr.Get("Workshop.NoPreset"), "build");
+            return null;
+        }
+        var preset = (IStylePreset)(Activator.CreateInstance(presetType)
+            ?? throw new InvalidOperationException("Preset constructor returned null."));
+        Log($"Preset: {preset.Id} ({preset.Parameters.Count} 个参数)", "build");
+        return preset;
+    }
+
+    // ---------- 命令 ----------
+
+    [CommunityToolkit.Mvvm.Input.RelayCommand]
+    private async Task RunPreviewAsync(CancellationToken ct)
+    {
+        if (IsBusy || _sampleBuffer is null) return;
+        IsBusy = true;
+        try
+        {
+            var preset = await CompilePresetAsync(ct);
+            if (preset is null) return;
+
+            Log("—— 渲染 ——", "run");
+            var parameters = preset.Parameters.ToDictionary(p => p.Key, p => p.DefaultValue);
+            var result = await _engine.ExecuteAsync(
+                preset.BuildPipeline(parameters), _sampleBuffer.Clone(), parameters,
+                previewQuality: true, progress: null, cancellationToken: ct);
+            PreviewImage = _import.ToImageSource(result.Result);
+            CompileState = 1;
+            Log($"完成({result.Duration.TotalMilliseconds:F0} ms)", "run");
+        }
+        catch (Exception ex)
+        {
+            CompileState = 2;
+            Log($"运行失败: {ex.Message}");
+            _logger.LogError(ex, "Workshop preview failed");
+        }
+        finally
+        {
+            IsBusy = false;
+        }
+    }
+
+    [CommunityToolkit.Mvvm.Input.RelayCommand]
+    private async Task PackZipAsync(CancellationToken ct)
+    {
+        if (IsBusy) return;
+        if (string.IsNullOrWhiteSpace(PluginId) || PluginId.Contains("..") || PluginId.Contains('/'))
+        {
+            _alert.Warn(Tr.Get("Workshop.Pack"), Tr.Get("Workshop.BadId"));
+            return;
+        }
+        IsBusy = true;
+        try
+        {
+            var (pe, _) = await CompileAsync(ct);
+            if (pe is null)
+            {
+                CompileState = 2;
+                Log(Tr.Get("Workshop.CompileFailed"), "build");
+                return;
+            }
+
+            var dialog = new Microsoft.Win32.SaveFileDialog
+            {
+                Filter = "Plugin package (*.zip)|*.zip",
+                FileName = PluginId + ".zip",
+            };
+            if (dialog.ShowDialog() != true) return;
+
+            var manifest = new Dictionary<string, object>
+            {
+                ["id"] = PluginId,
+                ["displayName"] = InfoEntries.First(e => e.LangCode == "en").Name,
+                ["version"] = Version,
+                ["author"] = string.IsNullOrWhiteSpace(Author) ? "unknown" : Author,
+                ["description"] = InfoEntries.First(e => e.LangCode == "en").Description,
+                ["requiredHostVersion"] = "*",
+                ["entryAssembly"] = AssemblyName + ".dll",
+                ["typeName"] = "",
+                ["capabilities"] = new[] { "convert.preset", "localization.strings" },
+                ["dependencies"] = Array.Empty<object>(),
+            };
+            var alc = new AssemblyLoadContext("workshop-pack", isCollectible: true);
+            try
+            {
+                using var ms = new MemoryStream(pe);
+                var assembly = alc.LoadFromStream(ms);
+                var entryType = assembly.GetTypes()
+                    .FirstOrDefault(t => typeof(IVioraPlugin).IsAssignableFrom(t) && t is { IsAbstract: false, IsInterface: false });
+                if (entryType is null)
+                {
+                    _alert.Warn(Tr.Get("Workshop.Pack"), Tr.Get("Workshop.NeedEntry"));
+                    Log(Tr.Get("Workshop.NeedEntry"), "build");
+                    return;
+                }
+                manifest["typeName"] = entryType.FullName ?? entryType.Name;
+            }
+            finally
+            {
+                try { alc.Unload(); } catch { }
+            }
+
+            using (var fs = new FileStream(dialog.FileName, FileMode.Create))
+            using (var zip = new System.IO.Compression.ZipArchive(fs, System.IO.Compression.ZipArchiveMode.Create))
+            {
+                var manifestEntry = zip.CreateEntry("plugin.json");
+                using (var w = new StreamWriter(manifestEntry.Open()))
+                    w.Write(System.Text.Json.JsonSerializer.Serialize(manifest,
+                        new System.Text.Json.JsonSerializerOptions { WriteIndented = true }));
+
+                var dllEntry = zip.CreateEntry(AssemblyName + ".dll");
+                using (var w = dllEntry.Open())
+                    w.Write(pe, 0, pe.Length);
+            }
+
+            Log($"已导出: {dialog.FileName}", "build");
+            _alert.Info(string.Format(Tr.Get("Workshop.PackDone"), dialog.FileName));
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Workshop pack failed");
+            Log($"打包失败: {ex.Message}");
+        }
+        finally
+        {
+            IsBusy = false;
+        }
+    }
+
     // ---------- 输出日志(编译 / 运行双 Tab) ----------
 
     private readonly List<(string Tag, string Line)> _logEntries = new();
     private string _outputTab = "build";
+
+    [ObservableProperty]
+    private string _outputLog = "";
 
     /// <summary>输出 Tab:"build" | "run"。</summary>
     public void SetOutputTab(string tab)
     {
         if (_outputTab == tab) return;
         _outputTab = tab;
-        RebuildOutput();
-    }
-
-    private void RebuildOutput()
-    {
         OutputLog = string.Join(Environment.NewLine,
             _logEntries.Where(e => e.Tag == _outputTab).Select(e => e.Line));
     }
@@ -726,7 +681,7 @@ public partial class WorkshopViewModel : ObservableObject
         if (tag == _outputTab) OutputLog += line + Environment.NewLine;
     }
 
-    // ---------- 模板与 API 速查 ----------
+    // ---------- 默认模板 ----------
 
     public const string DefaultTemplate =
 """
@@ -856,16 +811,5 @@ public sealed class MyStylePlugin : VioraPluginBase
         return Task.CompletedTask;
     }
 }
-""";
-
-    public const string ApiHelp = """
-        【风格契约】IStylePreset:Id / DisplayNameKey / DescriptionKey / Parameters / BuildPipeline(参数表 → 阶段列表)
-        【参数】PresetParameter(键, 文案键, 默认值, 最小, 最大, 步长)——文案键用内置 Param.* 可复用现成翻译
-        【阶段】IImageProcessingStage.ExecuteAsync(context, progress, ct):处理 context.Working!.Pixels(BGRA,y*Stride+x*4)
-        【基类】StageBase:Int/Dbl/Bool 读参数;PixelOps:Luma/Clamp/BlendPixel
-        【进度】progress?.Report(new StageProgress(名称, 0, 1, 0~1));取消始终透传 ct
-        【入口】VioraPluginBase:Metadata + InitializeAsync(context)(RegisterPreset / RegisterStrings)
-        【文案】context.RegisterStrings({"zh-Hans::Key": "值", ...}),能力需含 localization.strings
-        【红线】禁止联网/遥测;Id 发布后不可改;不要重复打包 Viora.Core/PluginSdk
 """;
 }

@@ -634,5 +634,10 @@
   "Workshop.Sdk.Rule3": "No host DLLs",
   "Workshop.DescBox": "Description",
   "Workshop.DescHint": "English required, others optional",
-  "Workshop.AddFile": "New file"
+  "Workshop.AddFile": "New file",
+  "Workshop.InfoTitle": "Related info",
+  "Workshop.InfoName": "Display name",
+  "Workshop.InfoDesc": "Description",
+  "Workshop.InfoAdd": "Add language",
+  "Workshop.InfoFixedHint": "default, not removable"
 }

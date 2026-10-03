@@ -1,39 +1,31 @@
-using System.Windows;
+﻿using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
 using System.Windows.Media;
+using ICSharpCode.AvalonEdit.Highlighting;
 using Viora.UI.Localization;
 
 namespace Viora.UI.Pages.Workshop;
 
 /// <summary>
-/// 插件工坊 code-behind:
-/// - 编辑器 = 高亮只读层(RichTextBox,内滚)+ 输入层(TextBox,NoWrap);两层行高/列宽严格一致,
-///   输入层内部 ScrollViewer 的偏移实时镜像到高亮层内部 ScrollViewer,横纵皆可滚动;
-/// - 高亮/minimap/registry 三份流文档均由 VM 生成,这里赋给对应 RichTextBox(Document 非依赖属性);
-/// - 文件列表 / minimap 折叠切换;编译状态徽章;Before/After 圆角与分割裁剪;输出 Tab。
+/// 插件工坊 code-behind:AvalonEdit 编辑器(自带滚动/光标/C# 高亮),
+/// registry 条目 JSON 高亮展示,编译状态徽章,Before/After 圆角与分割裁剪,折叠状态。
 /// </summary>
 public partial class WorkshopPage : UserControl
 {
-    private const double CodeLineHeight = 17;
-    private bool _syncing;
-
     public WorkshopPage(WorkshopViewModel vm)
     {
         DataContext = vm;
         InitializeComponent();
-        Loaded += OnLoaded;
 
-        // 输入层行高与高亮层段落行高强制一致(像素级对齐的前提)
-        System.Windows.Controls.TextBlock.SetLineHeight(EditorBox, CodeLineHeight);
-        System.Windows.Controls.TextBlock.SetLineStackingStrategy(EditorBox, System.Windows.LineStackingStrategy.BlockLineHeight);
+        // AvalonEdit:C# 高亮 + 制表符转空格
+        Editor.SyntaxHighlighting = HighlightingManager.Instance.GetDefinitionByExtension(".cs");
+        Editor.Options.ConvertTabsToSpaces = true;
+        Editor.Options.IndentationSize = 4;
+        Editor.Text = vm.SourceCode;
 
-        // RichTextBox.Document 非依赖属性:手动赋值并跟随 VM 更新
-        vm.HighlightDocument = CSharpHighlighter.Build(vm.SourceCode, CSharpHighlighter.TokenPalette.Instance);
-        vm.MinimapDocument = CSharpHighlighter.Build(vm.SourceCode, CSharpHighlighter.TokenPalette.Instance, minimap: true);
-        HighlightBox.Document = vm.HighlightDocument;
-        MinimapBox.Document = vm.MinimapDocument;
-        if (vm.RegistryDocument is not null) RegistryBox.Document = vm.RegistryDocument;
+        if (vm.MinimapDocument is not null) MinimapBox.Document = vm.MinimapDocument;
+
         vm.PropertyChanged += (_, e) =>
         {
             switch (e.PropertyName)
@@ -41,15 +33,18 @@ public partial class WorkshopPage : UserControl
                 case nameof(WorkshopViewModel.CompileState):
                     UpdateBadge(vm.CompileState);
                     break;
-                case nameof(WorkshopViewModel.HighlightDocument) when vm.HighlightDocument is not null:
-                    HighlightBox.Document = vm.HighlightDocument;
+                case nameof(WorkshopViewModel.SourceCode):
+                    if (Editor.Text != vm.SourceCode) Editor.Text = vm.SourceCode;
                     break;
                 case nameof(WorkshopViewModel.MinimapDocument) when vm.MinimapDocument is not null:
                     MinimapBox.Document = vm.MinimapDocument;
                     break;
-                case nameof(WorkshopViewModel.RegistryDocument):
-                    RegistryBox.Document = vm.RegistryDocument
-                        ?? CSharpHighlighter.Build("", CSharpHighlighter.TokenPalette.Instance);
+                case nameof(WorkshopViewModel.RegistryText):
+                    RegistryBox.Document = string.IsNullOrEmpty(vm.RegistryText)
+                        ? new System.Windows.Documents.FlowDocument(
+                            new System.Windows.Documents.Paragraph(
+                                new System.Windows.Documents.Run("")))
+                        : JsonHighlighter.Build(vm.RegistryText);
                     break;
                 case nameof(WorkshopViewModel.ActiveTab):
                     bool preview = vm.ActiveTab == "preview";
@@ -58,98 +53,98 @@ public partial class WorkshopPage : UserControl
                     if (!preview) Dispatcher.BeginInvoke(ApplyRoundedClips);
                     break;
                 case nameof(WorkshopViewModel.ShowMinimap):
-                    ApplyCollapseState(vm);
+                    MinimapColumn.Width = vm.ShowMinimap ? new GridLength(56) : new GridLength(30);
+                    MinimapHost.Visibility = vm.ShowMinimap ? Visibility.Visible : Visibility.Collapsed;
+                    MinimapExpand.Visibility = vm.ShowMinimap ? Visibility.Collapsed : Visibility.Visible;
                     break;
                 case nameof(WorkshopViewModel.ShowFileList):
-                    ApplyCollapseState(vm);
+                    FileListColumn.Width = vm.ShowFileList ? new GridLength(150) : new GridLength(30);
+                    FileListHost.Visibility = vm.ShowFileList ? Visibility.Visible : Visibility.Collapsed;
+                    FileListExpand.Visibility = vm.ShowFileList ? Visibility.Collapsed : Visibility.Visible;
                     break;
             }
         };
         UpdateBadge(vm.CompileState);
     }
 
-    private void OnLoaded(object sender, RoutedEventArgs e)
+    // ---------- 编辑器:文本回写 VM + minimap 防抖 ----------
+
+    private System.Windows.Threading.DispatcherTimer? _minimapTimer;
+
+    private void Editor_OnTextChanged(object sender, EventArgs e)
     {
-        // 输入层内部 ScrollViewer 滚动 → 镜像到高亮层内部 ScrollViewer(横纵)
-        var editorScroll = FindScrollViewer(EditorBox);
-        var highlightScroll = FindScrollViewer(HighlightBox);
-        if (editorScroll is not null && highlightScroll is not null)
-            editorScroll.ScrollChanged += (_, args) =>
-            {
-                if (_syncing) return;
-                _syncing = true;
-                try
-                {
-                    highlightScroll.ScrollToVerticalOffset(args.VerticalOffset);
-                    highlightScroll.ScrollToHorizontalOffset(args.HorizontalOffset);
-                }
-                finally { _syncing = false; }
-            };
+        if (DataContext is not WorkshopViewModel vm) return;
+        if (string.Equals(Editor.Text, vm.SourceCode, StringComparison.Ordinal)) return;
 
-        // 高亮文档不换行:页宽放大(与输入层 NoWrap 对齐)
-        if (HighlightBox.Document is { } doc) doc.PageWidth = 5000;
+        vm.SourceCode = Editor.Text;
 
-        ApplyRoundedClips();
-        if (DataContext is WorkshopViewModel vm)
-        {
-            ApplyCollapseState(vm);
-            ApplyCompareClip(vm.ComparePosition);
-        }
+        // minimap 防抖 200ms
+        _minimapTimer ??= new System.Windows.Threading.DispatcherTimer { Interval = TimeSpan.FromMilliseconds(200) };
+        _minimapTimer.Stop();
+        _minimapTimer.Tick -= OnMinimapTimerTick;
+        _minimapTimer.Tick += OnMinimapTimerTick;
+        _minimapTimer.Start();
     }
 
-    private static System.Windows.Controls.ScrollViewer? FindScrollViewer(System.Windows.DependencyObject root)
+    private void OnMinimapTimerTick(object? sender, EventArgs e)
     {
-        int n = System.Windows.Media.VisualTreeHelper.GetChildrenCount(root);
-        for (int i = 0; i < n; i++)
-        {
-            var child = System.Windows.Media.VisualTreeHelper.GetChild(root, i);
-            if (child is System.Windows.Controls.ScrollViewer sv) return sv;
-            var found = FindScrollViewer(child);
-            if (found is not null) return found;
-        }
-        return null;
+        if (sender is System.Windows.Threading.DispatcherTimer t) t.Stop();
+        if (DataContext is WorkshopViewModel vm) vm.UpdateMinimap(Editor.Text);
     }
 
-    // ---------- 折叠状态:文件列表 / minimap ----------
+    // ---------- 文件重命名:Enter 提交 / Esc 取消 / 失焦提交 ----------
 
-    private void ApplyCollapseState(WorkshopViewModel vm)
-    {
-        FileListColumn.Width = vm.ShowFileList ? new GridLength(170) : new GridLength(34);
-        FileListExpand.Visibility = vm.ShowFileList ? Visibility.Collapsed : Visibility.Visible;
-
-        MinimapColumn.Width = vm.ShowMinimap ? new GridLength(72) : new GridLength(34);
-        MinimapHost.Visibility = vm.ShowMinimap ? Visibility.Visible : Visibility.Collapsed;
-        MinimapExpand.Visibility = vm.ShowMinimap ? Visibility.Collapsed : Visibility.Visible;
-    }
-
-    // ---------- 编辑层:Tab 缩进 + 防抖高亮由 VM 驱动 ----------
-
-    private void Editor_OnTextChanged(object sender, TextChangedEventArgs e)
+    private void RenameBox_OnKeyDown(object sender, KeyEventArgs e)
     {
         if (sender is not TextBox box) return;
-
-        // Tab → 4 空格
-        var change = e.Changes.FirstOrDefault(c => c.AddedLength == 1);
-        if (change is not null && box.SelectionStart > 0 && box.Text[box.SelectionStart - 1] == '\t')
+        if (box.DataContext is not WorkshopViewModel.WorkshopFile file) return;
+        if (e.Key is Key.Enter or Key.Return)
         {
-            int caret = box.SelectionStart;
-            box.Text = box.Text.Remove(caret - 1, 1).Insert(caret - 1, "    ");
-            box.SelectionStart = caret + 3;
+            file.CommitRename();
+            e.Handled = true;
         }
-    }
-
-    // ---------- 文件名:Enter 提交 ----------
-
-    private void FileName_OnKeyDown(object sender, KeyEventArgs e)
-    {
-        if (e.Key is Key.Enter or Key.Return && sender is TextBox box)
+        else if (e.Key == Key.Escape)
         {
-            box.MoveFocus(new TraversalRequest(FocusNavigationDirection.Next));
+            file.CancelRename();
             e.Handled = true;
         }
     }
 
-    private void FileName_OnLostFocus(object sender, RoutedEventArgs e) { /* 绑定即提交 */ }
+    private void RenameBox_OnLostFocus(object sender, RoutedEventArgs e)
+    {
+        if (sender is TextBox box && box.DataContext is WorkshopViewModel.WorkshopFile file)
+            file.CommitRename();
+    }
+
+    private void Rename_OnClick(object sender, RoutedEventArgs e)
+    {
+        if ((sender as FrameworkElement)?.DataContext is WorkshopViewModel.WorkshopFile file)
+        {
+            file.BeginRename();
+            // 聚焦刚出现的重命名框
+            Dispatcher.BeginInvoke(() =>
+            {
+                if ((sender as FrameworkElement)?.DataContext is not WorkshopViewModel.WorkshopFile f) return;
+                var container = FileList.ItemContainerGenerator.ContainerFromItem(f) as ContentPresenter;
+                var box = FindDescendant<TextBox>(container);
+                box?.Focus();
+            }, System.Windows.Threading.DispatcherPriority.Input);
+        }
+    }
+
+    private static T? FindDescendant<T>(System.Windows.DependencyObject? root) where T : class
+    {
+        if (root is null) return null;
+        int n = System.Windows.Media.VisualTreeHelper.GetChildrenCount(root);
+        for (int i = 0; i < n; i++)
+        {
+            var child = System.Windows.Media.VisualTreeHelper.GetChild(root, i);
+            if (child is T hit) return hit;
+            var found = FindDescendant<T>(child);
+            if (found is not null) return found;
+        }
+        return null;
+    }
 
     // ---------- 编译状态徽章 ----------
 
