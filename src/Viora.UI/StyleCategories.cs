@@ -1,4 +1,4 @@
-namespace Viora.UI;
+﻿namespace Viora.UI;
 
 /// <summary>
 /// 风格分类体系:20 个固定大类。内置预设按 id 预映射,创作者未来发布插件时从中选择,
@@ -19,6 +19,8 @@ public static class StyleCategories
     private static readonly Dictionary<string, string> ByPresetId = new(StringComparer.OrdinalIgnoreCase)
     {
         ["anime-vector"] = "Style.Cat.Anime", ["comic"] = "Style.Cat.Anime",
+        ["art-nouveau"] = "Style.Cat.Illustration", ["art-deco"] = "Style.Cat.Illustration",
+        ["ukiyo-e"] = "Style.Cat.Traditional",
         ["oil-painting"] = "Style.Cat.OilPainting", ["fresco"] = "Style.Cat.OilPainting",
         ["watercolor"] = "Style.Cat.Watercolor",
         ["sketch"] = "Style.Cat.Sketch", ["stippling"] = "Style.Cat.Sketch", ["cross-hatching"] = "Style.Cat.Sketch",

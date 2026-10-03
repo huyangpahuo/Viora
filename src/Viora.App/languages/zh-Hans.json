@@ -552,5 +552,21 @@
   "Hotkey.Nav.Stylize": "切换到 风格化",
   "Hotkey.Nav.Works": "切换到 我的作品",
   "Hotkey.Nav.Market": "切换到 插件市场",
-  "Hotkey.Nav.Settings": "切换到 设置"
+  "Hotkey.Nav.Settings": "切换到 设置",
+  "Preset.UkiyoE.Name": "浮世绘",
+  "Preset.UkiyoE.Description": "浮世绘木版画:平面套色、靛蓝墨线与和纸肌理。",
+  "Preset.ArtNouveau.Name": "新艺术",
+  "Preset.ArtNouveau.Description": "新艺术运动:泥金橄榄色调、随形体流动的有机曲线与装饰边框。",
+  "Preset.ArtDeco.Name": "装饰艺术",
+  "Preset.ArtDeco.Description": "装饰艺术:中心对称构图、黑金阶梯套色与旭日放射纹。",
+  "Param.FlowLines": "流动线条",
+  "Param.FlowLines.Description": "随形体蜿蜒的有机曲线密度",
+  "Param.Border": "装饰边框",
+  "Param.Border.Description": "画面四周装饰框与角部环饰的强度",
+  "Param.Symmetry": "中心对称",
+  "Param.Symmetry.Description": "以左半镜像构成对称画面(0 = 关闭,1 = 开启)",
+  "Param.GoldTone": "金色调",
+  "Param.GoldTone.Description": "中间色阶向泥金偏移的程度",
+  "Param.Sunburst": "放射光线",
+  "Param.Sunburst.Description": "自上方中心的旭日放射纹强度"
 }

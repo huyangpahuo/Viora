@@ -552,5 +552,21 @@
   "Hotkey.Nav.Stylize": "Go to Stylize",
   "Hotkey.Nav.Works": "Go to My Works",
   "Hotkey.Nav.Market": "Go to Plugin Market",
-  "Hotkey.Nav.Settings": "Go to Settings"
+  "Hotkey.Nav.Settings": "Go to Settings",
+  "Preset.UkiyoE.Name": "Ukiyo-e",
+  "Preset.UkiyoE.Description": "Ukiyo-e woodblock print: flat color keys, indigo ink outlines and washi paper grain.",
+  "Preset.ArtNouveau.Name": "Art Nouveau",
+  "Preset.ArtNouveau.Description": "Art Nouveau: muted gold-olive tones, organic flowing lines and an ornamental border.",
+  "Preset.ArtDeco.Name": "Art Deco",
+  "Preset.ArtDeco.Description": "Art Deco: symmetric composition, black-and-gold stepped palette and sunburst rays.",
+  "Param.FlowLines": "Flow lines",
+  "Param.FlowLines.Description": "Density of organic curves that follow the subject's forms",
+  "Param.Border": "Ornamental border",
+  "Param.Border.Description": "Strength of the decorative frame and corner ornaments",
+  "Param.Symmetry": "Symmetry",
+  "Param.Symmetry.Description": "Mirror the left half into a symmetric composition (0 = off, 1 = on)",
+  "Param.GoldTone": "Gold tone",
+  "Param.GoldTone.Description": "How strongly mid tones shift toward gilding",
+  "Param.Sunburst": "Sunburst rays",
+  "Param.Sunburst.Description": "Intensity of the radiating sunburst from the top center"
 }
