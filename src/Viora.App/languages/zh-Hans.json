@@ -568,5 +568,15 @@
   "Param.GoldTone": "金色调",
   "Param.GoldTone.Description": "中间色阶向泥金偏移的程度",
   "Param.Sunburst": "放射光线",
-  "Param.Sunburst.Description": "自上方中心的旭日放射纹强度"
+  "Param.Sunburst.Description": "自上方中心的旭日放射纹强度",
+  "Preset.Bauhaus.Name": "包豪斯",
+  "Preset.Bauhaus.Description": "包豪斯几何抽象:网格化红黄蓝黑原色色面与黑色结构线。",
+  "Preset.SwissDesign.Name": "瑞士设计",
+  "Preset.SwissDesign.Description": "瑞士国际主义:严格网格、克制灰阶与瑞士红强调的海报画面。",
+  "Preset.Constructivism.Name": "构成主义",
+  "Preset.Constructivism.Description": "构成主义宣传画:黑红米白三色、斜向楔形色带与粗糙印刷颗粒。",
+  "Preset.DeStijl.Name": "风格派",
+  "Preset.DeStijl.Description": "风格派(蒙德里安):水平垂直黑线网格,少量红黄蓝原色格子。",
+  "Preset.Cubism.Name": "立体主义",
+  "Preset.Cubism.Description": "立体主义:多视角碎面重构,高饱和平涂与深色棱线。"
 }

@@ -568,5 +568,15 @@
   "Param.GoldTone": "Gold tone",
   "Param.GoldTone.Description": "How strongly mid tones shift toward gilding",
   "Param.Sunburst": "Sunburst rays",
-  "Param.Sunburst.Description": "Intensity of the radiating sunburst from the top center"
+  "Param.Sunburst.Description": "Intensity of the radiating sunburst from the top center",
+  "Preset.Bauhaus.Name": "Bauhaus",
+  "Preset.Bauhaus.Description": "Bauhaus geometric abstraction: gridded primary-color planes with black structure lines.",
+  "Preset.SwissDesign.Name": "Swiss Style",
+  "Preset.SwissDesign.Description": "Swiss International Style: strict grid, restrained grayscale and Swiss-red accents.",
+  "Preset.Constructivism.Name": "Constructivism",
+  "Preset.Constructivism.Description": "Constructivist poster: black/red/cream tri-color, diagonal wedges and coarse print grain.",
+  "Preset.DeStijl.Name": "De Stijl",
+  "Preset.DeStijl.Description": "De Stijl (Mondrian): orthogonal black grid with a few red/yellow/blue cells.",
+  "Preset.Cubism.Name": "Cubism",
+  "Preset.Cubism.Description": "Cubism: multi-view faceted reconstruction with saturated flat colors and dark ridges."
 }
