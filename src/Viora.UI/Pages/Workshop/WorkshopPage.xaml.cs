@@ -1,6 +1,5 @@
-﻿using System.Windows;
+using System.Windows;
 using System.Windows.Controls;
-using System.Windows.Documents;
 using System.Windows.Input;
 using System.Windows.Media;
 using Viora.UI.Localization;
@@ -8,8 +7,11 @@ using Viora.UI.Localization;
 namespace Viora.UI.Pages.Workshop;
 
 /// <summary>
-/// 插件工坊 code-behind:双层编辑器(透明输入层 + 语法高亮只读层)的滚动同步,
-/// 编译状态徽章,Before/After 对比滑杆的裁剪几何。
+/// 插件工坊 code-behind:
+/// - 双层编辑器(透明输入层 + 语法高亮只读层),编辑层内 ScrollViewer 滚动镜像到高亮层;
+/// - 编译状态徽章;
+/// - Before/After 对比:预览框圆角裁剪 + 拖动分割线裁剪左半原图;
+/// - 输出面板 编译/运行 Tab 切换。
 /// </summary>
 public partial class WorkshopPage : UserControl
 {
@@ -19,7 +21,9 @@ public partial class WorkshopPage : UserControl
     {
         DataContext = vm;
         InitializeComponent();
-        // RichTextBox.Document 非依赖属性,不能 XAML 绑定:这里手动赋值并跟随 VM 更新
+        Loaded += OnLoaded;
+
+        // RichTextBox.Document 非依赖属性,不能 XAML 绑定:手动赋值并跟随 VM 更新
         vm.HighlightDocument = CSharpHighlighter.Build(vm.SourceCode, CSharpHighlighter.TokenPalette.Instance);
         HighlightBox.Document = vm.HighlightDocument;
         vm.PropertyChanged += (_, e) =>
@@ -30,10 +34,42 @@ public partial class WorkshopPage : UserControl
                 HighlightBox.Document = vm.HighlightDocument;
         };
         UpdateBadge(vm.CompileState);
-        ApplyCompareClip(vm.ComparePosition);
     }
 
-    // ---------- 编辑层:Tab 缩进 + 高亮重建 + 滚动同步 ----------
+    private void OnLoaded(object sender, RoutedEventArgs e)
+    {
+        // 编辑层的内部 ScrollViewer:滚轮/拖动滚动时把偏移镜像到高亮层
+        var editorScroll = FindScrollViewer(EditorBox);
+        if (editorScroll is not null)
+            editorScroll.ScrollChanged += (_, args) =>
+            {
+                if (_syncing) return;
+                _syncing = true;
+                try
+                {
+                    HighlightScroller.ScrollToVerticalOffset(args.VerticalOffset);
+                    HighlightScroller.ScrollToHorizontalOffset(args.HorizontalOffset);
+                }
+                finally { _syncing = false; }
+            };
+        ApplyRoundedClips();
+        ApplyCompareClip(DataContext is WorkshopViewModel vm ? vm.ComparePosition : 50);
+    }
+
+    private static System.Windows.Controls.ScrollViewer? FindScrollViewer(System.Windows.DependencyObject root)
+    {
+        int n = System.Windows.Media.VisualTreeHelper.GetChildrenCount(root);
+        for (int i = 0; i < n; i++)
+        {
+            var child = System.Windows.Media.VisualTreeHelper.GetChild(root, i);
+            if (child is System.Windows.Controls.ScrollViewer sv) return sv;
+            var found = FindScrollViewer(child);
+            if (found is not null) return found;
+        }
+        return null;
+    }
+
+    // ---------- 编辑层:Tab 缩进 + 高亮重建 ----------
 
     private void Editor_OnTextChanged(object sender, TextChangedEventArgs e)
     {
@@ -54,40 +90,6 @@ public partial class WorkshopPage : UserControl
             try { vm.HighlightDocument = CSharpHighlighter.Build(box.Text, CSharpHighlighter.TokenPalette.Instance); }
             finally { _syncing = false; }
         }
-        Dispatcher.BeginInvoke(SyncScroll);
-    }
-
-    private void Editor_OnScroll(object sender, ScrollChangedEventArgs e)
-    {
-        if (_syncing) return;
-        SyncScroll();
-    }
-
-    private void SyncScroll()
-    {
-        if (_syncing) return;
-        var sv = FindScrollViewer(EditorBox);
-        if (sv is null) return;
-        _syncing = true;
-        try
-        {
-            HighlightScroller.ScrollToVerticalOffset(sv.VerticalOffset);
-            HighlightScroller.ScrollToHorizontalOffset(sv.HorizontalOffset);
-        }
-        finally { _syncing = false; }
-    }
-
-    private static System.Windows.Controls.ScrollViewer? FindScrollViewer(System.Windows.DependencyObject root)
-    {
-        int n = System.Windows.Media.VisualTreeHelper.GetChildrenCount(root);
-        for (int i = 0; i < n; i++)
-        {
-            var child = System.Windows.Media.VisualTreeHelper.GetChild(root, i);
-            if (child is System.Windows.Controls.ScrollViewer sv) return sv;
-            var found = FindScrollViewer(child);
-            if (found is not null) return found;
-        }
-        return null;
     }
 
     // ---------- 编译状态徽章 ----------
@@ -108,28 +110,43 @@ public partial class WorkshopPage : UserControl
         BadgeText.Text = ok ? Tr.Get("Workshop.Badge.Ok") : Tr.Get("Workshop.Badge.Failed");
     }
 
-    // ---------- Before/After 对比 ----------
+    // ---------- 输出 Tab ----------
+
+    private void OutTab_OnChecked(object sender, RoutedEventArgs e)
+    {
+        if (DataContext is not WorkshopViewModel vm) return;
+        vm.SetOutputTab(TabBuild.IsChecked == true ? "build" : "run");
+    }
+
+    // ---------- Before/After 对比 + 圆角裁剪 ----------
+
+    private void PreviewFrame_OnSizeChanged(object sender, SizeChangedEventArgs e)
+    {
+        ApplyRoundedClips();
+        if (DataContext is WorkshopViewModel vm) ApplyCompareClip(vm.ComparePosition);
+    }
 
     private void CompareSlider_OnValueChanged(object sender, RoutedPropertyChangedEventArgs<double> e)
     {
         ApplyCompareClip(e.NewValue);
     }
 
-    private void PreviewBorder_OnSizeChanged(object sender, SizeChangedEventArgs e)
+    /// <summary>预览框按实际尺寸设置圆角裁剪(Border.CornerRadius 不裁剪子元素,必须用 Clip)。</summary>
+    private void ApplyRoundedClips()
     {
-        if (DataContext is WorkshopViewModel vm) ApplyCompareClip(vm.ComparePosition);
+        double w = PreviewFrame.ActualWidth, h = PreviewFrame.ActualHeight;
+        if (w <= 0 || h <= 0) return;
+        PreviewFrame.Clip = new RectangleGeometry(new Rect(0, 0, w, h), 10, 10);
     }
 
     private void ApplyCompareClip(double percent)
     {
-        // Image 是 Stretch=Uniform,实际显示区与容器边距未知;直接按控件宽度比例裁剪,
-        // 图像两侧留白被裁掉的部分不影响观感(两侧留白对称)。
-        double width = BeforeImage.ActualWidth;
-        if (width <= 0) return;
-        double x = width * percent / 100.0;
-        BeforeImage.Clip = new RectangleGeometry(new Rect(0, 0, x, BeforeImage.ActualHeight));
-        SplitLine.Height = BeforeImage.ActualHeight > 0 ? BeforeImage.ActualHeight : SplitLine.Height;
-        Canvas.SetLeft(SplitLine, x);
+        double w = BeforeImage.ActualWidth, h = BeforeImage.ActualHeight;
+        if (w <= 0 || h <= 0) return;
+        double x = w * percent / 100.0;
+        BeforeImage.Clip = new RectangleGeometry(new Rect(0, 0, x, h));
+        SplitLine.Height = h;
+        Canvas.SetLeft(SplitLine, Math.Clamp(x - 1, 0, Math.Max(0, w - 2)));
     }
 
     // ---------- 输出滚底 ----------

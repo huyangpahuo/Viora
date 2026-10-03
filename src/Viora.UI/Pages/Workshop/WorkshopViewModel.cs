@@ -100,6 +100,10 @@ public partial class WorkshopViewModel : ObservableObject
     [ObservableProperty]
     private int _compileState;
 
+    /// <summary>输出面板底部状态行。</summary>
+    [ObservableProperty]
+    private string _readyText = "Ready";
+
     /// <summary>registry 条目的中文名/描述(上架条目要求双语)。</summary>
     [ObservableProperty]
     private string _nameZh = "";
@@ -112,7 +116,11 @@ public partial class WorkshopViewModel : ObservableObject
 
     public bool CanRun => !IsBusy && _sampleBuffer is not null;
 
-    partial void OnIsBusyChanged(bool value) => OnPropertyChanged(nameof(CanRun));
+    partial void OnIsBusyChanged(bool value)
+    {
+        OnPropertyChanged(nameof(CanRun));
+        ReadyText = value ? "Working…" : "Ready";
+    }
 
     public string ApiHelpText => ApiHelp;
 
@@ -188,7 +196,7 @@ public partial class WorkshopViewModel : ObservableObject
         if (pe is null)
         {
             CompileState = 2;
-            Log(Tr.Get("Workshop.CompileFailed"));
+            Log(Tr.Get("Workshop.CompileFailed"), "build");
             return null;
         }
 
@@ -203,12 +211,12 @@ public partial class WorkshopViewModel : ObservableObject
             .FirstOrDefault(t => typeof(IStylePreset).IsAssignableFrom(t) && t is { IsAbstract: false, IsInterface: false });
         if (presetType is null)
         {
-            Log(Tr.Get("Workshop.NoPreset"));
+            Log(Tr.Get("Workshop.NoPreset"), "build");
             return null;
         }
         var preset = (IStylePreset)(Activator.CreateInstance(presetType)
             ?? throw new InvalidOperationException("Preset constructor returned null."));
-        Log($"Preset: {preset.Id} ({preset.Parameters.Count} 个参数)");
+        Log($"Preset: {preset.Id} ({preset.Parameters.Count} 个参数)", "build");
         return preset;
     }
 
@@ -224,7 +232,7 @@ public partial class WorkshopViewModel : ObservableObject
             var preset = await CompilePresetAsync(ct);
             if (preset is null) return;
 
-            Log("—— 渲染 ——");
+            Log("—— 渲染 ——", "run");
             var parameters = preset.Parameters.ToDictionary(p => p.Key, p => p.DefaultValue);
             var result = await _engine.ExecuteAsync(
                 preset.BuildPipeline(parameters), _sampleBuffer.Clone(), parameters,
@@ -299,7 +307,7 @@ public partial class WorkshopViewModel : ObservableObject
                 if (entryType is null)
                 {
                     _alert.Warn(Tr.Get("Workshop.Pack"), Tr.Get("Workshop.NeedEntry"));
-                    Log(Tr.Get("Workshop.NeedEntry"));
+                    Log(Tr.Get("Workshop.NeedEntry"), "build");
                     return;
                 }
                 manifest["typeName"] = entryType.FullName ?? entryType.Name;
@@ -479,9 +487,31 @@ public partial class WorkshopViewModel : ObservableObject
         }
     }
 
-    private void Log(string line)
+    // ---------- 输出日志(编译 / 运行双 Tab) ----------
+
+    private readonly List<(string Tag, string Line)> _logEntries = new();
+    private string _outputTab = "build";
+
+    /// <summary>输出 Tab:"build" | "run"。</summary>
+    public void SetOutputTab(string tab)
     {
-        OutputLog += line + Environment.NewLine;
+        if (_outputTab == tab) return;
+        _outputTab = tab;
+        RebuildOutput();
+    }
+
+    private void RebuildOutput()
+    {
+        OutputLog = string.Join(Environment.NewLine,
+            _logEntries.Where(e => e.Tag == _outputTab).Select(e => e.Line));
+    }
+
+    private void Log(string line) => Log(line, "run");
+
+    private void Log(string line, string tag)
+    {
+        _logEntries.Add((tag, line));
+        if (tag == _outputTab) OutputLog += line + Environment.NewLine;
     }
 
     // ---------- 模板与 API 速查 ----------
