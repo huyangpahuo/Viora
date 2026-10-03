@@ -1,4 +1,4 @@
-<UserControl
+﻿<UserControl
     x:Class="Viora.UI.Pages.PluginMarket.PluginMarketPage"
     xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
@@ -120,7 +120,7 @@
         </Style>
     </UserControl.Resources>
 
-    <Grid Margin="16,14,16,14">
+    <Grid Margin="16,14,16,14" AllowDrop="True" Drop="Page_OnDrop" DragOver="Page_OnDragOver">
         <Grid.ColumnDefinitions>
             <ColumnDefinition Width="*" />
             <ColumnDefinition Width="420" />
@@ -134,6 +134,7 @@
                     <RowDefinition Height="Auto" />
                     <RowDefinition Height="Auto" />
                     <RowDefinition Height="*" />
+                    <RowDefinition Height="Auto" />
                 </Grid.RowDefinitions>
 
                 <!-- Hero 横幅(内层背景必须同圆角:ClipToBounds 不按圆角裁剪,方角会盖掉外层圆角) -->
@@ -354,6 +355,18 @@
                 </Grid>
             </Grid>
         </Border>
+
+            <!-- 插件安装拖拽提示条 -->
+            <Border Grid.Row="3" Margin="0,12,0,0" CornerRadius="10" Padding="10,8"
+                    Background="{DynamicResource Brush.Glass}" BorderBrush="{DynamicResource Color.Border}"
+                    BorderThickness="1" Opacity="0.85" IsHitTestVisible="False">
+                <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
+                    <controls:VioraIcon Geometry="{StaticResource Icon.CloudArrowDown}" Width="13" Height="13"
+                                        Foreground="{DynamicResource Color.Text.Disabled}" VerticalAlignment="Center" />
+                    <TextBlock Text="{loc:Translate Market.DropZone.Hint}" FontSize="11.5" Margin="8,0,0,0"
+                               Foreground="{DynamicResource Color.Text.Disabled}" VerticalAlignment="Center" />
+                </StackPanel>
+            </Border>
 
         <!-- ==================== 插件详情 / 全部插件(右) ==================== -->
         <Border Grid.Column="1" CornerRadius="14" Padding="16,14" Background="{DynamicResource Color.Surface}"

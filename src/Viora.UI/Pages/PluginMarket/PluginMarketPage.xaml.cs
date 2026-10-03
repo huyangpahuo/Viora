@@ -1,3 +1,4 @@
+﻿using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
 
@@ -13,6 +14,20 @@ public partial class PluginMarketPage : UserControl
     {
         DataContext = vm;
         InitializeComponent();
+    }
+
+    private void Page_OnDragOver(object sender, DragEventArgs e)
+    {
+        e.Effects = e.Data.GetDataPresent(DataFormats.FileDrop) ? DragDropEffects.Copy : DragDropEffects.None;
+        e.Handled = true;
+    }
+
+    private async void Page_OnDrop(object sender, DragEventArgs e)
+    {
+        if (e.Data.GetData(DataFormats.FileDrop) is not string[] files || files.Length == 0) return;
+        e.Handled = true;
+        if (DataContext is PluginMarketViewModel vm)
+            await vm.InstallDroppedAsync(files);
     }
 
     /// <summary>插件卡片列表滚轮:外层 ScrollViewer 统一滚动。</summary>

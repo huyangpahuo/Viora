@@ -1,4 +1,4 @@
-using System.IO;
+﻿using System.IO;
 using System.IO.Compression;
 using Microsoft.Extensions.Logging;
 using Viora.Core.Localization;
@@ -245,7 +245,7 @@ public sealed partial class AssemblyPluginHost : IPluginHost
                 var existingVersion = ParseVersionSafe(existing?.Version) ?? new Version(0, 0, 0);
                 var incomingVersion = ParseVersionSafe(manifest.Version) ?? new Version(0, 0, 0);
                 if (incomingVersion <= existingVersion)
-                    return new InstallResult(false, "duplicate", "Already installed.");
+                    return new InstallResult(false, "duplicate", manifest.Id); // Detail 携带 id,市场据此启用
                 Directory.Delete(target, recursive: true);
             }
 

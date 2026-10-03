@@ -1,4 +1,4 @@
-using System.Collections.ObjectModel;
+﻿using System.Collections.ObjectModel;
 using System.Windows;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
@@ -80,9 +80,10 @@ public partial class ShellViewModel : ObservableObject
             new(Sections.Core, "Nav.MyWorks", "Nav.MyWorks.Sub", "Images", typeof(Pages.MyWorks.MyWorksPage), 1),
             new(Sections.Core, "Nav.PluginMarket", "Nav.PluginMarket.Sub", "PuzzlePiece", typeof(Pages.PluginMarket.PluginMarketPage), 2),
             new(Sections.Core, "Nav.Settings", "Nav.Settings.Sub", "Gear", typeof(Pages.Settings.SettingsPage), 3),
-            new(Sections.Aux, "Nav.About", null, "CircleInfo", typeof(Pages.Support.AboutPage), 4),
-            new(Sections.Aux, "Nav.Help", null, "CircleQuestion", typeof(Pages.Support.HelpPage), 5),
-            new(Sections.Aux, "Nav.Feedback", null, "Envelope", typeof(Pages.Support.FeedbackPage), 6),
+            new(Sections.Core, "Nav.Workshop", "Nav.Workshop.Sub", "PenToSquare", typeof(Pages.Workshop.WorkshopPage), 4),
+            new(Sections.Aux, "Nav.About", null, "CircleInfo", typeof(Pages.Support.AboutPage), 5),
+            new(Sections.Aux, "Nav.Help", null, "CircleQuestion", typeof(Pages.Support.HelpPage), 6),
+            new(Sections.Aux, "Nav.Feedback", null, "Envelope", typeof(Pages.Support.FeedbackPage), 7),
         };
 
         SelectedItem = Items[0];

@@ -15,12 +15,12 @@
     <AssemblyVersion>1.0.1.0</AssemblyVersion>
     <FileVersion>1.0.1.0</FileVersion>
     <!-- exe 文件图标:Explorer、桌面快捷方式与任务栏(未显式设置窗口图标时的回退) -->
-    <ApplicationIcon>..\..\assets\viora.ico</ApplicationIcon>
+    <ApplicationIcon>../../assets/viora.ico</ApplicationIcon>
   </PropertyGroup>
 
   <ItemGroup>
     <!-- 供 MainWindow.Icon(pack URI)运行时使用 -->
-    <Resource Include="..\..\assets\viora.ico" Link="viora.ico" />
+    <Resource Include="../../assets/viora.ico" Link="viora.ico" />
   </ItemGroup>
 
   <ItemGroup>
@@ -40,4 +40,27 @@
   <ItemGroup>
     <None Include="languages\**\*" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
+
+  <!-- 插件工坊:sdk 参考程序集随构建/发布附带,内存编译用户源码时引用 -->
+  <Target Name="CollectWorkshopSdkBuild" AfterTargets="Build">
+    <ItemGroup>
+      <WorkshopSdk Include="$(MSBuildThisFileDirectory)../../assets/sdk/*.dll" />
+      <WorkshopSdk Include="$(OutDir)Viora.Core.dll" />
+      <WorkshopSdk Include="$(OutDir)Viora.PluginSdk.dll" />
+      <WorkshopSdk Include="$(OutDir)Microsoft.Extensions.Logging.Abstractions.dll" />
+      <WorkshopSdk Include="$(OutDir)System.*.dll" />
+    </ItemGroup>
+    <Copy SourceFiles="@(WorkshopSdk)" DestinationFolder="$(OutDir)sdk" SkipUnchangedFiles="true" />
+  </Target>
+  <Target Name="CollectWorkshopSdkPublish" AfterTargets="Publish">
+    <ItemGroup>
+      <WorkshopSdk Include="$(MSBuildThisFileDirectory)../../assets/sdk/*.dll" />
+      <WorkshopSdk Include="$(PublishDir)Viora.Core.dll" />
+      <WorkshopSdk Include="$(PublishDir)Viora.PluginSdk.dll" />
+      <WorkshopSdk Include="$(PublishDir)Microsoft.Extensions.Logging.Abstractions.dll" />
+      <WorkshopSdk Include="$(PublishDir)System.*.dll" />
+    </ItemGroup>
+    <Copy SourceFiles="@(WorkshopSdk)" DestinationFolder="$(PublishDir)sdk" SkipUnchangedFiles="true" />
+  </Target>
+
 </Project>

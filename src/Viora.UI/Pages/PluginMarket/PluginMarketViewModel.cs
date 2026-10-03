@@ -318,6 +318,103 @@ public partial class PluginMarketViewModel : ObservableObject
 
     private bool _installing;
 
+    /// <summary>手动导入(拖拽/复制文件夹)且不在官方目录中的插件,并入「我的插件」列表。</summary>
+    private readonly List<MarketPlugin> _manualItems = new();
+
+    private async Task RefreshManualAsync()
+    {
+        var list = new List<MarketPlugin>();
+        try
+        {
+            foreach (var descriptor in await _pluginHost.GetPluginsAsync())
+            {
+                string id = descriptor.Metadata.Id;
+                if (_catalogItems.Any(c => c.PluginId == id)) continue;   // 目录内插件走官方条目
+                if (descriptor.State == PluginLoadState.Incompatible) continue;
+                list.Add(new MarketPlugin
+                {
+                    Id = id,
+                    PluginId = id,
+                    PresetId = null,
+                    PackageFile = $"plugins/{id}",
+                    Name = descriptor.Metadata.DisplayName,
+                    Author = descriptor.Metadata.Author,
+                    IsVerified = true,
+                    Tags = Array.Empty<string>(),
+                    CategoryKey = "Style.Cat.Experimental",
+                    Rating = 5.0,
+                    InstallsText = "—",
+                    Version = descriptor.Metadata.Version.ToString(),
+                    SizeText = "…",
+                    UpdatedText = "—",
+                    Description = descriptor.Metadata.Description,
+                    PreviewImage = SampleImage,
+                    TileBrush = MarketPlugin.MakeBrush(id),
+                    BeforeBrush = SampleBeforeBrush,
+                    AfterBrush = SampleAfterBrush,
+                    RepositoryUrl = null,
+                });
+            }
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "Failed to enumerate manually installed plugins");
+        }
+        _manualItems.Clear();
+        _manualItems.AddRange(list);
+    }
+
+    /// <summary>拖拽安装:接受一个或多个插件 zip,安装后立即发现并启用。</summary>
+    public async Task InstallDroppedAsync(IReadOnlyList<string> files)
+    {
+        if (_installing) return;
+        _installing = true;
+        try
+        {
+            int installed = 0, failed = 0;
+            foreach (var file in files)
+            {
+                if (!file.EndsWith(".zip", StringComparison.OrdinalIgnoreCase) || !File.Exists(file)) continue;
+                try
+                {
+                    var result = await _pluginHost.InstallFromPackageAsync(file);
+                    if (result.Success || result.ErrorCode == "duplicate")
+                    {
+                        await _pluginHost.DiscoverAsync();
+                        await _pluginHost.EnableAsync(IdFromPackage(file, result));
+                        installed++;
+                    }
+                    else
+                    {
+                        failed++;
+                        _alert.Warn(Tr.Get("Market.Install"), result.Detail ?? Tr.Get("Market.Install.Failed"));
+                    }
+                }
+                catch (Exception ex)
+                {
+                    failed++;
+                    _logger.LogError(ex, "Drag-drop install failed for {File}", file);
+                }
+            }
+
+            if (installed > 0)
+                _alert.Info(string.Format(Tr.Get("Market.DropZone.Installed"), installed));
+            await RefreshManualAsync();
+            await RefreshCardsAsync();
+        }
+        finally
+        {
+            _installing = false;
+            NotifyInstallability();
+        }
+    }
+
+    private static string IdFromPackage(string file, Core.Plugins.InstallResult result)
+    {
+        // 安装成功与 duplicate 时 Detail 都携带插件 id
+        return string.IsNullOrEmpty(result.Detail) ? System.IO.Path.GetFileNameWithoutExtension(file) : result.Detail;
+    }
+
     public PluginMarketViewModel(IUiAlert alert, ILogger<PluginMarketViewModel> logger,
         IPresetCatalog catalog, IPluginHost pluginHost, OfficialPluginService official,
         IImportServiceProxy import, IImageConversionEngine engine)
@@ -348,6 +445,7 @@ public partial class PluginMarketViewModel : ObservableObject
         RebuildCatalogItems();
         _ = RefreshCardsAsync();
         _ = _official.RefreshFromGitHubAsync(); // 网络可用时同步官方仓库最新目录
+        LocalizationSource.Current.PropertyChanged += async (_, _) => await RefreshManualAsync();
     }
 
     public string[] TabFilters { get; }
@@ -533,7 +631,8 @@ public partial class PluginMarketViewModel : ObservableObject
     {
         // 统一目录(官方/社区不再区分):「我的插件」= 已安装;其余 Tab = 全部目录按分类过滤。
         if (TabFilter == "Market.Tab.Mine")
-            return ApplySearch(_catalogItems.Where(p => p.PluginId is not null && _official.IsInstalled(p.PluginId)));
+            return ApplySearch(_catalogItems.Where(p => p.PluginId is not null && _official.IsInstalled(p.PluginId))
+                .Concat(_manualItems));
 
         IEnumerable<MarketPlugin> query = _catalogItems.Concat(MarketplaceCatalog.Plugins);
 
@@ -576,6 +675,7 @@ public partial class PluginMarketViewModel : ObservableObject
 
     private async Task RefreshCardsAsync()
     {
+        await RefreshManualAsync();
         RebuildAllCards();
         var records = Query().ToList();
         TotalItems = records.Count;

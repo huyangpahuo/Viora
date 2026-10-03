@@ -30,6 +30,8 @@ public static class ServiceCollectionExtensions
         services.AddTransient<MyWorksPage>();
         services.AddTransient<MyWorksViewModel>();
         services.AddTransient<PluginMarketPage>();
+        services.AddSingleton<Pages.Workshop.WorkshopViewModel>();
+        services.AddTransient<Pages.Workshop.WorkshopPage>();
         services.AddTransient<PluginMarketViewModel>();
         services.AddTransient<PlaceholderPage>();
         services.AddSingleton<Pages.Support.SupportViewModel>();
