@@ -1,4 +1,4 @@
-using System.ComponentModel;
+﻿using System.ComponentModel;
 using System.Diagnostics;
 using System.IO;
 using System.Windows;
@@ -34,8 +34,6 @@ public sealed partial class WorkCardViewModel : ObservableObject
 
     public string SizeDisplay => FormatBytes(Record.ResultBytes);
 
-    public string DimensionsDisplay => $"{Record.ResultWidth} × {Record.ResultHeight}";
-
     public bool IsFavorite => Record.IsFavorite;
 
     public string FavoriteTooltip => Tr.Get(IsFavorite ? "Works.Card.Unfavorite" : "Works.Card.Favorite");
@@ -49,9 +47,6 @@ public sealed partial class WorkCardViewModel : ObservableObject
 
     /// <summary>详情面板“作品信息”键值行。</summary>
     public IReadOnlyList<InfoRow> InfoRows { get; }
-
-    /// <summary>详情面板“使用的参数”快照行。</summary>
-    public IReadOnlyList<WorkParameterSnapshot> ParamRows => Record.Parameters;
 
     /// <summary>参数快照显示行:旧记录的 Label 是保存时语言写死的,按 DisplayNameKey 重本地化。</summary>
     public IReadOnlyList<WorkParameterSnapshot> DisplayParamRows =>

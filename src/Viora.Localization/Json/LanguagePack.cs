@@ -1,4 +1,4 @@
-using System.Text.Json;
+﻿using System.Text.Json;
 
 namespace Viora.Localization.Json;
 
@@ -16,17 +16,4 @@ public sealed class LanguagePack
 
     public required Dictionary<string, string> Strings { get; init; }
 
-    public static LanguagePack FromJson(string code, string displayName, string json)
-    {
-        var strings = JsonSerializer.Deserialize<Dictionary<string, string>>(json, JsonOptions)
-            ?? throw new InvalidOperationException($"Language pack '{code}' is empty or invalid.");
-        return new LanguagePack { Code = code, DisplayName = displayName, Strings = strings };
-    }
-
-    internal static readonly JsonSerializerOptions JsonOptions = new()
-    {
-        ReadCommentHandling = JsonCommentHandling.Skip,
-        AllowTrailingCommas = true,
-        PropertyNameCaseInsensitive = true,
-    };
 }

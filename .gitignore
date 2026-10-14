@@ -14,3 +14,11 @@ Viora-plugins/
 plugin-sources/
 tools/
 viora-40-genuinely-different-plugin-styles.md
+
+# 发布信息(仅发布时写,见 AGENT.md)
+release-notes.md
+
+# 插件工坊 VS Code 扩展(docs/06)
+vscode-workshop/node_modules/
+vscode-workshop/out/
+vscode-workshop/*.vsix

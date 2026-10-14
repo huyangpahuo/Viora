@@ -17,10 +17,6 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Viora.PluginSdk", "src\Vior
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Viora.UI", "src\Viora.UI\Viora.UI.csproj", "{591BF5A0-FE9E-44FD-BAF2-A26DDD367C58}"
 EndProject
-EndProject
-EndProject
-EndProject
-EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU

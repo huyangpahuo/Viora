@@ -46,6 +46,9 @@ public static class AppLocations
     public static string ResolveLogsFolder(string? overridePath) =>
         string.IsNullOrWhiteSpace(overridePath) ? Path.Combine(DefaultRoot, "logs") : overridePath;
 
+    /// <summary>可再生的下载数据缓存(官方插件目录的磁盘镜像等)。删除不影响功能,仅退回内置快照。</summary>
+    public static string CacheFolder => Path.Combine(DefaultRoot, "cache");
+
     /// <summary>解析作品库目录:自定义优先,空 = 默认。</summary>
     public static string ResolveWorksFolder(string? overridePath) =>
         string.IsNullOrWhiteSpace(overridePath) ? Path.Combine(DefaultRoot, "works") : overridePath;

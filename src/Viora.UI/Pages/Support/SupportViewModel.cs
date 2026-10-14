@@ -1,4 +1,4 @@
-using System.Collections.ObjectModel;
+﻿using System.Collections.ObjectModel;
 using System.Diagnostics;
 using System.IO;
 using CommunityToolkit.Mvvm.ComponentModel;
@@ -18,9 +18,6 @@ public static class SupportLinks
     public const string Discord = "https://discord.gg/GRThdfrUjt";
     public const string Telegram = "https://t.me/+MEjpv8FLI9IzYTA1";
 
-    public static bool HasQQ => !string.IsNullOrEmpty(QQGroup);
-    public static bool HasDiscord => !string.IsNullOrEmpty(Discord);
-    public static bool HasTelegram => !string.IsNullOrEmpty(Telegram);
 }
 
 /// <summary>外链按钮行。</summary>

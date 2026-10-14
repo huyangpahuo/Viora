@@ -1,4 +1,4 @@
-using System.IO;
+﻿using System.IO;
 using System.Text.Json;
 using System.Text.RegularExpressions;
 using Microsoft.Extensions.Logging;
@@ -176,12 +176,6 @@ public sealed partial class JsonLocalizationService : ILocalizationService
         return idx > 0 ? scopedKey[(idx + 2)..] : scopedKey;
     }
 
-    internal void RegisterPack(LanguagePack pack)
-    {
-        lock (_gate)
-            _packs[pack.Code] = pack;
-        LanguageChanged?.Invoke(this, EventArgs.Empty);
-    }
 
     internal static bool DevModeMarker { get; set; }
 

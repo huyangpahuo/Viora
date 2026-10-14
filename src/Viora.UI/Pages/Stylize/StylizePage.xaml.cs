@@ -1,4 +1,4 @@
-using System.Windows;
+﻿using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
 using System.Windows.Media;
@@ -95,8 +95,9 @@ public partial class StylizePage : UserControl
     {
         if (sender is ListBox lb)
         {
-            _chipsScroll ??= FindDescendantScrollViewer(lb);
-            _chipsScroll.ScrollToHorizontalOffset(_chipsScroll.HorizontalOffset - e.Delta * 0.6);
+            var scroll = _chipsScroll ??= FindDescendantScrollViewer(lb);
+            if (scroll is null) return;
+            scroll.ScrollToHorizontalOffset(scroll.HorizontalOffset - e.Delta * 0.6);
             e.Handled = true;
         }
     }

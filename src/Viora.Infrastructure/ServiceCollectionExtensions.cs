@@ -1,4 +1,5 @@
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Extensions.Logging;
 using Viora.Core.Pipeline;
 using Viora.Core.Plugins;
@@ -20,7 +21,8 @@ public static class ServiceCollectionExtensions
     public static IServiceCollection AddVioraInfrastructure(this IServiceCollection services)
     {
         services.AddSingleton<ISettingsService, JsonSettingsService>();
-        services.AddSingleton<IAppPaths, AppPaths>();
+        // TryAdd:组合根(主程序 App / 工坊 App)可先注册自己的 IAppPaths(如工坊的独立数据目录)
+        services.TryAddSingleton<IAppPaths, AppPaths>();
         services.AddSingleton<ILogFileProvider, LogFileProvider>();
                 services.AddSingleton<ImageBufferAdapter>();
         services.AddSingleton<IImageConversionEngine, ImageConversionEngine>();

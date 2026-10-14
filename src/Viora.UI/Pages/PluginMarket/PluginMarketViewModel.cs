@@ -44,8 +44,6 @@ public sealed partial class MarketCardViewModel : ObservableObject
 
     public string AuthorTooltip => string.Format(Tr.Get("Market.Author.Tooltip"), Model.Author);
 
-    public bool HasRepository => !string.IsNullOrEmpty(Model.RepositoryUrl);
-
     /// <summary>点击作者名 → 打开插件的 GitHub 仓库(地址由作者在目录中配置,官方条目指向 packages 内的包)。</summary>
     [RelayCommand]
     private void OpenRepository()
@@ -147,16 +145,6 @@ public sealed partial class MarketCardViewModel : ObservableObject
         OnPropertyChanged(nameof(InstallButtonText));
     }
 
-    /// <summary>语言切换后刷新文案(主 VM 通过它触发,避免跨类调用受保护成员)。</summary>
-    public void RefreshMeta()
-    {
-        OnPropertyChanged(nameof(InstallsDisplay));
-        OnPropertyChanged(nameof(RatingDetailText));
-        OnPropertyChanged(nameof(MetaLine));
-        OnPropertyChanged(nameof(CategoryDisplay));
-        OnPropertyChanged(nameof(InstallButtonText));
-    }
-
     /// <summary>安装状态变化后由主 VM 调用。</summary>
     public void NotifyInstallStateChanged()
     {
@@ -186,7 +174,7 @@ public partial class PluginMarketViewModel : ObservableObject
     private readonly IImageConversionEngine _engine;
 
     /// <summary>内置样张(官方预设展示图;创作者插件未来上传自己的截图,加载失败时回退默认渐变)。</summary>
-    private static readonly ImageSource SampleImage = LoadSampleImage();
+    private static readonly ImageSource? SampleImage = LoadSampleImage();
 
     private static ImageSource? LoadSampleImage()
     {
@@ -524,8 +512,6 @@ public partial class PluginMarketViewModel : ObservableObject
 
     /// <summary>「作者全部插件」面板锚定的作者(打开面板时取当前详情的作者)。</summary>
     private string? _allCardsAuthor;
-
-    public string? AllAuthorText => _allCardsAuthor;
 
     public ObservableCollection<MarketCardViewModel> AllCards { get; } = new();
 

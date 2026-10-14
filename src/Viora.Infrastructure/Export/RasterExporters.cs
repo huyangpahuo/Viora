@@ -1,4 +1,4 @@
-using System.IO;
+﻿using System.IO;
 using System.Windows.Media.Imaging;
 using Viora.Core.Imaging;
 using Viora.Core.Plugins;
@@ -87,21 +87,6 @@ public sealed class WebpExporter : IImageExporter
     public Task ExportAsync(IImageBuffer buffer, Stream output, IReadOnlyDictionary<string, object>? options, CancellationToken cancellationToken)
         => Exporters.ExportViaCustomContainerAsync(buffer, output, WebpContainerFormat, cancellationToken);
 
-    public static bool IsSupported
-    {
-        get
-        {
-            try
-            {
-                _ = BitmapEncoder.Create(WebpContainerFormat);
-                return true;
-            }
-            catch
-            {
-                return false;
-            }
-        }
-    }
 }
 
 internal enum WicEncoder { Png, Jpeg, Bmp, Tiff, Gif }

@@ -3,7 +3,6 @@ using Viora.UI.Hosting;
 using Viora.UI.Shell;
 using Viora.UI.Services;
 using Viora.UI.Pages.MyWorks;
-using Viora.UI.Pages.Placeholder;
 using Viora.UI.Pages.PluginMarket;
 using Viora.UI.Pages.Settings;
 using Viora.UI.Pages.Stylize;
@@ -30,10 +29,7 @@ public static class ServiceCollectionExtensions
         services.AddTransient<MyWorksPage>();
         services.AddTransient<MyWorksViewModel>();
         services.AddTransient<PluginMarketPage>();
-        services.AddSingleton<Pages.Workshop.WorkshopViewModel>();
-        services.AddTransient<Pages.Workshop.WorkshopPage>();
         services.AddTransient<PluginMarketViewModel>();
-        services.AddTransient<PlaceholderPage>();
         services.AddSingleton<Pages.Support.SupportViewModel>();
         services.AddTransient<Pages.Support.AboutPage>();
         services.AddTransient<Pages.Support.HelpPage>();

@@ -14,8 +14,6 @@ public sealed class GeneralSettings
 
     /// <summary>界面字体(本机字体族名);空 = 默认。</summary>
     public string FontFamily { get; set; } = string.Empty;
-
-    public bool ConfirmBeforeCloseDuringProcessing { get; set; } = true;
 }
 
 public sealed class AppearanceSettings
@@ -44,19 +42,13 @@ public sealed class ImageProcessingSettings
     public int PreviewMaxDimension { get; set; } = 1024;
 
     public int ExportMaxDimension { get; set; } = 4096;
-
-    public int PaletteSize { get; set; } = 8;
 }
 
 public sealed class ExportSettings
 {
     public string DefaultFormat { get; set; } = "png";
 
-    public int PngQuality { get; set; } = 100;
-
     public int JpegQuality { get; set; } = 92;
-
-    public string OutputFolder { get; set; } = string.Empty;
 }
 
 public sealed class HotkeySettings
@@ -72,26 +64,15 @@ public sealed class PluginSettings
     public List<string> DisabledPlugins { get; set; } = new();
 }
 
+/// <summary>性能设置。</summary>
 public sealed class PerformanceSettings
 {
-    public int MaxDegreeOfParallelism { get; set; } = 0; // 0 = auto
-
     public bool UsePreviewQualityDuringInteraction { get; set; } = true;
 }
 
-public sealed class CacheSettings
-{
-    public bool EnableCache { get; set; } = true;
-
-    public string CachePath { get; set; } = string.Empty; // empty = default under app data
-
-    public long MaxCacheSizeMb { get; set; } = 512;
-}
-
+/// <summary>隐私设置。</summary>
 public sealed class PrivacySettings
 {
-    public bool ShareAnonymousUsage { get; set; } = false;
-
     public bool RedactPathsInLogs { get; set; } = true;
 }
 
@@ -103,6 +84,13 @@ public sealed class DebugSettings
     public string LogFolder { get; set; } = string.Empty;
 
     public string LogLevel { get; set; } = "Information";
+}
+
+/// <summary>插件工坊(独立应用,重新设计中)的设置;主程序不读写此节。</summary>
+public sealed class WorkshopSettings
+{
+    /// <summary>工作区文件夹(插件的源码就住在这里,自动保存);空 = 默认(文档\Viora Workshop\MyStyle)。</summary>
+    public string WorkspaceFolder { get; set; } = string.Empty;
 }
 
 /// <summary>The full settings document, versioned for future migrations.</summary>
@@ -126,11 +114,11 @@ public sealed class VioraSettings
 
     public PerformanceSettings Performance { get; set; } = new();
 
-    public CacheSettings Cache { get; set; } = new();
-
     public PrivacySettings Privacy { get; set; } = new();
 
     public DebugSettings Debug { get; set; } = new();
+
+    public WorkshopSettings Workshop { get; set; } = new();
 }
 
 public interface ISettingsService

@@ -1,4 +1,4 @@
-using System.Collections.Concurrent;
+﻿using System.Collections.Concurrent;
 using System.IO;
 using Microsoft.Extensions.Logging;
 
@@ -117,9 +117,3 @@ public sealed class FileLoggerProvider : ILoggerProvider
     }
 }
 
-/// <summary>Registers the file provider on the standard builder from the composition root.</summary>
-public static class FileLoggerFactoryExtensions
-{
-    public static ILoggingBuilder AddVioraFile(this ILoggingBuilder builder, FileLoggerProvider provider)
-        => builder.AddProvider(provider);
-}

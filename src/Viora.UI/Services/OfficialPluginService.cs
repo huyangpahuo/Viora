@@ -1,4 +1,4 @@
-using System.Net.Http;
+﻿using System.Net.Http;
 using System.IO;
 using System.IO.Compression;
 using System.Text.Json;
@@ -11,7 +11,7 @@ namespace Viora.UI.Services;
 
 /// <summary>
 /// 官方插件仓库服务:官方 GitHub 仓库(Viora-plugins)的目录镜像与安装包定位。
-/// 目录来源优先级:内置快照(离线兜底)→ 本地镜像 → GitHub 拉取刷新。
+/// 目录来源优先级:磁盘镜像(最近一次联网成功的结果)→ 内置快照(编译期离线兜底)→ GitHub 在线刷新。
 /// 安装包定位:优先从 GitHub raw 下载(真实远程分发),网络不佳时回退本地镜像。
 /// 客户端不预装任何插件:安装区从空开始,全部由用户在市场按需安装。
 /// </summary>
@@ -30,7 +30,8 @@ public sealed class OfficialPluginService
         string Author, string Category, string Version, string DescZh, string DescEn,
         string PackageFile, string? Repository, string[] Tags);
 
-    private static readonly HttpClient Http = CreateClient(TimeSpan.FromSeconds(8));
+    // 目录刷新也要拉完整 registry;raw 在部分地区实测超过 8s,超时上限过紧会让第一源永远失败。
+    private static readonly HttpClient Http = CreateClient(TimeSpan.FromSeconds(20));
 
     /// <summary>包下载专用:整体超时放宽到 120s(原 6s 全局超时让稍大的包在正常网络也装不上)。</summary>
     private static readonly HttpClient DownloadHttp = CreateClient(TimeSpan.FromMinutes(2));
@@ -63,12 +64,40 @@ public sealed class OfficialPluginService
     {
         _logger = logger;
         LoadBundledRegistry();
+        LoadCachedRegistry();
         _logger?.LogInformation("Official registry loaded: {Count} items", _items.Count);
     }
 
-    // ---------- 目录 ----------
+    /// <summary>在线目录的磁盘镜像:最近一次成功拉取的 registry,比编译期快照新;离线会话也不会退回过期数据。</summary>
+    private static string CacheFilePath => Path.Combine(AppLocations.CacheFolder, "official-registry.json");
 
-    public string NameOf((string NameZh, string NameEn) names) => LocalizationSource.Current.Language == "en" ? names.NameEn : names.NameZh;
+    private void LoadCachedRegistry()
+    {
+        try
+        {
+            if (!File.Exists(CacheFilePath)) return;
+            ParseRegistry(File.ReadAllText(CacheFilePath));
+        }
+        catch
+        {
+            // 镜像损坏:保留内置快照
+        }
+    }
+
+    private void SaveCache(string json)
+    {
+        try
+        {
+            Directory.CreateDirectory(AppLocations.CacheFolder);
+            File.WriteAllText(CacheFilePath, json);
+        }
+        catch
+        {
+            // 镜像写入失败不影响本次会话
+        }
+    }
+
+    // ---------- 目录 ----------
 
     /// <summary>加载编译进程序的目录快照(离线兜底);在线目录由 RefreshFromGitHubAsync 刷新。</summary>
     private void LoadBundledRegistry()
@@ -124,7 +153,7 @@ public sealed class OfficialPluginService
         _items = list;
     }
 
-    /// <summary>从官方 GitHub 仓库拉取最新 registry(raw → jsDelivr;网络不佳时静默保留当前目录)。</summary>
+    /// <summary>从官方 GitHub 仓库拉取最新 registry(raw → jsDelivr;全部失败时保留当前目录并记日志)。</summary>
     public async Task RefreshFromGitHubAsync()
     {
         foreach (var url in RemoteUrls("registry.json"))
@@ -133,14 +162,17 @@ public sealed class OfficialPluginService
             {
                 string json = await Http.GetStringAsync(url);
                 ParseRegistry(json);
+                SaveCache(json);
                 RaiseChanged();
                 return;
             }
-            catch
+            catch (Exception ex)
             {
-                // 尝试下一个源
+                _logger?.LogWarning(ex, "Registry refresh failed for {Url}, trying next source", url);
             }
         }
+
+        _logger?.LogWarning("Registry refresh failed on all sources; keeping current catalog ({Count} items)", _items.Count);
     }
 
     // ---------- 安装区 ----------

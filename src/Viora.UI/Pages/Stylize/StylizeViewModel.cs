@@ -1139,8 +1139,6 @@ public sealed class HistoryItemViewModel
     }
 
     public string TimeDisplay => Record.CreatedAt.ToString("MM-dd HH:mm");
-
-    public string ResultAbsolutePath => _works.GetImageAbsolutePath(Record.ResultImageFile);
 }
 
 /// <summary>中央工作区底部 Tab:图片 / 批量处理 / 历史记录。</summary>

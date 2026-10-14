@@ -1,4 +1,4 @@
-using Viora.Core.Imaging;
+﻿using Viora.Core.Imaging;
 
 namespace Viora.Infrastructure.Imaging;
 
@@ -19,15 +19,4 @@ public sealed class ImageBufferAdapter
         return source;
     }
 
-    /// <summary>Copies from a BitmapSource into a Core buffer (BGRA32).</summary>
-    public IImageBuffer FromBitmapSource(System.Windows.Media.Imaging.BitmapSource source)
-    {
-        var converted = new System.Windows.Media.Imaging.FormatConvertedBitmap(
-            source, System.Windows.Media.PixelFormats.Bgra32, null, 0);
-        converted.Freeze();
-        int stride = converted.PixelWidth * 4;
-        var pixels = new byte[stride * converted.PixelHeight];
-        converted.CopyPixels(pixels, stride, 0);
-        return new RgbaImageBuffer(converted.PixelWidth, converted.PixelHeight, pixels);
-    }
 }

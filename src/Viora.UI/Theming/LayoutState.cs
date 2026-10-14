@@ -1,4 +1,4 @@
-using CommunityToolkit.Mvvm.ComponentModel;
+﻿using CommunityToolkit.Mvvm.ComponentModel;
 
 namespace Viora.UI.Theming;
 
@@ -46,9 +46,4 @@ public partial class LayoutState : ObservableObject
         if (compact != IsSidebarCompact) IsSidebarCompact = compact;
     }
 
-    public void UpdateSize(double width, double height)
-    {
-        WindowWidth = width;
-        WindowHeight = height;
-    }
 }
