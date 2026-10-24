@@ -466,6 +466,7 @@
   "Settings.Theme.PickColor": "点击选择颜色",
   "Settings.General.Font": "界面字体",
   "Settings.General.Font.Desc": "选择本机安装的字体,立即生效;留空使用默认",
+  "Settings.General.Font.Default": "系统默认({0})",
   "Settings.Appearance.Scale": "界面缩放",
   "Settings.Appearance.Scale.Desc": "整体缩放界面与字号(80% – 120%),立即生效",
   "Settings.Update.Title": "检查更新",

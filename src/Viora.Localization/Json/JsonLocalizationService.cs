@@ -108,6 +108,12 @@ public sealed partial class JsonLocalizationService : ILocalizationService
         }
     }
 
+    public string GetLanguageDisplayName(string code)
+    {
+        lock (_gate)
+            return _packs.TryGetValue(code, out var pack) ? pack.DisplayName : code;
+    }
+
     public event EventHandler? LanguageChanged;
 
     public string GetString(string key)

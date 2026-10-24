@@ -35,6 +35,10 @@ public sealed class LocalizationSource : INotifyPropertyChanged
     /// <summary>Current language code (bindable, e.g. for language list selection).</summary>
     public string Language => _service?.CurrentLanguage ?? "en";
 
+    /// <summary>语言码 → 下拉显示名(供无 DI 的 XAML converter 使用)。</summary>
+    public static string DisplayNameOf(string code) =>
+        _service?.GetLanguageDisplayName(code) ?? code;
+
     private void RaiseAll()
     {
         PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(string.Empty));

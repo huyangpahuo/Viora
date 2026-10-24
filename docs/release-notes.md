@@ -14,6 +14,9 @@
 - 应用内「插件工坊」整页移除(含源码编辑、预览、打包、registry 整合等功能);插件制作将改为 **VS Code 扩展**形态重新提供,教程见 docs/06,相关设置项预留未删。
 
 **修复**
+- 界面语言下拉对第三方语言包误显示为原始代码或重复的「English」:现在统一读取语言包自带的名称(如「日本語」),选中态随之正确;
+- 侧边栏在日语等长文案下溢出出现横向滚动条:标题与副标题改为自动换行;
+- 界面字体下拉在未自定义时显示为空:现在显示当前实际生效的默认字体名。
 - 网络不佳时插件市场一直显示旧目录:目录刷新超时从 8 秒放宽到 20 秒,拉取成功的目录缓存到磁盘(之后离线也显示最新),编译期内置快照同步更新到 95 款;
 - 平滑图片使用「弦丝画」风格时画面毫无变化的 bug;
 - 8 个艺术运动风格升级到 1.1.0:重写了算法,新版保留照片原本的内容与结构,不再是"几何色块抽象画"。
@@ -30,6 +33,9 @@
 - The in-app plugin **Workshop** page is removed (source editing, preview, packaging, registry integration); plugin authoring will return as a **VS Code extension** — see docs/06 for the tutorial. Reserved settings keys are kept.
 
 **Fixed**
+- The language dropdown showed the raw code or a duplicated "English" for third-party packs: all dropdowns now use the pack's own display name (e.g. 日本語) and the check mark follows;
+- The sidebar overflowed with a horizontal scrollbar for long languages like Japanese: titles and subtitles now wrap automatically;
+- The interface-font dropdown was blank when no custom font was set: it now shows the currently effective default font name.
 - The market kept showing a stale catalog on poor networks: the catalog refresh timeout was raised from 8s to 20s, a successfully fetched catalog is now cached to disk (so even offline sessions show the latest), and the built-in snapshot shipped with the app was refreshed to the 95-style catalog;
 - String Art produced no visible change on smooth photos;
 - The 8 art-movement styles are rebuilt (v1.1.0) to preserve the photo's original content and structure instead of producing abstract color blocks.

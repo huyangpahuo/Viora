@@ -466,6 +466,7 @@
   "Settings.Theme.PickColor": "Click to pick a color",
   "Settings.General.Font": "Interface font",
   "Settings.General.Font.Desc": "Pick any font installed on this PC; applies instantly. Empty = default",
+  "Settings.General.Font.Default": "System default ({0})",
   "Settings.Appearance.Scale": "UI scale",
   "Settings.Appearance.Scale.Desc": "Scale the whole UI including text (80% – 120%); applies instantly",
   "Settings.Update.Title": "Check for updates",

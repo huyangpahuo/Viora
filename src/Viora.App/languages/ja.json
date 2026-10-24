@@ -466,6 +466,7 @@
   "Settings.Theme.PickColor": "クリックして色を選択",
   "Settings.General.Font": "インターフェイスフォント",
   "Settings.General.Font.Desc": "この PC にインストール済みのフォントを選択できます。即時反映。空欄で既定",
+  "Settings.General.Font.Default": "システム既定({0})",
   "Settings.Appearance.Scale": "UI スケール",
   "Settings.Appearance.Scale.Desc": "テキストを含む UI 全体を拡大縮小(80%〜120%)。即時反映",
   "Settings.Update.Title": "アップデートを確認",

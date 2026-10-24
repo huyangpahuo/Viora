@@ -179,7 +179,7 @@ public partial class SettingsViewModel : ObservableObject
         };
 
         LanguageItems = _localization.AvailableLanguages
-            .Select(code => new LanguageOption(code, code.StartsWith("zh", StringComparison.OrdinalIgnoreCase) ? "中文(简体)" : "English"))
+            .Select(code => new LanguageOption(code, _localization.GetLanguageDisplayName(code)))
             .ToList();
         LogLevels = ["Trace", "Debug", "Information", "Warning", "Error"];
 
@@ -269,13 +269,34 @@ public partial class SettingsViewModel : ObservableObject
         AppRestart.Restart();
     }
 
-    /// <summary>本机字体选项(按显示名排序)。</summary>
-    public IReadOnlyList<LanguageOption> FontItems { get; } =
-        System.Windows.Media.Fonts.SystemFontFamilies
+    /// <summary>
+    /// 本机字体选项;首项 Code="" 对应"留空 = 默认"的设置语义,DisplayName 标出实际生效的字体,
+    /// 让下拉框在未自定义字体时也不空白。
+    /// </summary>
+    public IReadOnlyList<LanguageOption> FontItems { get; } = BuildFontItems();
+
+    private static List<LanguageOption> BuildFontItems()
+    {
+        var items = new List<LanguageOption>
+        {
+            new(string.Empty, string.Format(Tr.Get("Settings.General.Font.Default"), ResolveDefaultUiFontName())),
+        };
+        items.AddRange(System.Windows.Media.Fonts.SystemFontFamilies
             .Select(f => new LanguageOption(f.Source, f.FamilyNames.TryGetValue(
                 System.Windows.Markup.XmlLanguage.GetLanguage("zh-hans"), out var zh) && !string.IsNullOrEmpty(zh) ? zh : f.Source))
-            .OrderBy(f => f.DisplayName, StringComparer.OrdinalIgnoreCase)
-            .ToList();
+            .OrderBy(f => f.DisplayName, StringComparer.OrdinalIgnoreCase));
+        return items;
+    }
+
+    /// <summary>默认字体回退链(与 App.ApplyFontFamily 同源)中第一个本机可用的家族名。</summary>
+    private static string ResolveDefaultUiFontName()
+    {
+        var installed = System.Windows.Media.Fonts.SystemFontFamilies
+            .Select(f => f.Source).ToHashSet(StringComparer.OrdinalIgnoreCase);
+        foreach (var name in new[] { "Inter", "Segoe UI Variable Display", "Segoe UI" })
+            if (installed.Contains(name)) return name;
+        return "Segoe UI";
+    }
 
     public string SelectedFontFamily
     {

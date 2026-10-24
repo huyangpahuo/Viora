@@ -247,28 +247,35 @@
                         <RowDefinition Height="Auto" />
                     </Grid.RowDefinitions>
 
-                    <!-- 核心功能 -->
+                    <!-- 核心功能(标题/副标题自动换行——日语等长文案不能把侧栏撑出横向滚动) -->
                     <ListBox Grid.Row="0" BorderThickness="0" Background="Transparent" Padding="0,10,0,0"
                              ItemsSource="{Binding CoreItems}" SelectedItem="{Binding SelectedItem}"
                              ItemContainerStyle="{StaticResource NavCoreItem}"
-                             ScrollViewer.VerticalScrollBarVisibility="Disabled">
+                             ScrollViewer.VerticalScrollBarVisibility="Disabled"
+                             ScrollViewer.HorizontalScrollBarVisibility="Disabled">
                         <ListBox.ItemTemplate>
                             <DataTemplate>
-                                <StackPanel Orientation="Horizontal">
-                                    <Border x:Name="IconTile" Width="38" Height="38" CornerRadius="11"
+                                <Grid>
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="Auto" />
+                                        <ColumnDefinition Width="*" />
+                                    </Grid.ColumnDefinitions>
+                                    <Border x:Name="IconTile" Grid.Column="0" Width="38" Height="38" CornerRadius="11"
                                             Background="{DynamicResource Brush.Glass}" BorderBrush="{DynamicResource Color.Border}"
                                             BorderThickness="1">
                                         <controls:VioraIcon Geometry="{Binding IconKey, Converter={StaticResource IconKey}}"
                                                             Width="19" Height="19"
                                                             Foreground="{DynamicResource Color.Text.Secondary}" />
                                     </Border>
-                                    <StackPanel Margin="11,0,0,0" VerticalAlignment="Center">
+                                    <StackPanel Grid.Column="1" Margin="11,0,0,0" VerticalAlignment="Center">
                                         <TextBlock x:Name="Title" Text="{Binding Title}" FontSize="13.5" FontWeight="SemiBold"
+                                                   TextWrapping="Wrap"
                                                    Foreground="{DynamicResource Color.Text.Primary}" />
                                         <TextBlock x:Name="Subtitle" Text="{Binding Subtitle}" FontSize="10.5" Margin="0,2,0,0"
+                                                   TextWrapping="Wrap"
                                                    Foreground="{DynamicResource Color.Text.Secondary}" />
                                     </StackPanel>
-                                </StackPanel>
+                                </Grid>
                                 <DataTemplate.Triggers>
                                     <DataTrigger Binding="{Binding IsSelected, RelativeSource={RelativeSource AncestorType=ListBoxItem}}" Value="True">
                                         <Setter TargetName="IconTile" Property="Background" Value="#2EFFFFFF" />
@@ -300,16 +307,22 @@
                             <ListBox BorderThickness="0" Background="Transparent"
                                      ItemsSource="{Binding AuxItems}" SelectedItem="{Binding SelectedItem}"
                                      ItemContainerStyle="{StaticResource NavAuxItem}"
-                                     ScrollViewer.VerticalScrollBarVisibility="Disabled">
+                                     ScrollViewer.VerticalScrollBarVisibility="Disabled"
+                                     ScrollViewer.HorizontalScrollBarVisibility="Disabled">
                                 <ListBox.ItemTemplate>
                                     <DataTemplate>
-                                        <StackPanel Orientation="Horizontal">
-                                            <controls:VioraIcon Geometry="{Binding IconKey, Converter={StaticResource IconKey}}"
+                                        <Grid>
+                                            <Grid.ColumnDefinitions>
+                                                <ColumnDefinition Width="Auto" />
+                                                <ColumnDefinition Width="*" />
+                                            </Grid.ColumnDefinitions>
+                                            <controls:VioraIcon Grid.Column="0" Geometry="{Binding IconKey, Converter={StaticResource IconKey}}"
                                                                 Width="13" Height="13" Margin="2,0,0,0"
                                                                 Foreground="{Binding Foreground, RelativeSource={RelativeSource AncestorType=ListBoxItem}}" />
-                                            <TextBlock Text="{Binding Title}" FontSize="12" Margin="9,0,0,0" VerticalAlignment="Center"
+                                            <TextBlock Grid.Column="1" Text="{Binding Title}" FontSize="12" Margin="9,0,0,0" VerticalAlignment="Center"
+                                                       TextWrapping="Wrap"
                                                        Foreground="{Binding Foreground, RelativeSource={RelativeSource AncestorType=ListBoxItem}}" />
-                                        </StackPanel>
+                                        </Grid>
                                     </DataTemplate>
                                 </ListBox.ItemTemplate>
                             </ListBox>

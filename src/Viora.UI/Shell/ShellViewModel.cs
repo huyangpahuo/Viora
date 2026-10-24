@@ -140,14 +140,8 @@ public partial class ShellViewModel : ObservableObject
     [ObservableProperty]
     private string _currentLanguageName = string.Empty;
 
-    private void RefreshLanguageState() => CurrentLanguageName = LanguageDisplayName(_localization.CurrentLanguage);
-
-    public static string LanguageDisplayName(string code) => code switch
-    {
-        "zh-Hans" or "zh" => "中文",
-        "en" => "English",
-        _ => code,
-    };
+    private void RefreshLanguageState() =>
+        CurrentLanguageName = _localization.GetLanguageDisplayName(_localization.CurrentLanguage);
 
     [RelayCommand]
     private void SetLanguage(string code)

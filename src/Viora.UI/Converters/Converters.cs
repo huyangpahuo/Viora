@@ -170,11 +170,11 @@ public sealed class StringEmptyToVisibilityConverter : IValueConverter
         throw new NotSupportedException();
 }
 
-/// <summary>Language code (value) → display name ("中文" / "English").</summary>
+/// <summary>Language code (value) → display name from the pack itself (简体中文 / English / 日本語…).</summary>
 public sealed class LanguageDisplayNameConverter : IValueConverter
 {
     public object Convert(object? value, Type targetType, object parameter, CultureInfo culture) =>
-        Viora.UI.Shell.ShellViewModel.LanguageDisplayName(value as string ?? string.Empty);
+        LocalizationSource.DisplayNameOf(value as string ?? string.Empty);
 
     public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture) =>
         throw new NotSupportedException();
@@ -188,7 +188,7 @@ public sealed class LanguageEqualsCurrentConverter : IValueConverter
 {
     public object Convert(object? value, Type targetType, object parameter, CultureInfo culture) =>
         string.Equals(
-            Viora.UI.Shell.ShellViewModel.LanguageDisplayName(value as string ?? string.Empty),
+            LocalizationSource.DisplayNameOf(value as string ?? string.Empty),
             parameter as string,
             StringComparison.Ordinal);
 
