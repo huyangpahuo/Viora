@@ -433,6 +433,7 @@ public partial class PluginMarketViewModel : ObservableObject
         RebuildCatalogItems();
         _ = RefreshCardsAsync();
         _ = _official.RefreshFromGitHubAsync(); // 网络可用时同步官方仓库最新目录
+        _ = _official.RefreshCommunityAsync();  // 同步官网(viora-web)数据库里的社区插件目录
         LocalizationSource.Current.PropertyChanged += async (_, _) => await RefreshManualAsync();
     }
 

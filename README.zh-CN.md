@@ -45,6 +45,7 @@ Viora 是一款**本地优先**的 Windows 图片风格化应用(WPF / .NET 8)�
 ## 插件生态
 
 - 官方插件仓库:[huyangpahuo/Viora-plugins](https://github.com/huyangpahuo/Viora-plugins) —— 95 个风格插件的分发源,也是第三方插件的上架入口(提交 PR 即可);
+- 社区插件:[Viora 插件网站](https://viora-web.vercel.app) 上作者自主发布(记录在网站数据库,安装包托管在作者自己的 GitHub 仓库),客户端插件市场可直接搜索安装,与官方插件平等展示;
 - 插件 = 一个文件夹(`plugin.json` 清单 + 编译好的 DLL),市场里的 zip 就是它的压缩包;放进 `plugins` 文件夹即安装,删掉即卸载;
 - 制作自己的风格插件:每个插件的源码是一个完全自足的文件夹(算法 + 入口 + 清单),引用 `Viora.PluginSdk` 写约 30 行入口代码,算法可以是任何托管代码,完整教程见 [插件开发指南](docs/03-插件开发指南.md)。
 

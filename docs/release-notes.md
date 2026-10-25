@@ -5,6 +5,7 @@
 ### 中文
 
 **新增**
+- 客户端接入官网(viora-web)的社区插件目录:作者在网站发布、记录在数据库的插件(安装包托管在作者自己的 GitHub 仓库)现在出现在插件市场,可直接搜索安装;
 - 界面新增**日语语言包**(日本語):设置里即可切换,600 余条文案全部翻译;
 - 官方风格目录从 55 款扩到 **95 款**,新增 40 个风格插件:艺术运动(浮世绘、新艺术、装饰艺术、包豪斯、瑞士国际主义、构成主义、风格派、立体派)、设计与网络亚文化(未来主义、超现实主义、达达、至上主义、孟菲斯、粗野主义、迷幻、Vaporwave、Synthwave、Y2K、Frutiger Aero、GeoCities)、历史文化(泥金手抄本、拜占庭圣像、埃及象形、波斯细密画、莫卧儿细密画、凯尔特结、皮影戏)、数学与科学(莫尔纹、Voronoi、反应扩散、元胞自动机、L-System、Metaball、流场、纹影成像)、光学与摄影(鱼眼、太阳化、长曝光、红蓝立体、光栅立体),全部保留照片内容、不做过度抽象;
 - 插件市场支持把 zip 直接拖进窗口安装,和"从市场安装"等效;
@@ -24,6 +25,7 @@
 ### English
 
 **New**
+- The client now consumes the community plugin catalog from the Viora website: plugins published by authors on the site (recorded in its database, packages hosted in the authors' own GitHub repos) appear in the plugin market for direct install;
 - A **Japanese interface language pack** (日本語): switchable in Settings, with all 600+ strings fully localized;
 - The official style catalog grows from 55 to **95 styles** with 40 new plugins: art movements (Ukiyo-e, Art Nouveau, Art Deco, Bauhaus, Swiss Style, Constructivism, De Stijl, Cubism), design & web subcultures (Futurism, Surrealism, Dada, Suprematism, Memphis, Brutalism, Psychedelic, Vaporwave, Synthwave, Y2K, Frutiger Aero, GeoCities), historical & cultural (Illuminated Manuscript, Byzantine Icon, Egyptian Hieroglyph, Persian Miniature, Mughal Miniature, Celtic Knotwork, Shadow Puppet), math & science (Moiré, Voronoi, Reaction Diffusion, Cellular Automaton, L-System, Metaball, Flow Field, Schlieren), optics & photography (Fisheye, Solarization, Long Exposure, Anaglyph 3D, Lenticular) — all preserve the photo's content instead of turning it into abstraction;
 - The plugin market now accepts dragging a plugin zip onto the window to install, same as installing from the market;

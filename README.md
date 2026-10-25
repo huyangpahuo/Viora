@@ -45,6 +45,7 @@ From source: install the [.NET 8 SDK](https://dotnet.microsoft.com/download/dotn
 ## Plugin ecosystem
 
 - Official plugin repository: [huyangpahuo/Viora-plugins](https://github.com/huyangpahuo/Viora-plugins) — the distribution source for all 95 styles and the entry point for third-party plugins (submit a PR);
+- Community plugins: published by authors on the [Viora plugins website](https://viora-web.vercel.app) (recorded in the site database, packages hosted in the authors' own GitHub repos); they appear in the in-app plugin market and install just like official ones;
 - A plugin is just a folder (`plugin.json` manifest + compiled DLL); the market's zip is that folder compressed. Drop it into `plugins` to install, delete it to uninstall;
 - Building your own style plugin: every plugin's source lives in a fully self-contained folder (algorithm + entry class + manifest); reference `Viora.PluginSdk`, write ~30 lines of entry code, and the algorithm can be any managed code — full tutorial in the [plugin guide](docs/03-插件开发指南.md).
 
